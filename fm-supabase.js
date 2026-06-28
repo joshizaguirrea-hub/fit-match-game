@@ -26,7 +26,16 @@ window.FMAuth = (function(){
       return false;
     }
     if(!window.supabase){ console.warn("[FitMatch] Falta cargar supabase-js"); return false; }
-    if(!client) client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if(!client) client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        // ARREGLO CUELGUE: desactivamos el candado entre-pestañas (navigator.locks)
+        // que dejaba el login atascado en "Ingresando..." para siempre.
+        lock: async (_name, _acquireTimeout, fn) => await fn()
+      }
+    });
     return true;
   }
   return {
