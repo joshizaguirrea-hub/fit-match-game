@@ -174,29 +174,50 @@
 </header>
 
 <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-12">
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-
-    <a id="card-play-link" onclick="handlePlayClick()" class="card-link group rounded-3xl border-2 p-7 flex flex-col cursor-pointer" style="background:linear-gradient(135deg,#312e81,#7c3aed);border-color:#a855f7">
-      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:rgba(255,255,255,.18);color:#fff"><i class="fa-solid fa-gamepad text-2xl"></i></div>
-      <h3 class="athletic text-2xl font-bold uppercase text-white mb-1">Jugar Ahora</h3>
-      <p class="text-white/80 text-sm">El motor: jugadores, banco, modos (Individual / Reto / Competencia), reloj y monedas.</p>
+  <!-- Hero Card Principal -->
+  <div class="max-w-2xl mx-auto mb-12">
+    <a id="card-play-link" onclick="handlePlayClick()" class="card-link group rounded-3xl border-2 p-8 flex flex-col items-center text-center cursor-pointer" style="background:linear-gradient(135deg,#312e81,#7c3aed);border-color:#a855f7">
+      <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style="background:rgba(255,255,255,.18);color:#fff">
+        <i class="fa-solid fa-dumbbell text-4xl"></i>
+      </div>
+      <h3 class="athletic text-3xl font-bold uppercase text-white mb-3">Entrenar Ahora</h3>
+      <p class="text-white/80 text-base mb-4">72 rutinas de dioses legendarios + 60 entrenamientos modernos (Gimnasio, Yoga, Pilates, Cardio, Calistenia, Hipopresivos)</p>
+      <div class="flex items-center gap-4 text-sm text-white/70">
+        <span><i class="fa-solid fa-users mr-1"></i> Modo Cooperativo</span>
+        <span><i class="fa-solid fa-trophy mr-1"></i> Ranking Global</span>
+        <span><i class="fa-solid fa-comments mr-1"></i> Chat en Vivo</span>
+      </div>
     </a>
-
-    <a href="cartas.html" class="card-link group rounded-3xl border border-gray-800 p-7 flex flex-col" style="background:linear-gradient(135deg,#15151E,#0B0B0F)">
-      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:rgba(37,99,235,.15);color:#3b82f6"><i class="fa-solid fa-layer-group text-2xl"></i></div>
-      <h3 class="athletic text-2xl font-bold uppercase text-white mb-1">Catalogo de Cartas</h3>
-      <p class="text-gray-400 text-sm">Las cartas de color (8 por grupo), ventajas y castigos. Listas para imprimir.</p>
-    </a>
-
-    <a href="fichas.html" class="card-link group rounded-3xl border border-gray-800 p-7 flex flex-col" style="background:linear-gradient(135deg,#15151E,#0B0B0F)">
-      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:rgba(245,158,11,.15);color:#f59e0b"><i class="fa-solid fa-coins text-2xl"></i></div>
-      <h3 class="athletic text-2xl font-bold uppercase text-white mb-1">Monedas & Reloj</h3>
-      <p class="text-gray-400 text-sm">Las fichas de 1/2/3 puntos y el reloj de arena con temporizador real.</p>
-    </a>
-
   </div>
 
-  <div class="text-center mt-10">
+  <!-- Características del Juego -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-center">
+      <div class="w-12 h-12 rounded-xl bg-purple-600/20 flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-landmark text-2xl text-purple-400"></i>
+      </div>
+      <h4 class="athletic text-lg font-bold uppercase text-white mb-2">72 Dioses Legendarios</h4>
+      <p class="text-gray-400 text-sm">Rutinas inspiradas en 9 culturas: Grecia, Nórdicos, Egipto, China, Japón, Mongoles, Mayas, Aztecas e Incas</p>
+    </div>
+
+    <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-center">
+      <div class="w-12 h-12 rounded-xl bg-pink-600/20 flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-dumbbell text-2xl text-pink-400"></i>
+      </div>
+      <h4 class="athletic text-lg font-bold uppercase text-white mb-2">60 Entrenamientos Modernos</h4>
+      <p class="text-gray-400 text-sm">Gimnasio, Yoga, Pilates, Cardio, Calistenia y Hipopresivos para todos los niveles</p>
+    </div>
+
+    <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-center">
+      <div class="w-12 h-12 rounded-xl bg-yellow-600/20 flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-medal text-2xl text-yellow-400"></i>
+      </div>
+      <h4 class="athletic text-lg font-bold uppercase text-white mb-2">Sistema de Rangos</h4>
+      <p class="text-gray-400 text-sm">Asciende desde Recluta hasta General con tus puntos de experiencia</p>
+    </div>
+  </div>
+
+  <div class="text-center">
     <a href="REGLAS_URL" id="rules-cta" class="inline-flex items-center gap-2 athletic text-sm font-bold uppercase tracking-wider text-gray-300 hover:text-white">
       <i class="fa-solid fa-scale-balanced"></i> Ver las reglas del juego
     </a>
@@ -567,12 +588,14 @@
       if (!supabase) {
         errorEl.textContent = "Error: No se pudo conectar con Supabase. Verifica tu conexión.";
         errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = `<span>Ingresar</span> <i class="fa-solid fa-sign-in-alt"></i>`;
         return;
       }
 
-      // Agregar timeout de 15 segundos
+      // Reducir timeout a 10 segundos para mejor feedback
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet.")), 15000);
+        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet.")), 10000);
       });
 
       const { data, error } = await Promise.race([
@@ -683,12 +706,14 @@
       if (!supabase) {
         errorEl.textContent = "Error: No se pudo conectar con Supabase. Verifica tu conexión.";
         errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = `<span>Crear Cuenta e Ingresar</span> <i class="fa-solid fa-user-check"></i>`;
         return;
       }
 
-      // Agregar timeout de 15 segundos
+      // Reducir timeout a 10 segundos para mejor feedback
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet.")), 15000);
+        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet.")), 10000);
       });
 
       // 1) Registrarse en Supabase Auth
