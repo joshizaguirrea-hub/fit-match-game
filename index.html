@@ -167,8 +167,8 @@
     </div>
     <h1 class="athletic text-5xl sm:text-7xl font-bold uppercase tracking-tight mb-4">FIT <span style="color:#a855f7">MATCH</span></h1>
     <p class="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto">La app de juego: arma tu partida, apuesta puntos y suda. <strong class="text-white">Primero en llegar a 30 gana.</strong></p>
-    <a id="main-play-btn" onclick="handlePlayClick()" class="inline-flex items-center gap-2 mt-8 athletic text-xl font-bold uppercase tracking-wide text-white py-3 px-10 rounded-full cursor-pointer" style="background:linear-gradient(135deg,#22c55e,#16a34a)">
-      <i class="fa-solid fa-play"></i> Empezar partida
+    <a id="main-play-btn" onclick="handlePlayClick(event)" class="inline-flex items-center gap-2 mt-8 athletic text-xl font-bold uppercase tracking-wide text-white py-3 px-10 rounded-full cursor-pointer" style="background:linear-gradient(135deg,#22c55e,#16a34a)">
+      <i class="fa-solid fa-play"></i> Empezar a entrenar
     </a>
   </div>
 </header>
@@ -176,7 +176,7 @@
 <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-12">
   <!-- Hero Card Principal -->
   <div class="max-w-2xl mx-auto mb-12">
-    <a id="card-play-link" onclick="handlePlayClick()" class="card-link group rounded-3xl border-2 p-8 flex flex-col items-center text-center cursor-pointer" style="background:linear-gradient(135deg,#312e81,#7c3aed);border-color:#a855f7">
+    <a id="card-play-link" onclick="handlePlayClick(event)" class="card-link group rounded-3xl border-2 p-8 flex flex-col items-center text-center cursor-pointer" style="background:linear-gradient(135deg,#312e81,#7c3aed);border-color:#a855f7">
       <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style="background:rgba(255,255,255,.18);color:#fff">
         <i class="fa-solid fa-dumbbell text-4xl"></i>
       </div>
