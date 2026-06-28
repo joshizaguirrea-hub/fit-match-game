@@ -593,18 +593,11 @@
         return;
       }
 
-      // Aumentar timeout a 30 segundos para conexiones lentas
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet o intenta más tarde.")), 30000);
+      // Eliminar timeout temporalmente para ver el error real
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
       });
-
-      const { data, error } = await Promise.race([
-        supabase.auth.signInWithPassword({
-          email: email,
-          password: password
-        }),
-        timeoutPromise
-      ]);
 
       if (error) {
         console.error("Error de Supabase:", error);
@@ -623,9 +616,7 @@
       console.error("Error en loginWithPassword:", err);
       let errMsg = "¡Uuups! La contraseña es incorrecta o este correo aún no ha sido registrado.";
       
-      if (err.message && err.message.includes("Tiempo de espera")) {
-        errMsg = err.message;
-      } else if (err.message && !err.message.includes("Invalid login credentials")) {
+      if (err.message && !err.message.includes("Invalid login credentials")) {
         errMsg = "Error al ingresar: " + err.message;
       }
       
