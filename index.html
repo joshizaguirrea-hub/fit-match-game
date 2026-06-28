@@ -703,19 +703,11 @@
         return;
       }
 
-      // Aumentar timeout a 30 segundos para conexiones lentas
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet o intenta más tarde.")), 30000);
+      // Eliminar timeout para ver error real
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email,
+        password: password
       });
-
-      // 1) Registrarse en Supabase Auth
-      const { data, error: signUpError } = await Promise.race([
-        supabase.auth.signUp({
-          email: email,
-          password: password
-        }),
-        timeoutPromise
-      ]);
 
       if (signUpError) {
         throw signUpError;
