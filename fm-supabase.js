@@ -11,7 +11,7 @@
    ============================================================ */
 
 const SUPABASE_URL      = "https://ebclaayqkcnigelfabhg.supabase.co";   // ej: https://abcdxyz.supabase.co
-const SUPABASE_ANON_KEY = "sb_publishable_zOxWd3cSJdQg797rSq-pAw_-XTt7Ux_";      // ej: eyJhbGciOi... (cadena larga)
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViY2xhYXlxa2NuaWdlbGZhYmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MTA4MDEsImV4cCI6MjA5Nzk4NjgwMX0.Qc0CXq1TXgGAOj2Q3S9joOkpA3Yxsjju2ndNdC0EuBQ";      // llave clasica anon public (eyJ...)
 
 /* ------------------------------------------------------------
    De aqui para abajo NO toques nada (lo maneja Horus).
