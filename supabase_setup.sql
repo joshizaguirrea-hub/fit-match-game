@@ -80,6 +80,12 @@ CREATE POLICY IF NOT EXISTS "Ver propios workouts" ON workouts
 CREATE POLICY IF NOT EXISTS "Insertar propios workouts" ON workouts
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+-- (Opcional pero recomendado) Permitir VER los workouts de otros usuarios
+-- para que se puedan ver los perfiles/estadísticas de los amigos en el ranking.
+-- Si NO quieres que las estadísticas sean públicas, no ejecutes esta política.
+CREATE POLICY IF NOT EXISTS "Ver workouts públicos" ON workouts
+  FOR SELECT USING (true);
+
 -- ============================================================
 -- 4. CREAR TRIGGER AUTOMÁTICO PARA PERFIL
 -- ============================================================

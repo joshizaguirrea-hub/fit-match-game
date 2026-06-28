@@ -141,13 +141,14 @@ function getMatchReason(score, userRank, otherRank) {
 }
 
 // Función para abrir el modal de perfil
-function openProfileModal() {
+// userId opcional: si se pasa, muestra el perfil de ESE usuario (un amigo). Si no, el tuyo.
+function openProfileModal(userId) {
   const modal = document.getElementById('profile-modal');
   if (!modal) {
     createProfileModal();
   }
   
-  loadProfileData();
+  loadProfileData(userId);
   document.getElementById('profile-modal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -334,35 +335,46 @@ function switchProfileTab(tabName) {
 }
 
 // Función para cargar datos del perfil
-async function loadProfileData() {
+async function loadProfileData(targetUserId) {
   try {
-    // Obtener datos del usuario actual
+    // Usuario logueado
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    // A quién mostramos: si nos pasan targetUserId es un amigo; si no, soy yo
+    const viewingId = targetUserId || (user && user.id);
+    if (!viewingId) return;
+    const isOwn = !targetUserId || (user && targetUserId === user.id);
 
-    // Obtener nickname y puntos
+    // Ocultar pestañas que solo aplican a TU propio perfil cuando ves a un amigo
+    const tabPhotos = document.querySelector('.profile-tab[data-tab="photos"]');
+    const tabCustom = document.querySelector('.profile-tab[data-tab="customization"]');
+    if (tabPhotos) tabPhotos.style.display = isOwn ? '' : 'none';
+    if (tabCustom) tabCustom.style.display = isOwn ? '' : 'none';
+
+    // Obtener perfil que estamos viendo
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', viewingId)
       .single();
 
     if (profile) {
-      document.getElementById('profile-nickname').textContent = profile.nickname || 'Usuario';
-      
-      const rank = window.getMilitaryRank ? window.getMilitaryRank(profile.total_points || 0) : 'Recluta';
-      document.getElementById('profile-rank').textContent = rank;
+      // La base usa 'apodo'; dejamos 'nickname' como respaldo por compatibilidad
+      document.getElementById('profile-nickname').textContent = profile.apodo || profile.nickname || 'Usuario';
     }
 
-    // Obtener workouts del usuario
+    // Obtener workouts del usuario que estamos viendo
     const { data: workouts } = await supabase
       .from('workouts')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', viewingId);
 
-    // Calcular estadísticas
+    // Calcular estadísticas (puntos derivados de los workouts)
     const stats = calculateUserStats(workouts || []);
-    
+
+    // El rango sale de los puntos reales acumulados
+    const rank = window.getMilitaryRank ? window.getMilitaryRank(stats.totalPoints) : 'Recluta';
+    document.getElementById('profile-rank').textContent = rank;
+
     document.getElementById('stat-hours').textContent = stats.totalHours;
     document.getElementById('stat-days').textContent = stats.totalDays;
     document.getElementById('stat-routines').textContent = stats.routinesCompleted;
@@ -373,10 +385,10 @@ async function loadProfileData() {
     loadAchievements(workouts || [], stats.totalPoints);
 
     // Cargar fotos
-    loadPhotos(user.id);
+    loadPhotos(viewingId);
 
-    // Cargar mejor FIT-BRO
-    loadBestFitBro(user, profile);
+    // Cargar mejor FIT-BRO (solo para tu propio perfil)
+    if (isOwn && profile) loadBestFitBro(user, profile);
 
     // Generar gráfico de actividad
     generateActivityChart(workouts || []);

@@ -78,12 +78,12 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js"></script>
-<script src="fm-routines.js"></script>
-<script src="fm-specialized-routines.js"></script>
-<script src="fm-badges.js"></script>
-<script src="fm-achievements.js"></script>
-<script src="fm-profile.js"></script>
+<script src="fm-supabase.js?v=3"></script>
+<script src="fm-routines.js?v=3"></script>
+<script src="fm-specialized-routines.js?v=3"></script>
+<script src="fm-badges.js?v=3"></script>
+<script src="fm-achievements.js?v=3"></script>
+<script src="fm-profile.js?v=3"></script>
 </head>
 <body class="min-h-screen antialiased">
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#ec4899;color:#fff;font-family:Fredoka,sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:2.5px solid #111827;border-radius:999px;box-shadow:3px 3px 0 #111827;display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
@@ -193,12 +193,21 @@
       <span class="fun text-2xl font-bold text-gray-900">Fit Match · Jugar</span>
     </div>
     <div class="flex items-center gap-2.5">
-      <!-- Mini Perfil Nube -->
-      <div id="play-user-bar" class="hidden sm:flex items-center gap-2 bg-gray-100 border-2 border-gray-900 px-4 py-1.5 rounded-full text-xs font-bold text-gray-800">
+      <!-- Mini Perfil Nube (clickeable para ver tu perfil) -->
+      <button id="play-user-bar" onclick="openProfileModal()" title="Ver mi perfil" class="hidden sm:flex items-center gap-2 bg-gray-100 hover:bg-purple-100 border-2 border-gray-900 px-4 py-1.5 rounded-full text-xs font-bold text-gray-800 transition cursor-pointer">
         <span class="w-2.5 h-2.5 rounded-full bg-green-500" id="play-user-dot"></span>
         <span id="play-user-text">Invitado</span>
         <span id="play-user-rank" class="bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Recluta</span>
-      </div>
+        <i class="fa-solid fa-user text-purple-600 ml-1"></i>
+      </button>
+      <!-- Botón Mi Perfil (siempre visible para acceso fácil) -->
+      <button id="play-btn-profile" onclick="openProfileModal()" title="Mi Perfil" class="hidden flex items-center gap-1 text-gray-700 hover:text-purple-600 font-bold text-sm transition">
+        <i class="fa-solid fa-user"></i><span class="hidden md:inline">Mi Perfil</span>
+      </button>
+      <!-- Botón Cerrar Sesión -->
+      <button id="play-btn-logout" onclick="handlePlayLogout()" title="Cerrar sesión" class="hidden flex items-center gap-1 text-gray-500 hover:text-red-500 font-bold text-sm transition">
+        <i class="fa-solid fa-sign-out-alt"></i><span class="hidden md:inline">Salir</span>
+      </button>
     </div>
   </div>
 </header>
@@ -1750,6 +1759,16 @@ function getMilitaryRank(points) {
   return 'Recluta';
 }
 
+// Cerrar sesión limpio desde la pantalla de juego (re-ingreso sin fantasmas)
+async function handlePlayLogout() {
+  const supabase = window.FMAuth && window.FMAuth.getClient ? window.FMAuth.getClient() : null;
+  if (!supabase) { window.location.href = 'index.html'; return; }
+  if (confirm('¿Seguro que quieres cerrar sesión?')) {
+    try { await supabase.auth.signOut(); } catch(e) { console.error(e); }
+    window.location.href = 'index.html';
+  }
+}
+
 async function initCloudProfile() {
   if (!window.FMAuth || !window.FMAuth.isConfigured()) return;
   const supabase = window.FMAuth.getClient();
@@ -1789,6 +1808,11 @@ async function initCloudProfile() {
         document.getElementById('play-user-text').innerHTML = `${profile.apodo} <span class="text-gray-500 font-normal">(${cloudTotalPoints} pts)</span>`;
         document.getElementById('play-user-rank').textContent = rank;
       }
+      // Mostrar botones de Perfil y Cerrar Sesión al estar logueado
+      const pBtn = document.getElementById('play-btn-profile');
+      const lBtn = document.getElementById('play-btn-logout');
+      if (pBtn) pBtn.classList.remove('hidden');
+      if (lBtn) lBtn.classList.remove('hidden');
       
       // Si estamos en entrenamiento, reemplazar el jugador 'Tu' con el apodo de la nube
       if (G.training && G.players && G.players[0] && (G.players[0].name === 'Tu' || G.players[0].name === 'Invitado')) {
