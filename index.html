@@ -586,16 +586,16 @@
       console.log("Iniciando login para:", email);
       const supabase = window.FMAuth.getClient();
       if (!supabase) {
-        errorEl.textContent = "Error: No se pudo conectar con Supabase. Verifica tu conexión.";
+        errorEl.textContent = "Error: No se pudo conectar con Supabase. Verifica la configuración en fm-supabase.js";
         errorEl.classList.remove('hidden');
         btn.disabled = false;
         btn.innerHTML = `<span>Ingresar</span> <i class="fa-solid fa-sign-in-alt"></i>`;
         return;
       }
 
-      // Reducir timeout a 10 segundos para mejor feedback
+      // Aumentar timeout a 30 segundos para conexiones lentas
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet.")), 10000);
+        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet o intenta más tarde.")), 30000);
       });
 
       const { data, error } = await Promise.race([
@@ -607,6 +607,7 @@
       ]);
 
       if (error) {
+        console.error("Error de Supabase:", error);
         throw error;
       }
 
@@ -711,9 +712,9 @@
         return;
       }
 
-      // Reducir timeout a 10 segundos para mejor feedback
+      // Aumentar timeout a 30 segundos para conexiones lentas
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet.")), 10000);
+        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet o intenta más tarde.")), 30000);
       });
 
       // 1) Registrarse en Supabase Auth
