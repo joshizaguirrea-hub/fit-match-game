@@ -15,10 +15,10 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=3"></script>
-<script src="fm-badges.js?v=3"></script>
-<script src="fm-achievements.js?v=3"></script>
-<script src="fm-profile.js?v=3"></script>
+<script src="fm-supabase.js?v=4"></script>
+<script src="fm-badges.js?v=4"></script>
+<script src="fm-achievements.js?v=4"></script>
+<script src="fm-profile.js?v=4"></script>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
@@ -438,6 +438,16 @@
       loadChat();
       loadGuilds();
     });
+
+    // BLINDAJE: si Supabase no responde en 4s, no dejamos la UI colgada en "Cargando..."
+    setTimeout(() => {
+      if (userText && userText.textContent.includes('Cargando')) {
+        console.warn('[FitMatch] La nube no respondió a tiempo. Entrando en Modo Invitado.');
+        userDot.className = "inline-block w-2 h-2 rounded-full bg-gray-500";
+        userText.textContent = "Modo Invitado (Progreso local temporal)";
+        loadRanking();
+      }
+    }, 4000);
 
     // Enlazar tecla enter al chat
     document.getElementById('chat-input-text').addEventListener('keypress', e => {
@@ -869,22 +879,25 @@
   /* ============ GATEKEEPER MODAL LOGIC ============ */
   // ARREGLO FANTASMA: revisamos la SESIÓN REAL de Supabase (guardada en el navegador),
   // no solo la variable de memoria 'currentProfile' que se vacía al recargar/navegar.
+  // BLINDAJE: si la nube no responde en 2.5s, NO nos quedamos colgados.
   async function handlePlayClick(e) {
     if (e) e.preventDefault();
     const supabase = (window.FMAuth && window.FMAuth.getClient) ? window.FMAuth.getClient() : null;
     if (supabase) {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const sessionPromise = supabase.auth.getSession();
+        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 2500));
+        const { data: { session } } = await Promise.race([sessionPromise, timeout]);
         if (session) {
-          // Sesión viva (aunque la variable aún no cargue) -> entras directo, sin pedir login de nuevo
+          // Sesión viva -> entras directo, sin pedir login de nuevo
           window.location.href = "jugar.html";
           return;
         }
       } catch (err) {
-        console.error("Error verificando sesión:", err);
+        console.error("Sesión no disponible o tardó demasiado:", err);
       }
     }
-    // No hay sesión real -> sí mostramos el modal de ingreso
+    // No hay sesión (o la nube no respondió) -> mostramos el modal de ingreso
     toggleEntranceModal();
   }
 
