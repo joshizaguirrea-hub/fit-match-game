@@ -7,28 +7,47 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fm-fichas.css">
 <style>
-  body{font-family:'Nunito',sans-serif;background:#fdf2f8;color:#1f2937;}
+  /* ===== TEMA OSCURO PREMIUM v2 ===== */
+  :root{
+    --bg:#0f1117; --surface:#181c2a; --surface2:#222842; --border:#2c3350;
+    --txt:#eceefb; --txt-soft:#b2b9d4; --txt-mut:#8b92b0;
+    --brand:#7c5cff; --brand2:#a855f7; --accent:#22d3ee; --good:#34d399;
+  }
+  body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--txt);}
   button{cursor:pointer;}
-  .fun{font-family:'Fredoka',sans-serif;}
-  .pop{border:3px solid #111827;border-radius:22px;box-shadow:6px 6px 0 #111827;position:relative;overflow:hidden;}
-  .dots{background-image:radial-gradient(rgba(255,255,255,.35) 1.6px, transparent 1.6px);background-size:12px 12px;}
-  .ribbon{border:2.5px solid #111827;border-radius:10px;box-shadow:2px 2px 0 #111827;}
-  .icon-bubble{border:3px solid #111827;border-radius:50%;box-shadow:3px 3px 0 rgba(17,24,39,.55);}
-  .exrow{border:2px solid #111827;border-radius:9px;background:#fff;}
-  .cost-badge{border:2.5px solid #111827;border-radius:999px;background:#fff;color:#111827;box-shadow:2px 2px 0 #111827;}
-  .card-back{aspect-ratio:3/4;background:repeating-linear-gradient(45deg,#a78bfa 0 14px,#8b5cf6 14px 28px);}
+  .fun{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.01em;}
+  /* Tarjetas: de comic a premium (sombra suave, borde sutil, hover elegante) */
+  .pop{border:1px solid var(--border);border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.35) !important;background:var(--surface);position:relative;overflow:hidden;transition:transform .2s, box-shadow .2s, border-color .2s;}
+  .pop:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(0,0,0,.5) !important;border-color:var(--brand);}
+  /* Re-skin de utilidades Tailwind claras -> oscuras (con mejor contraste WCAG AA) */
+  .bg-white{background:var(--surface) !important;}
+  .bg-gray-50,.bg-gray-100{background:var(--surface2) !important;}
+  .text-gray-900,.text-gray-800{color:var(--txt) !important;}
+  .text-gray-700,.text-gray-600{color:var(--txt-soft) !important;}
+  .text-gray-500,.text-gray-400{color:var(--txt-mut) !important;}
+  .border-gray-900,.border-gray-800,.border-gray-700{border-color:var(--border) !important;}
+  .bg-yellow-400{background:var(--brand) !important;color:#fff !important;}
+  .hover\:bg-gray-100:hover{background:var(--surface2) !important;}
+  header{background:rgba(15,17,23,.88) !important;border-color:var(--border) !important;backdrop-filter:blur(10px);}
+  .dots{background-image:radial-gradient(rgba(255,255,255,.18) 1.6px, transparent 1.6px);background-size:12px 12px;}
+  .ribbon{border:1px solid var(--border);border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,.3);}
+  .icon-bubble{border:1px solid var(--border);border-radius:50%;box-shadow:0 4px 12px rgba(0,0,0,.35);}
+  .exrow{border:1px solid var(--border);border-radius:11px;background:var(--surface2);}
+  .cost-badge{border:1px solid var(--border);border-radius:999px;background:var(--surface2);color:var(--txt);box-shadow:0 2px 8px rgba(0,0,0,.3);}
+  .card-back{aspect-ratio:3/4;background:repeating-linear-gradient(45deg,#6d4bd8 0 14px,#7c5cff 14px 28px);}
   @keyframes dealIn{0%{transform:rotateY(90deg) scale(.78);opacity:0}55%{transform:rotateY(-8deg) scale(1.04)}100%{transform:none;opacity:1}}
   .deal-in{animation:dealIn .55s cubic-bezier(.2,.8,.2,1) both;}
   @keyframes wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
   .wobble{animation:wobble 1.6s ease-in-out infinite;}
   .pcard{transition:transform .15s, box-shadow .15s;}
-  .pcard.retador{box-shadow:6px 6px 0 #111827 !important;outline:3px solid #8b5cf6;outline-offset:2px;}
-  .pcard.retado{box-shadow:6px 6px 0 #111827 !important;outline:3px solid #ef4444;outline-offset:2px;}
-  ::-webkit-scrollbar{width:10px;}::-webkit-scrollbar-track{background:#fce7f3;}
-  ::-webkit-scrollbar-thumb{background:#f9a8d4;border-radius:5px;}
+  .pcard.retador{box-shadow:0 8px 24px rgba(0,0,0,.4) !important;outline:2px solid #7c5cff;outline-offset:2px;}
+  .pcard.retado{box-shadow:0 8px 24px rgba(0,0,0,.4) !important;outline:2px solid #ef4444;outline-offset:2px;}
+  ::-webkit-scrollbar{width:10px;}::-webkit-scrollbar-track{background:#181c2a;}
+  ::-webkit-scrollbar-thumb{background:#3a4063;border-radius:5px;}
+  ::-webkit-scrollbar-thumb:hover{background:#4a5180;}
   /* seleccion de ejercicio en la carta */
   .exsel{cursor:pointer;transition:transform .12s, box-shadow .12s;}
   .exsel:hover{transform:translateX(2px);}
@@ -78,15 +97,15 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=6"></script>
-<script src="fm-routines.js?v=6"></script>
-<script src="fm-specialized-routines.js?v=6"></script>
-<script src="fm-badges.js?v=6"></script>
-<script src="fm-achievements.js?v=6"></script>
-<script src="fm-profile.js?v=6"></script>
+<script src="fm-supabase.js?v=7"></script>
+<script src="fm-routines.js?v=7"></script>
+<script src="fm-specialized-routines.js?v=7"></script>
+<script src="fm-badges.js?v=7"></script>
+<script src="fm-achievements.js?v=7"></script>
+<script src="fm-profile.js?v=7"></script>
 </head>
 <body class="min-h-screen antialiased">
-<a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#ec4899;color:#fff;font-family:Fredoka,sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:2.5px solid #111827;border-radius:999px;box-shadow:3px 3px 0 #111827;display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
+<a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
 
 <!-- Botón Flotante para abrir Chat/Social -->
 <button onclick="toggleSocialSidebar()" class="social-toggle-btn">
@@ -189,7 +208,7 @@
 <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b-2 border-gray-900">
   <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full icon-bubble flex items-center justify-center" style="background:#ec4899;color:#fff"><i class="fa-solid fa-fire-flame-curved"></i></div>
+      <div class="w-10 h-10 rounded-full icon-bubble flex items-center justify-center" style="background:linear-gradient(135deg,#7c5cff,#a855f7);color:#fff"><i class="fa-solid fa-fire-flame-curved"></i></div>
       <span class="fun text-2xl font-bold text-gray-900">Fit Match · Jugar</span>
     </div>
     <div class="flex items-center gap-2.5">
@@ -216,22 +235,22 @@
 
   <!-- ===== INTRO: elegir modo ===== -->
   <section id="screen-intro">
-    <div class="text-center mb-8">
-      <h1 class="fun text-4xl sm:text-5xl font-bold text-gray-900 mb-2">Elige tu <span style="color:#ec4899">modo</span></h1>
-      <p class="text-gray-600 font-semibold max-w-xl mx-auto">Entrena tu solo o reta a tus amigos. En ambos llegas a <b>30 puntos</b>.</p>
+    <div class="text-center mb-10">
+      <h1 class="fun text-4xl sm:text-5xl font-extrabold mb-3" style="color:var(--txt)">Elige tu <span style="background:linear-gradient(90deg,#7c5cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent">modo</span></h1>
+      <p class="text-base max-w-xl mx-auto" style="color:var(--txt-soft)">Entrena en solitario o reta a tus amigos. En ambos llegas a <b style="color:var(--txt)">30 puntos</b>.</p>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
-      <button onclick="startTraining()" class="pop bg-white p-7 text-center deal-in" style="box-shadow:8px 8px 0 #111827">
-        <div class="w-16 h-16 mx-auto icon-bubble flex items-center justify-center text-3xl mb-3" style="background:#34d399;color:#06281e"><i class="fa-solid fa-dumbbell"></i></div>
-        <h2 class="fun text-2xl font-bold text-gray-900 mb-1">Entrenamiento Personal</h2>
-        <p class="text-gray-500 font-semibold text-sm">Completa rutinas, crece en el rango militar, haz amigos y disfruta sudando. ¡Tu viaje fitness empieza aquí!</p>
-        <span class="inline-flex items-center gap-2 mt-4 fun font-bold text-white py-2 px-5 rounded-full border-2 border-gray-900" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-play"></i> Entrenar</span>
+      <button onclick="startTraining()" class="pop p-8 text-left deal-in group">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-5 text-white" style="background:linear-gradient(135deg,#34d399,#0ea5a4)"><i class="fa-solid fa-dumbbell"></i></div>
+        <h2 class="fun text-2xl font-bold mb-2" style="color:var(--txt)">Entrenamiento Personal</h2>
+        <p class="text-sm leading-relaxed" style="color:var(--txt-soft)">Sigue rutinas guiadas a tu ritmo, registra tu progreso y sube de rango militar. Tu viaje fitness, sin distracciones.</p>
+        <span class="inline-flex items-center gap-2 mt-6 fun font-semibold text-white py-2.5 px-6 rounded-xl" style="background:linear-gradient(135deg,#34d399,#0ea5a4)"><i class="fa-solid fa-play"></i> Entrenar</span>
       </button>
-      <button onclick="goSetup()" class="pop bg-white p-7 text-center deal-in" style="box-shadow:8px 8px 0 #111827">
-        <div class="w-16 h-16 mx-auto icon-bubble flex items-center justify-center text-3xl mb-3" style="background:#8b5cf6;color:#fff"><i class="fa-solid fa-people-group"></i></div>
-        <h2 class="fun text-2xl font-bold text-gray-900 mb-1">Modo Juego</h2>
-        <p class="text-gray-500 font-semibold text-sm">Completa rutinas, crece en el rango militar, haz amigos y disfruta sudando juntos. ¡Tu viaje fitness empieza aquí!</p>
-        <span class="inline-flex items-center gap-2 mt-4 fun font-bold text-white py-2 px-5 rounded-full border-2 border-gray-900" style="background:#8b5cf6;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-users"></i> Jugar en grupo</span>
+      <button onclick="goSetup()" class="pop p-8 text-left deal-in group">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-5 text-white" style="background:linear-gradient(135deg,#7c5cff,#a855f7)"><i class="fa-solid fa-people-group"></i></div>
+        <h2 class="fun text-2xl font-bold mb-2" style="color:var(--txt)">Modo Juego</h2>
+        <p class="text-sm leading-relaxed" style="color:var(--txt-soft)">Reta a tus amigos en tiempo real, apuesta puntos y compite por la cima. Entrenar nunca fue tan divertido.</p>
+        <span class="inline-flex items-center gap-2 mt-6 fun font-semibold text-white py-2.5 px-6 rounded-xl" style="background:linear-gradient(135deg,#7c5cff,#a855f7)"><i class="fa-solid fa-users"></i> Jugar en grupo</span>
       </button>
     </div>
   </section>
@@ -239,7 +258,7 @@
   <!-- ===== RUTINAS DE ENTRENAMIENTO (MODO PERSONAL) ===== -->
   <section id="screen-routine" class="hidden">
     <div class="text-center mb-8">
-      <h1 class="fun text-4xl sm:text-5xl font-bold text-gray-900 mb-2">Rutinas de <span style="color:#ec4899">Entrenamiento</span></h1>
+      <h1 class="fun text-4xl sm:text-5xl font-extrabold mb-2" style="color:var(--txt)">Rutinas de <span style="background:linear-gradient(90deg,#7c5cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent">Entrenamiento</span></h1>
       <p class="text-gray-600 font-semibold max-w-xl mx-auto">Elige entre las rutinas legendarias de los Dioses o las rutinas especializadas modernas.</p>
     </div>
     
@@ -417,7 +436,7 @@
   <!-- ===== SETUP ===== -->
   <section id="screen-setup" class="hidden">
     <div class="text-center mb-8">
-      <h1 class="fun text-4xl sm:text-5xl font-bold text-gray-900 mb-2">A <span style="color:#ec4899">Jugar</span></h1>
+      <h1 class="fun text-4xl sm:text-5xl font-extrabold mb-2" style="color:var(--txt)">A <span style="background:linear-gradient(90deg,#7c5cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent">Jugar</span></h1>
       <p class="text-gray-600 font-semibold max-w-xl mx-auto">El banco reparte <b>5 puntos</b> a cada jugador. Apuesta y completa retos para ganar puntos. <b>Primero en llegar a 30 gana.</b></p>
     </div>
     <div class="pop bg-white p-8 max-w-lg mx-auto text-center" style="box-shadow:8px 8px 0 #111827">
@@ -594,7 +613,7 @@
         </ul>
       </div>
       <div>
-        <h3 class="fun font-bold text-gray-900 mb-1"><i class="fa-solid fa-store mr-1" style="color:#ec4899"></i> Mercado</h3>
+        <h3 class="fun font-bold mb-1" style="color:var(--txt)"><i class="fa-solid fa-store mr-1" style="color:#22d3ee"></i> Mercado</h3>
         <p><b>Ventaja</b> la paga el retado; <b>Desventaja</b> la paga el retador. Adapta el ejercicio a tu nivel, pero respeta el mismo tiempo.</p>
       </div>
     </div>
