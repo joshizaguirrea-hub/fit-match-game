@@ -97,12 +97,12 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=7"></script>
-<script src="fm-routines.js?v=7"></script>
-<script src="fm-specialized-routines.js?v=7"></script>
-<script src="fm-badges.js?v=7"></script>
-<script src="fm-achievements.js?v=7"></script>
-<script src="fm-profile.js?v=7"></script>
+<script src="fm-supabase.js?v=8"></script>
+<script src="fm-routines.js?v=8"></script>
+<script src="fm-specialized-routines.js?v=8"></script>
+<script src="fm-badges.js?v=8"></script>
+<script src="fm-achievements.js?v=8"></script>
+<script src="fm-profile.js?v=8"></script>
 </head>
 <body class="min-h-screen antialiased">
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
@@ -388,8 +388,8 @@
 
   <!-- ===== MODAL DETALLE DE RUTINA ===== -->
   <div id="routine-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-white border-4 border-gray-900 rounded-3xl p-6 max-w-lg w-full relative shadow-[8px_8px_0_#111827] text-gray-900">
-      <button onclick="closeRoutineModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-xl font-bold">
+    <div class="rounded-3xl p-6 max-w-lg w-full relative" style="background:var(--surface);border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.6)">
+      <button onclick="closeRoutineModal()" class="absolute top-4 right-4 text-xl" style="color:var(--txt-mut)">
         <i class="fa-solid fa-times"></i>
       </button>
       
@@ -1954,30 +1954,35 @@ function renderRoutinePicker() {
   }
 
   grid.innerHTML = list.map(r => {
-    let borderCol = "border-green-500";
-    let bgBadge = "bg-green-100 text-green-800";
-    if (r.level === 'intermedio') { borderCol = "border-amber-500"; bgBadge = "bg-amber-100 text-amber-800"; }
-    else if (r.level === 'avanzado') { borderCol = "border-red-500"; bgBadge = "bg-red-100 text-red-800"; }
-    else if (r.level === 'espartano') { borderCol = "border-purple-600"; bgBadge = "bg-purple-100 text-purple-800"; }
+    const levelColor = r.level === 'espartano' ? '#a855f7' : r.level === 'avanzado' ? '#ef4444' : r.level === 'intermedio' ? '#f59e0b' : '#34d399';
+    const durMin = estimateDuration(r);
+    const eqList = getRoutineEquipment(r);
+    const eqSummary = eqList.slice(0,3).map(e=>e.label).join(' · ') + (eqList.length>3 ? ' +' + (eqList.length-3) : '');
 
     // Determinar la etiqueta (culture para dioses, category para especializadas)
     const badgeText = activeCategory === 'gods' ? r.culture : r.category;
     const badgeIcon = activeCategory === 'gods' ? '' : getCategoryIcon(r.category);
 
     return `
-      <div onclick="openRoutineDetail('${r.id}', '${activeCategory}')" class="pop bg-white p-5 cursor-pointer transition hover:-translate-y-1.5 border-4 ${borderCol} flex flex-col justify-between" style="box-shadow: 6px 6px 0 #111827">
+      <div onclick="openRoutineDetail('${r.id}', '${activeCategory}')" class="pop p-5 cursor-pointer flex flex-col justify-between" style="border-top:3px solid ${levelColor}">
         <div>
-          <div class="flex justify-between items-start mb-2">
-            <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border-2 border-gray-900 ${bgBadge}">${badgeIcon}${badgeText}</span>
-            <span class="text-xs font-bold text-gray-500 uppercase">${r.level}</span>
+          <div class="flex justify-between items-start mb-2 gap-2">
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase" style="background:var(--surface2);color:var(--txt-soft)">${badgeIcon}${badgeText}</span>
+            <span class="text-[10px] font-bold uppercase tracking-wide" style="color:${levelColor}">${r.level}</span>
           </div>
-          <h3 class="fun text-xl font-bold text-gray-900 mb-1">${r.name}</h3>
-          <p class="text-gray-500 text-xs font-semibold leading-relaxed mb-4">${r.description}</p>
+          <h3 class="fun text-lg font-bold mb-1" style="color:var(--txt)">${r.name}</h3>
+          <p class="text-xs leading-relaxed mb-3" style="color:var(--txt-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${r.description}</p>
+          <div class="flex items-center gap-1.5 text-[11px] mb-3" style="color:var(--txt-mut)">
+            <i class="fa-solid fa-toolbox" style="color:var(--brand2)"></i>
+            <span class="truncate">${eqSummary}</span>
+          </div>
         </div>
-        
-        <div class="flex items-center justify-between border-t border-gray-100 pt-3">
-          <span class="text-xs font-bold text-gray-400"><i class="fa-solid fa-list-check mr-1"></i> ${r.exercises.length} Ejercicios</span>
-          <span class="fun font-bold text-sm text-yellow-500 flex items-center gap-1"><i class="fa-solid fa-bolt"></i> +${r.points} PX</span>
+        <div class="flex items-center justify-between pt-3" style="border-top:1px solid var(--border)">
+          <span class="text-[11px] font-semibold flex items-center gap-3" style="color:var(--txt-mut)">
+            <span><i class="fa-regular fa-clock mr-1"></i>${durMin}'</span>
+            <span><i class="fa-solid fa-list-check mr-1"></i>${r.exercises.length}</span>
+          </span>
+          <span class="fun font-bold text-sm flex items-center gap-1" style="color:#fbbf24"><i class="fa-solid fa-bolt"></i> +${r.points} PX</span>
         </div>
       </div>
     `;
@@ -1996,6 +2001,41 @@ function getCategoryIcon(category) {
   return icons[category] || '';
 }
 
+// ===== AYUDANTES DE PRESENTACION (equipo + duracion) =====
+// Detecta el equipo necesario leyendo el nombre del ejercicio (sin meter datos a mano)
+function detectEquipment(name){
+  const n = (name||'').toLowerCase();
+  const map = [
+    {k:['mancuerna'], label:'Mancuernas', icon:'fa-dumbbell'},
+    {k:['barra'], label:'Barra', icon:'fa-grip-lines'},
+    {k:['banca','banco'], label:'Banco', icon:'fa-couch'},
+    {k:['polea'], label:'Polea', icon:'fa-link'},
+    {k:['prensa'], label:'Prensa', icon:'fa-weight-hanging'},
+    {k:['máquina','maquina'], label:'Máquina', icon:'fa-gears'},
+    {k:['kettlebell','pesa rusa'], label:'Kettlebell', icon:'fa-bowling-ball'},
+    {k:['banda','elástic','elastic'], label:'Banda', icon:'fa-bezier-curve'},
+    {k:['esterilla','colchoneta'], label:'Colchoneta', icon:'fa-square'},
+    {k:['paralelas','fondos'], label:'Paralelas', icon:'fa-equals'}
+  ];
+  const found = [];
+  map.forEach(m => { if(m.k.some(kw => n.includes(kw))) found.push({label:m.label, icon:m.icon}); });
+  return found;
+}
+// Equipo de toda la rutina: usa el campo equipment si existe; si no, lo deduce de los ejercicios
+function getRoutineEquipment(r){
+  if(Array.isArray(r.equipment) && r.equipment.length){
+    return r.equipment.map(e => ({label:e, icon:'fa-dumbbell'}));
+  }
+  const seen = {}; const out = [];
+  (r.exercises||[]).forEach(ex => detectEquipment(ex.name).forEach(eq => { if(!seen[eq.label]){seen[eq.label]=1; out.push(eq);} }));
+  return out.length ? out : [{label:'Peso corporal', icon:'fa-person'}];
+}
+// Duracion estimada en minutos (trabajo + descanso, por rondas)
+function estimateDuration(r){
+  const perRound = (r.exercises||[]).reduce((s,e)=> s + ((e.reps||10)*3 + 25), 0);
+  return Math.max(5, Math.round((perRound * (r.rounds||1)) / 60));
+}
+
 function openRoutineDetail(id, category = 'gods') {
   const list = category === 'gods' ? (window.FMRoutines || []) : (window.FMSpecializedRoutines || []);
   const r = list.find(x => x.id === id);
@@ -2009,32 +2049,59 @@ function openRoutineDetail(id, category = 'gods') {
   else if (r.level === 'espartano') { borderCol = "border-purple-600"; bgBadge = "bg-purple-100 text-purple-800 font-bold"; }
 
   const content = document.getElementById('routine-detail-content');
+  const levelColor = r.level === 'espartano' ? '#a855f7' : r.level === 'avanzado' ? '#ef4444' : r.level === 'intermedio' ? '#f59e0b' : '#34d399';
+  const dur = estimateDuration(r);
+  const routineEq = getRoutineEquipment(r);
   content.innerHTML = `
-    <div class="text-center pb-2">
-      <span class="inline-block border-2 border-gray-900 px-3 py-1 rounded-full text-xs font-bold uppercase mb-2 ${bgBadge}">${r.culture}</span>
-      <h3 class="fun text-3xl font-bold text-gray-900">${r.name}</h3>
-      <p class="text-gray-500 text-xs italic mt-1 font-semibold">"${r.description}"</p>
+    <div class="text-center pb-1">
+      <span class="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase mb-2 tracking-wide" style="background:${levelColor}22;color:${levelColor};border:1px solid ${levelColor}55">${r.culture || r.category} · ${r.level}</span>
+      <h3 class="fun text-2xl sm:text-3xl font-bold" style="color:var(--txt)">${r.name}</h3>
+      <p class="text-xs italic mt-1.5" style="color:var(--txt-soft)">"${r.description}"</p>
     </div>
 
-    <div class="border-y-2 border-gray-100 py-3 flex items-center justify-between">
-      <span class="text-sm font-bold text-gray-700">Dificultad: <b class="uppercase" style="color: ${r.level === 'espartano' ? '#9333ea' : r.level === 'avanzado' ? '#dc2626' : r.level === 'intermedio' ? '#d97706' : '#16a34a'}">${r.level}</b></span>
-      <span class="fun font-bold text-base text-yellow-500 flex items-center gap-1"><i class="fa-solid fa-bolt"></i> +${r.points} Puntos de Rango</span>
+    <div class="grid grid-cols-3 gap-2">
+      <div class="rounded-xl py-2.5 text-center" style="background:var(--surface2)">
+        <div class="fun font-bold text-lg" style="color:var(--txt)"><i class="fa-regular fa-clock mr-1" style="color:var(--accent)"></i>${dur}'</div>
+        <div class="text-[10px] uppercase tracking-wide" style="color:var(--txt-mut)">Duración</div>
+      </div>
+      <div class="rounded-xl py-2.5 text-center" style="background:var(--surface2)">
+        <div class="fun font-bold text-lg" style="color:var(--txt)"><i class="fa-solid fa-repeat mr-1" style="color:var(--accent)"></i>${r.rounds}</div>
+        <div class="text-[10px] uppercase tracking-wide" style="color:var(--txt-mut)">Rondas</div>
+      </div>
+      <div class="rounded-xl py-2.5 text-center" style="background:var(--surface2)">
+        <div class="fun font-bold text-lg" style="color:#fbbf24"><i class="fa-solid fa-bolt mr-1"></i>+${r.points}</div>
+        <div class="text-[10px] uppercase tracking-wide" style="color:var(--txt-mut)">Puntos</div>
+      </div>
     </div>
 
     <div>
-      <p class="fun font-bold text-gray-800 text-sm mb-2"><i class="fa-solid fa-list-check mr-1 text-purple-600"></i> Tabla de Ejercicios (Repeticiones):</p>
-      <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-        ${r.exercises.map(ex => `
-          <div class="flex justify-between items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm font-semibold">
-            <span class="text-gray-800 flex items-center gap-1.5 text-left">
-              ${ex.name}
-              <button onclick="showExerciseHelp('${ex.name.replace(/'/g, "\\'")}', event)" class="text-blue-500 hover:text-blue-700 text-xs focus:outline-none flex items-center justify-center" title="Ver guía de técnica">
-                <i class="fa-solid fa-circle-info"></i>
-              </button>
-            </span>
-            <span class="bg-gray-200 text-gray-800 text-xs px-2.5 py-1 rounded-md border border-gray-300 font-bold">${ex.reps} rep${ex.reps > 1 ? 'es' : ''}</span>
+      <p class="fun font-bold text-xs mb-1.5" style="color:var(--txt-soft)"><i class="fa-solid fa-toolbox mr-1" style="color:var(--brand2)"></i> Equipo necesario:</p>
+      <div class="flex flex-wrap gap-1.5">
+        ${routineEq.map(e => `<span class="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:var(--surface2);color:var(--txt);border:1px solid var(--border)"><i class="fa-solid ${e.icon}" style="color:var(--brand2)"></i> ${e.label}</span>`).join('')}
+      </div>
+    </div>
+
+    <div>
+      <p class="fun font-bold text-xs mb-2" style="color:var(--txt-soft)"><i class="fa-solid fa-list-check mr-1" style="color:var(--brand2)"></i> Ejercicios:</p>
+      <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+        ${r.exercises.map(ex => {
+          const eq = detectEquipment(ex.name);
+          const eqTags = eq.length
+            ? eq.map(e => `<span class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded" style="background:var(--bg);color:var(--txt-soft)"><i class="fa-solid ${e.icon}"></i>${e.label}</span>`).join('')
+            : `<span class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded" style="background:var(--bg);color:var(--txt-mut)"><i class="fa-solid fa-person"></i>Peso corporal</span>`;
+          return `
+          <div class="rounded-xl px-4 py-2.5" style="background:var(--surface2);border:1px solid var(--border)">
+            <div class="flex justify-between items-center gap-2">
+              <span class="text-sm font-semibold flex items-center gap-1.5 text-left" style="color:var(--txt)">
+                ${ex.name}
+                <button onclick="showExerciseHelp('${ex.name.replace(/'/g, "\\'")}', event)" class="text-xs focus:outline-none" style="color:var(--accent)" title="Ver guía de técnica"><i class="fa-solid fa-circle-info"></i></button>
+              </span>
+              <span class="text-xs px-2.5 py-1 rounded-md font-bold whitespace-nowrap" style="background:var(--brand);color:#fff">${ex.reps} rep${ex.reps > 1 ? 's' : ''}</span>
+            </div>
+            <div class="flex flex-wrap gap-1 mt-1.5">${eqTags}</div>
           </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     </div>
 
@@ -2048,28 +2115,28 @@ function openRoutineDetail(id, category = 'gods') {
   if (cloudUser) {
     optsCont.innerHTML = `
       <div class="space-y-2.5">
-        <button onclick="startRoutineWorkout()" class="w-full fun font-bold text-white py-3 px-6 rounded-2xl border-2 border-gray-900 shadow-[4px_4px_0_#111827] bg-green-500 hover:bg-green-600 transition-all flex items-center justify-center gap-2 text-base">
+        <button onclick="startRoutineWorkout()" class="w-full fun font-bold text-white py-3 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-base" style="background:linear-gradient(135deg,#34d399,#0ea5a4)">
           <i class="fa-solid fa-dumbbell"></i> ¡Comenzar Solo!
         </button>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button onclick="launchClanSession('${r.id}')" class="fun font-bold text-white py-2.5 px-4 rounded-xl border-2 border-gray-900 bg-purple-600 hover:bg-purple-700 transition flex items-center justify-center gap-1.5 text-xs">
+          <button onclick="launchClanSession('${r.id}')" class="fun font-bold text-white py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 transition flex items-center justify-center gap-1.5 text-xs">
             <i class="fa-solid fa-shield-halved"></i> Entrenar con mi Clan
           </button>
           
-          <button onclick="createRoomCodeSession('${r.id}')" class="fun font-bold text-white py-2.5 px-4 rounded-xl border-2 border-gray-900 bg-blue-600 hover:bg-blue-700 transition flex items-center justify-center gap-1.5 text-xs">
+          <button onclick="createRoomCodeSession('${r.id}')" class="fun font-bold text-white py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition flex items-center justify-center gap-1.5 text-xs">
             <i class="fa-solid fa-gamepad"></i> Crear Sala (Código)
           </button>
         </div>
         
-        <button onclick="joinRoomCodeSessionPrompt()" class="w-full fun font-bold text-gray-700 py-2.5 px-4 rounded-xl border-2 border-gray-900 bg-gray-50 hover:bg-gray-100 transition flex items-center justify-center gap-1.5 text-xs">
+        <button onclick="joinRoomCodeSessionPrompt()" class="w-full fun font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-1.5 text-xs" style="background:var(--surface2);color:var(--txt-soft);border:1px solid var(--border)">
           <i class="fa-solid fa-key"></i> Unirse a una Sala con Código
         </button>
       </div>
     `;
   } else {
     optsCont.innerHTML = `
-      <button onclick="startRoutineWorkout()" class="w-full fun font-bold text-white py-3.5 px-6 rounded-2xl border-2 border-gray-900 shadow-[4px_4px_0_#111827] bg-green-500 hover:bg-green-600 transition-all flex items-center justify-center gap-2 text-lg">
+      <button onclick="startRoutineWorkout()" class="w-full fun font-bold text-white py-3.5 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-lg" style="background:linear-gradient(135deg,#34d399,#0ea5a4)">
         <i class="fa-solid fa-dumbbell"></i> ¡Comenzar Entrenamiento!
       </button>
     `;
