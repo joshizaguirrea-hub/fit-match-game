@@ -1,0 +1,13 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Dependencias / entorno (por si acaso)
+node_modules/
+.env
+.env.*
+
+# Netlify
+.netlify/

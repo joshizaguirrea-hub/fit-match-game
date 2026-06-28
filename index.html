@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fit Match - Juego</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  body{font-family:'Inter',sans-serif;background:#0B0B0F;color:#F3F4F6;}
+  .athletic{font-family:'Oswald',sans-serif;}
+  .card-link{transition:transform .2s, box-shadow .2s, border-color .2s;}
+  .card-link:hover{transform:translateY(-6px);}
+</style>
+<!-- Supabase JS & Connection -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="fm-supabase.js"></script>
+<script src="fm-badges.js"></script>
+<script src="fm-achievements.js"></script>
+<script src="fm-profile.js"></script>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+<!-- Barra de Usuario / Supabase -->
+<div id="user-bar" class="bg-gray-900 border-b border-gray-800 text-xs py-2 px-4 flex items-center justify-between z-50">
+  <div class="flex items-center gap-2">
+    <span class="inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse" id="user-dot"></span>
+    <span id="user-text" class="text-gray-400 font-medium">Cargando conexión con la nube...</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <button id="btn-profile" onclick="openProfileModal()" class="hidden text-gray-400 hover:text-purple-400 font-bold transition">
+      <i class="fa-solid fa-user mr-1"></i> Mi Perfil
+    </button>
+    <button id="btn-logout" onclick="handleLogout()" class="hidden text-gray-400 hover:text-red-400 font-bold transition">
+      Cerrar Sesión <i class="fa-solid fa-sign-out-alt ml-1"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal Unificado de Entrada (Login o Invitado) -->
+<div id="unified-entrance-modal" class="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+  <div class="bg-gray-900 border-2 border-gray-800 rounded-3xl p-6 max-w-md w-full relative shadow-2xl">
+    <button onclick="toggleEntranceModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white text-lg transition">
+      <i class="fa-solid fa-times"></i>
+    </button>
+    
+    <!-- PASO 1: Formulario Unificado (Login / Registro / Invitado) -->
+    <div id="entrance-step-form" class="space-y-4">
+      <div class="text-center">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center mx-auto mb-2 text-white text-3xl shadow-xl">
+          <i class="fa-solid fa-dumbbell"></i>
+        </div>
+        <h3 class="athletic text-3xl font-bold uppercase text-white tracking-wide">Ingresar a Fit Match</h3>
+        <p class="text-gray-400 text-[11px] mt-1">Conéctate para guardar tus récords, ver estadísticas de dificultad y ascender rangos militares.</p>
+      </div>
+
+      <!-- Pestañas para Iniciar Sesión vs Registrarse -->
+      <div class="flex bg-gray-950 border border-gray-800 rounded-xl p-1 text-xs font-bold">
+        <button onclick="switchAuthTab('login')" id="tab-auth-login" class="flex-1 py-2 text-center rounded-lg bg-purple-600 text-white transition">Iniciar Sesión</button>
+        <button onclick="switchAuthTab('register')" id="tab-auth-register" class="flex-1 py-2 text-center rounded-lg text-gray-400 hover:text-white transition">Registrarse</button>
+      </div>
+      
+      <!-- Panel de Iniciar Sesión (Login) -->
+      <div id="auth-panel-login" class="bg-gray-950 p-4 rounded-2xl border border-gray-800 space-y-3">
+        <span class="block text-[10px] font-bold text-purple-400 uppercase tracking-wider"><i class="fa-solid fa-key mr-1"></i> Ingresar con contraseña</span>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Electrónico</label>
+          <input type="email" id="login-email" placeholder="tu-correo@ejemplo.com" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Contraseña</label>
+          <input type="password" id="login-password" placeholder="Tu contraseña" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+        </div>
+        
+        <button onclick="loginWithPassword()" id="btn-login-pw" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-1.5">
+          <span>Ingresar</span> <i class="fa-solid fa-sign-in-alt"></i>
+        </button>
+        
+        <!-- Enlace de recuperación de contraseña -->
+        <div class="text-center">
+          <button onclick="sendResetPasswordLink()" id="btn-reset-pw" class="text-[10px] font-bold text-gray-500 hover:text-purple-400 transition focus:outline-none">
+            ¿Olvidaste tu contraseña o entraste con Magic Link? Recuperar
+          </button>
+        </div>
+        
+        <p id="login-error" class="text-red-500 text-[10px] font-semibold text-center hidden mt-1"></p>
+      </div>
+
+      <!-- Panel de Registro (Sign Up) -->
+      <div id="auth-panel-register" class="hidden bg-gray-950 p-4 rounded-2xl border border-gray-800 space-y-3">
+        <span class="block text-[10px] font-bold text-purple-400 uppercase tracking-wider"><i class="fa-solid fa-user-plus mr-1"></i> Registrar nueva cuenta</span>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Electrónico</label>
+          <input type="email" id="register-email" placeholder="nuevo-correo@ejemplo.com" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Apodo / Nickname</label>
+          <input type="text" id="register-nickname" placeholder="Ej: Josh-Fit" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Contraseña</label>
+          <input type="password" id="register-password" placeholder="Crea tu contraseña (mínimo 6)" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+        </div>
+        
+        <button onclick="registerWithPassword()" id="btn-register-pw" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-1.5">
+          <span>Crear Cuenta e Ingresar</span> <i class="fa-solid fa-user-check"></i>
+        </button>
+        <p id="register-error" class="text-red-500 text-[10px] font-semibold text-center hidden mt-1"></p>
+      </div>
+      
+      <div class="text-center text-gray-500 text-[10px] font-bold uppercase">— O TAMBIÉN —</div>
+      
+      <!-- Entrada de Invitado -->
+      <a href="jugar.html" class="w-full bg-gray-950 hover:bg-gray-900 border border-gray-800 text-gray-300 font-bold p-3 rounded-2xl transition flex items-center gap-3 text-left">
+        <div class="w-8 h-8 rounded-xl bg-gray-800 flex items-center justify-center text-md shrink-0 text-gray-400">
+          <i class="fa-solid fa-user-clock"></i>
+        </div>
+        <div>
+          <span class="block text-xs uppercase text-white">Entrar como Invitado</span>
+          <span class="block text-[10px] text-gray-500 font-normal leading-tight">Juega localmente. Récords temporales.</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- PASO 2: Mensaje de Registro Exitoso con Email Confirmación -->
+    <div id="entrance-step-success" class="space-y-4 text-center hidden py-4">
+      <div class="w-14 h-14 rounded-2xl bg-green-500 flex items-center justify-center mx-auto mb-2 text-white text-3xl shadow-xl">
+        <i class="fa-solid fa-check-double animate-pulse"></i>
+      </div>
+      <h3 class="athletic text-2xl font-bold uppercase text-white">¡Registro Exitoso!</h3>
+      <p class="text-gray-400 text-sm">Tu cuenta ha sido creada. Si habilitaste confirmación, revisa tu correo; si no, ya puedes **Iniciar Sesión** con tu contraseña de inmediato.</p>
+    </div>
+
+    <!-- PASO 3: Solicitar Apodo / Nickname (si es usuario existente sin perfil) -->
+    <div id="entrance-step-nickname" class="space-y-4 hidden">
+      <div class="text-center">
+        <div class="w-14 h-14 rounded-2xl bg-yellow-500 flex items-center justify-center mx-auto mb-2 text-black text-2xl shadow-xl">
+          <i class="fa-solid fa-user-ninja"></i>
+        </div>
+        <h3 class="athletic text-2xl font-bold uppercase text-white">¡Crea tu Apodo!</h3>
+        <p class="text-gray-400 text-xs mt-1">Tu cuenta está lista, solo elige tu apodo de atleta para comenzar a registrar tus puntuaciones en el ranking.</p>
+      </div>
+      
+      <div>
+        <label class="block text-[11px] font-bold text-gray-400 uppercase mb-2">Tu Apodo / Nickname</label>
+        <input type="text" id="auth-nickname" maxlength="20" placeholder="Ej: Súper-Santi" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition font-semibold">
+      </div>
+      
+      <button onclick="saveProfile()" id="btn-save-profile" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+        <span>Guardar y Entrar</span> <i class="fa-solid fa-check"></i>
+      </button>
+      
+      <p id="profile-error" class="text-red-500 text-xs font-semibold text-center hidden"></p>
+    </div>
+  </div>
+</div>
+  </div>
+</div>
+
+<header class="relative overflow-hidden border-b border-gray-800">
+  <div class="absolute -right-32 -top-32 w-96 h-96 rounded-full blur-3xl" style="background:rgba(124,58,237,.20)"></div>
+  <div class="absolute -left-32 -bottom-32 w-96 h-96 rounded-full blur-3xl" style="background:rgba(245,158,11,.10)"></div>
+  <div class="relative z-10 max-w-6xl mx-auto px-4 py-16 sm:py-24 text-center">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 shadow-2xl" style="background:linear-gradient(135deg,#7c3aed,#a855f7)">
+      <i class="fa-solid fa-gamepad text-4xl text-white"></i>
+    </div>
+    <h1 class="athletic text-5xl sm:text-7xl font-bold uppercase tracking-tight mb-4">FIT <span style="color:#a855f7">MATCH</span></h1>
+    <p class="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto">La app de juego: arma tu partida, apuesta puntos y suda. <strong class="text-white">Primero en llegar a 30 gana.</strong></p>
+    <a id="main-play-btn" onclick="handlePlayClick()" class="inline-flex items-center gap-2 mt-8 athletic text-xl font-bold uppercase tracking-wide text-white py-3 px-10 rounded-full cursor-pointer" style="background:linear-gradient(135deg,#22c55e,#16a34a)">
+      <i class="fa-solid fa-play"></i> Empezar partida
+    </a>
+  </div>
+</header>
+
+<main class="flex-grow max-w-6xl w-full mx-auto px-4 py-12">
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+
+    <a id="card-play-link" onclick="handlePlayClick()" class="card-link group rounded-3xl border-2 p-7 flex flex-col cursor-pointer" style="background:linear-gradient(135deg,#312e81,#7c3aed);border-color:#a855f7">
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:rgba(255,255,255,.18);color:#fff"><i class="fa-solid fa-gamepad text-2xl"></i></div>
+      <h3 class="athletic text-2xl font-bold uppercase text-white mb-1">Jugar Ahora</h3>
+      <p class="text-white/80 text-sm">El motor: jugadores, banco, modos (Individual / Reto / Competencia), reloj y monedas.</p>
+    </a>
+
+    <a href="cartas.html" class="card-link group rounded-3xl border border-gray-800 p-7 flex flex-col" style="background:linear-gradient(135deg,#15151E,#0B0B0F)">
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:rgba(37,99,235,.15);color:#3b82f6"><i class="fa-solid fa-layer-group text-2xl"></i></div>
+      <h3 class="athletic text-2xl font-bold uppercase text-white mb-1">Catalogo de Cartas</h3>
+      <p class="text-gray-400 text-sm">Las cartas de color (8 por grupo), ventajas y castigos. Listas para imprimir.</p>
+    </a>
+
+    <a href="fichas.html" class="card-link group rounded-3xl border border-gray-800 p-7 flex flex-col" style="background:linear-gradient(135deg,#15151E,#0B0B0F)">
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:rgba(245,158,11,.15);color:#f59e0b"><i class="fa-solid fa-coins text-2xl"></i></div>
+      <h3 class="athletic text-2xl font-bold uppercase text-white mb-1">Monedas & Reloj</h3>
+      <p class="text-gray-400 text-sm">Las fichas de 1/2/3 puntos y el reloj de arena con temporizador real.</p>
+    </a>
+
+  </div>
+
+  <div class="text-center mt-10">
+    <a href="REGLAS_URL" id="rules-cta" class="inline-flex items-center gap-2 athletic text-sm font-bold uppercase tracking-wider text-gray-300 hover:text-white">
+      <i class="fa-solid fa-scale-balanced"></i> Ver las reglas del juego
+    </a>
+  </div>
+</main>
+
+<!-- SECCIÓN SOCIAL: RANKING & CENTRO SOCIAL (CHAT + GREMIOS) -->
+<section class="max-w-6xl mx-auto px-4 py-8 border-t border-gray-800" id="ranking-section">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    
+    <!-- COLUMNA IZQUIERDA: RANKING -->
+    <div class="space-y-6">
+      <div class="text-left">
+        <div class="inline-flex items-center gap-2 bg-purple-950/40 text-purple-400 border border-purple-900/50 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+          <i class="fa-solid fa-trophy"></i> En tiempo real
+        </div>
+        <h2 class="athletic text-3xl font-bold uppercase text-white">Ranking de Atletas</h2>
+        <p class="text-gray-400 text-sm">Los mejores acumulados de la comunidad de Fit Match.</p>
+      </div>
+      
+      <div class="bg-gray-950 border border-gray-800 rounded-3xl overflow-hidden shadow-xl">
+        <table class="w-full text-left text-sm border-collapse">
+          <thead>
+            <tr class="bg-gray-900/50 text-gray-400 border-b border-gray-800 text-xs font-bold uppercase">
+              <th class="py-4 px-6 text-center w-16">Puesto</th>
+              <th class="py-4 px-6">Atleta</th>
+              <th class="py-4 px-6 text-right">Partidas</th>
+              <th class="py-4 px-6 text-right text-yellow-400">Total Puntos</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-rows" class="divide-y divide-gray-900">
+            <tr>
+              <td colspan="4" class="py-8 text-center text-gray-500 font-medium">
+                <i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Cargando tabla de posiciones...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- COLUMNA DERECHA: CENTRO SOCIAL (CHAT + GREMIOS) -->
+    <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div class="space-y-1">
+          <h2 class="athletic text-3xl font-bold uppercase text-white">Centro Social</h2>
+          <p class="text-gray-400 text-sm">Conéctate, chatea y únete a clanes de Fit Bros.</p>
+        </div>
+        
+        <!-- Pestañas del Centro Social -->
+        <div class="flex bg-gray-950 border border-gray-800 rounded-xl p-1 text-xs font-bold">
+          <button onclick="switchSocialTab('chat')" id="tab-chat-btn" class="px-4 py-2 rounded-lg bg-purple-600 text-white transition">Chat Global</button>
+          <button onclick="switchSocialTab('guilds')" id="tab-guilds-btn" class="px-4 py-2 rounded-lg text-gray-400 hover:text-white transition">Gremios</button>
+        </div>
+      </div>
+      
+      <!-- SUB-SECCIÓN: CHAT GLOBAL -->
+      <div id="social-tab-chat" class="bg-gray-950 border border-gray-800 rounded-3xl p-5 flex flex-col justify-between shadow-xl" style="height: 380px;">
+        <!-- Lista de Mensajes -->
+        <div id="chat-messages-container" class="flex-grow overflow-y-auto space-y-3 pr-2 scrollbar-thin text-xs">
+          <div class="text-center text-gray-500 py-12">
+            <i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Cargando chat...
+          </div>
+        </div>
+        
+        <!-- Entrada de Mensaje -->
+        <div class="border-t border-gray-900 pt-3 mt-3">
+          <div id="chat-input-container" class="flex gap-2">
+            <input type="text" id="chat-input-text" disabled placeholder=" Conéctate para chatear..." class="flex-grow bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+            <button onclick="sendChatMessage()" id="chat-send-btn" disabled class="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- SUB-SECCIÓN: GREMIOS / CLANES -->
+      <div id="social-tab-guilds" class="hidden bg-gray-950 border border-gray-800 rounded-3xl p-5 flex flex-col justify-between shadow-xl" style="height: 380px;">
+        <div class="flex-grow overflow-y-auto space-y-3 pr-2 scrollbar-thin text-xs" id="guilds-container">
+          <div class="text-center text-gray-500 py-12">
+            <i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Cargando gremios...
+          </div>
+        </div>
+        
+        <!-- Panel para crear gremio (solo si eres rango Cabo y no estás en ninguno) -->
+        <div id="guild-create-panel" class="border-t border-gray-900 pt-3 mt-3 hidden">
+          <button onclick="openGuildCreateModal()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 shadow-lg">
+            <i class="fa-solid fa-shield-halved"></i> Fundar un Gremio (Requiere Cabo o más)
+          </button>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+<!-- MODAL PARA CREAR GREMIO -->
+<div id="guild-create-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+  <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full relative shadow-2xl text-left">
+    <button onclick="closeGuildCreateModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white text-lg">
+      <i class="fa-solid fa-times"></i>
+    </button>
+    
+    <div class="space-y-4">
+      <div class="text-center">
+        <div class="w-12 h-12 rounded-2xl bg-purple-600 flex items-center justify-center mx-auto mb-2 text-white text-xl border border-purple-500/20">
+          <i class="fa-solid fa-shield-halved animate-pulse"></i>
+        </div>
+        <h3 class="athletic text-2xl font-bold uppercase text-white">Fundar Gremio</h3>
+        <p class="text-gray-400 text-xs mt-1">Elige un nombre majestuoso para tu clan de Fit Bros.</p>
+      </div>
+      
+      <div>
+        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Nombre del Gremio</label>
+        <input type="text" id="guild-name-input" maxlength="25" placeholder="Ej: Gladiadores de la Selva" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+      </div>
+      
+      <div>
+        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Descripción del Gremio</label>
+        <textarea id="guild-desc-input" maxlength="100" rows="3" placeholder="Ej: Entrenamos por honor y gloria..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 transition resize-none"></textarea>
+      </div>
+      
+      <button onclick="createGuild()" id="btn-submit-guild" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-1.5 text-xs shadow-lg">
+        <span>Crear Gremio</span> <i class="fa-solid fa-check"></i>
+      </button>
+      
+      <p id="guild-error" class="text-red-500 text-xs font-semibold text-center hidden"></p>
+    </div>
+  </div>
+</div>
+
+<footer class="border-t border-gray-800 py-6 text-center text-xs text-gray-500">
+  Fit Match 2026 - San Jose, Costa Rica - App de juego
+</footer>
+
+<!-- SCRIPT DE LOGICA DE LOGIN, SOCIAL, CHAT Y GREMIOS -->
+<script>
+  let currentUser = null;
+  let currentProfile = null;
+  let cloudTotalPoints = 0;
+  let activeSocialTab = 'chat';
+  let chatSubscription = null;
+  let hasPromptedRecovery = false;
+
+  function getMilitaryRank(points) {
+    if (points >= 1000) return 'General';
+    if (points >= 700) return 'Mayor';
+    if (points >= 400) return 'Capitán';
+    if (points >= 200) return 'Teniente';
+    if (points >= 100) return 'Sargento';
+    if (points >= 50) return 'Cabo';
+    if (points >= 16) return 'Soldado';
+    return 'Recluta';
+  }
+
+  async function initAuth() {
+    const userDot = document.getElementById('user-dot');
+    const userText = document.getElementById('user-text');
+    const btnLogout = document.getElementById('btn-logout');
+
+    if (!window.FMAuth || !window.FMAuth.isConfigured()) {
+      userDot.className = "inline-block w-2 h-2 rounded-full bg-red-500";
+      userText.textContent = "Error: Configuración de Supabase no encontrada.";
+      return;
+    }
+
+    const supabase = window.FMAuth.getClient();
+    if (!supabase) {
+      userDot.className = "inline-block w-2 h-2 rounded-full bg-red-500";
+      userText.textContent = "Error al iniciar el cliente de base de datos.";
+      return;
+    }
+
+    // Escuchar cambios de estado de sesión
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      // Verificar si venimos redirigidos de un restablecimiento de contraseña
+      const urlParams = new URLSearchParams(window.location.search);
+      const isRecovery = urlParams.has('reset') || window.location.hash.includes('type=recovery');
+      
+      // SÓLO preguntar si tenemos una sesión activa (Supabase ya validó el token del correo)
+      if (isRecovery && session && !hasPromptedRecovery) {
+        hasPromptedRecovery = true; // bloquear bucles de inmediato
+
+        const newPassword = prompt("Ingresa tu nueva contraseña para el juego (mínimo 6 caracteres):");
+        if (newPassword && newPassword.length >= 6) {
+          const { error } = await supabase.auth.updateUser({ password: newPassword });
+          if (error) {
+            alert("Error al actualizar contraseña: " + error.message);
+          } else {
+            alert("¡Tu contraseña se ha restaurado correctamente! Ya puedes iniciar sesión de forma directa.");
+            
+            // LIMPIAR la URL de forma silenciosa sólo después de actualizar la contraseña con éxito
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+            window.location.hash = ''; // limpiar el hash de recuperación
+          }
+        } else {
+          // Si cancela, también limpiar para no dejar el bucle activo
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+          window.location.hash = '';
+        }
+      }
+
+      if (session) {
+        currentUser = session.user;
+        await checkProfile(session.user);
+        enableChatUI(true);
+      } else {
+        currentUser = null;
+        currentProfile = null;
+        userDot.className = "inline-block w-2 h-2 rounded-full bg-gray-500";
+        userText.textContent = "Modo Invitado (Progreso local temporal)";
+        btnLogout.classList.add('hidden');
+        enableChatUI(false);
+      }
+      loadRanking();
+      loadChat();
+      loadGuilds();
+    });
+
+    // Enlazar tecla enter al chat
+    document.getElementById('chat-input-text').addEventListener('keypress', e => {
+      if (e.key === 'Enter') sendChatMessage();
+    });
+  }
+
+  function enableChatUI(enabled) {
+    const input = document.getElementById('chat-input-text');
+    const btn = document.getElementById('chat-send-btn');
+    if (input && btn) {
+      input.disabled = !enabled;
+      btn.disabled = !enabled;
+      if (enabled) {
+        input.placeholder = " Escribe un mensaje aquí...";
+      } else {
+        input.placeholder = " Conéctate para chatear...";
+      }
+    }
+  }
+
+  async function checkProfile(user) {
+    const supabase = window.FMAuth.getClient();
+    const userDot = document.getElementById('user-dot');
+    const userText = document.getElementById('user-text');
+    const btnLogout = document.getElementById('btn-logout');
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error cargando perfil:", error);
+    }
+
+    if (profile) {
+      currentProfile = profile;
+      
+      // Obtener puntos acumulados en la nube
+      const { data: workouts } = await supabase.from('workouts').select('puntos').eq('user_id', user.id);
+      cloudTotalPoints = 0;
+      if (workouts) {
+        cloudTotalPoints = workouts.reduce((sum, w) => sum + (w.puntos || 0), 0);
+      }
+      const rank = getMilitaryRank(cloudTotalPoints);
+
+      userDot.className = "inline-block w-2 h-2 rounded-full bg-green-500";
+      userText.innerHTML = `Atleta conectado: <strong class="text-white">${profile.apodo}</strong> <span class="bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded-full uppercase ml-1.5 font-bold tracking-wider">${rank}</span> <span class="text-gray-500 font-normal ml-1">(${cloudTotalPoints} pts)</span>`;
+      btnLogout.classList.remove('hidden');
+      document.getElementById('btn-profile').classList.remove('hidden');
+      
+      // Cerrar el modal unificado de entrada
+      document.getElementById('unified-entrance-modal').classList.add('hidden');
+
+      // Actualizar botones de inicio para ir directo al juego
+      const mainBtn = document.getElementById('main-play-btn');
+      const cardLink = document.getElementById('card-play-link');
+      if (mainBtn) {
+        mainBtn.innerHTML = `<i class="fa-solid fa-dumbbell mr-1"></i> ¡A jugar, ${profile.apodo}!`;
+        mainBtn.removeAttribute('onclick');
+        mainBtn.href = "jugar.html";
+      }
+      if (cardLink) {
+        cardLink.removeAttribute('onclick');
+        cardLink.href = "jugar.html";
+      }
+
+      // Habilitar panel de creación de gremio si es rango Cabo o más (>= 50 pts)
+      const createPanel = document.getElementById('guild-create-panel');
+      if (createPanel) {
+        if (cloudTotalPoints >= 50 && !profile.guild_id) {
+          createPanel.classList.remove('hidden');
+        } else {
+          createPanel.classList.add('hidden');
+        }
+      }
+    } else {
+      // Tiene cuenta pero no apodo, abrir modal para crear apodo
+      currentProfile = null;
+      userDot.className = "inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse";
+      userText.textContent = "Por favor, crea tu apodo de atleta...";
+      btnLogout.classList.remove('hidden');
+      
+      // Mostrar pantalla de apodo en el modal unificado
+      document.getElementById('entrance-step-form').classList.add('hidden');
+      document.getElementById('entrance-step-nickname').classList.remove('hidden');
+      document.getElementById('entrance-step-success').classList.add('hidden');
+      document.getElementById('unified-entrance-modal').classList.remove('hidden');
+    }
+  }
+
+  function toggleEntranceModal() {
+    const modal = document.getElementById('unified-entrance-modal');
+    modal.classList.toggle('hidden');
+    
+    // resetear estados
+    if (!currentUser) {
+      document.getElementById('entrance-step-form').classList.remove('hidden');
+      document.getElementById('entrance-step-success').classList.add('hidden');
+      switchAuthTab('login');
+    }
+  }
+
+  /* ============ PESTAÑAS DE REGISTRO / LOGIN CON CONTRASEÑA ============ */
+  let activeAuthTab = 'login';
+
+  function switchAuthTab(tab) {
+    activeAuthTab = tab;
+    const loginBtn = document.getElementById('tab-auth-login');
+    const registerBtn = document.getElementById('tab-auth-register');
+    const loginPanel = document.getElementById('auth-panel-login');
+    const registerPanel = document.getElementById('auth-panel-register');
+
+    if (tab === 'login') {
+      loginBtn.className = "flex-1 py-2 text-center rounded-lg bg-purple-600 text-white transition";
+      registerBtn.className = "flex-1 py-2 text-center rounded-lg text-gray-400 hover:text-white transition";
+      loginPanel.classList.remove('hidden');
+      registerPanel.classList.add('hidden');
+    } else {
+      registerBtn.className = "flex-1 py-2 text-center rounded-lg bg-purple-600 text-white transition";
+      loginBtn.className = "flex-1 py-2 text-center rounded-lg text-gray-400 hover:text-white transition";
+      registerPanel.classList.remove('hidden');
+      loginPanel.classList.add('hidden');
+    }
+  }
+
+  async function loginWithPassword() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const errorEl = document.getElementById('login-error');
+    const btn = document.getElementById('btn-login-pw');
+
+    if (!email || !password) {
+      errorEl.textContent = "Por favor, escribe tu correo y contraseña.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    errorEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Ingresando...`;
+
+    try {
+      console.log("Iniciando login para:", email);
+      const supabase = window.FMAuth.getClient();
+      if (!supabase) {
+        errorEl.textContent = "Error: No se pudo conectar con Supabase. Verifica tu conexión.";
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // Agregar timeout de 15 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet.")), 15000);
+      });
+
+      const { data, error } = await Promise.race([
+        supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        }),
+        timeoutPromise
+      ]);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log("Login exitoso, datos:", data);
+      
+      // Verificar sesión y cargar perfil
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await checkProfile(user);
+      }
+
+    } catch (err) {
+      console.error("Error en loginWithPassword:", err);
+      let errMsg = "¡Uuups! La contraseña es incorrecta o este correo aún no ha sido registrado.";
+      
+      if (err.message && err.message.includes("Tiempo de espera")) {
+        errMsg = err.message;
+      } else if (err.message && !err.message.includes("Invalid login credentials")) {
+        errMsg = "Error al ingresar: " + err.message;
+      }
+      
+      errorEl.textContent = errMsg;
+      errorEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span>Ingresar</span> <i class="fa-solid fa-sign-in-alt"></i>`;
+    }
+  }
+
+  async function sendResetPasswordLink() {
+    const email = document.getElementById('login-email').value.trim();
+    const errorEl = document.getElementById('login-error');
+    const btn = document.getElementById('btn-reset-pw');
+
+    if (!email) {
+      errorEl.textContent = "Por favor, escribe tu correo arriba (en el campo de email) para enviarte el enlace.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    errorEl.classList.add('hidden');
+    btn.disabled = true;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Enviando correo...`;
+
+    try {
+      const supabase = window.FMAuth.getClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/index.html?reset=true'
+      });
+
+      if (error) throw error;
+
+      alert(`¡Correo enviado! Hemos mandado un enlace de restablecimiento a ${email}. Ábrelo para definir tu contraseña.`);
+    } catch (err) {
+      console.error(err);
+      errorEl.textContent = "Error al enviar correo: " + err.message;
+      errorEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = oldText;
+    }
+  }
+
+  async function registerWithPassword() {
+    const email = document.getElementById('register-email').value.trim();
+    const nickname = document.getElementById('register-nickname').value.trim();
+    const password = document.getElementById('register-password').value.trim();
+    const errorEl = document.getElementById('register-error');
+    const btn = document.getElementById('btn-register-pw');
+
+    if (!email || !nickname || !password) {
+      errorEl.textContent = "Por favor, completa todos los campos.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    if (nickname.length < 3) {
+      errorEl.textContent = "El apodo debe tener al menos 3 caracteres.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    if (password.length < 6) {
+      errorEl.textContent = "La contraseña debe tener al menos 6 caracteres.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    errorEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Registrando...`;
+
+    try {
+      console.log("Iniciando registro para:", email, nickname);
+      const supabase = window.FMAuth.getClient();
+      if (!supabase) {
+        errorEl.textContent = "Error: No se pudo conectar con Supabase. Verifica tu conexión.";
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // Agregar timeout de 15 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Tiempo de espera agotado. Verifica tu conexión a internet.")), 15000);
+      });
+
+      // 1) Registrarse en Supabase Auth
+      const { data, error: signUpError } = await Promise.race([
+        supabase.auth.signUp({
+          email: email,
+          password: password
+        }),
+        timeoutPromise
+      ]);
+
+      if (signUpError) {
+        throw signUpError;
+      }
+
+      console.log("Usuario de Auth creado, ID:", data.user.id);
+
+      // 2) Guardar el perfil en public.profiles
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: data.user.id,
+        apodo: nickname
+      });
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Mostrar paso de éxito
+      document.getElementById('entrance-step-form').classList.add('hidden');
+      document.getElementById('entrance-step-success').classList.remove('hidden');
+    } catch (err) {
+      console.error(err);
+      let errMsg = "Error: No se pudo registrar la cuenta. ";
+      
+      if (err.message && err.message.includes("Tiempo de espera")) {
+        errMsg = err.message;
+      } else if (err.message) {
+        errMsg += err.message;
+      }
+      
+      errorEl.textContent = errMsg;
+      errorEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span>Crear Cuenta e Ingresar</span> <i class="fa-solid fa-user-check"></i>`;
+    }
+  }
+
+  async function saveProfile() {
+    const nickname = document.getElementById('auth-nickname').value.trim();
+    const errorEl = document.getElementById('profile-error');
+    const btn = document.getElementById('btn-save-profile');
+
+    if (!nickname) {
+      errorEl.textContent = "Por favor, escribe tu apodo.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    if (nickname.length < 3) {
+      errorEl.textContent = "El apodo debe tener al menos 3 caracteres.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    errorEl.classList.add('hidden');
+    btn.disabled = true;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Guardando...`;
+
+    try {
+      const supabase = window.FMAuth.getClient();
+      if (!supabase) throw new Error("No se pudo obtener el cliente de Supabase.");
+      if (!currentUser) throw new Error("No hay usuario autenticado actualmente.");
+
+      // Insertar en la tabla profiles
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: currentUser.id,
+        apodo: nickname
+      });
+
+      if (profileError) {
+        alert("Error de Supabase al guardar: " + profileError.message);
+        throw profileError;
+      }
+
+      alert("¡Apodo guardado con éxito! Bienvenido al juego.");
+      
+      // Cerrar modal y re-verificar perfil
+      document.getElementById('unified-entrance-modal').classList.add('hidden');
+      await checkProfile(currentUser);
+    } catch (err) {
+      console.error(err);
+      alert("Error capturado: " + err.message);
+      errorEl.textContent = "El apodo podría estar en uso o hubo un error: " + err.message;
+      errorEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = oldText;
+    }
+  }
+
+  async function handleLogout() {
+    const supabase = window.FMAuth.getClient();
+    if (confirm("¿Seguro que quieres cerrar sesión?")) {
+      await supabase.auth.signOut();
+      window.location.reload();
+    }
+  }
+
+  async function loadRanking() {
+    const tbody = document.getElementById('ranking-rows');
+    const supabase = window.FMAuth.getClient();
+    
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('ranking')
+        .select('*')
+        .limit(10);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-8 text-center text-gray-500">
+              <i class="fa-solid fa-face-smile mr-2"></i> ¡Aún no hay records! Las primeras partidas quedarán aquí.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = data.map((row, index) => {
+        let medal = index === 0 ? "" : index === 1 ? "" : index === 2 ? "" : `${index + 1}`;
+        let rowClass = "";
+        
+        if (currentProfile && row.apodo === currentProfile.apodo) {
+          rowClass = "bg-purple-950/20 font-semibold border-l-2 border-purple-500";
+        }
+
+        return `
+          <tr class="${rowClass} hover:bg-gray-900/30 transition">
+            <td class="py-4 px-6 text-center text-lg font-bold">${medal}</td>
+            <td class="py-4 px-6 font-medium text-white flex items-center gap-2">
+              ${row.apodo}
+              ${currentProfile && row.apodo === currentProfile.apodo ? '<span class="bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded-full uppercase">Tú</span>' : ''}
+            </td>
+            <td class="py-4 px-6 text-right text-gray-400">${row.entrenamientos}</td>
+            <td class="py-4 px-6 text-right font-bold text-yellow-400 text-lg">${row.puntos_totales || row.mejor_puntaje || 0} pts</td>
+          </tr>
+        `;
+      }).join('');
+
+    } catch (err) {
+      console.error("Error al cargar ranking:", err);
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="py-8 text-center text-red-500">
+            <i class="fa-solid fa-triangle-exclamation mr-2"></i> Error al cargar el ranking.
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  /* ============ GATEKEEPER MODAL LOGIC ============ */
+  function handlePlayClick(e) {
+    if (e) e.preventDefault();
+    if (currentProfile) {
+      window.location.href = "jugar.html";
+    } else {
+      toggleEntranceModal();
+    }
+  }
+
+  /* ============ CENTRO SOCIAL: PESTAÑAS ============ */
+  function switchSocialTab(tab) {
+    activeSocialTab = tab;
+    
+    const chatBtn = document.getElementById('tab-chat-btn');
+    const guildsBtn = document.getElementById('tab-guilds-btn');
+    const chatTab = document.getElementById('social-tab-chat');
+    const guildsTab = document.getElementById('social-tab-guilds');
+
+    if (tab === 'chat') {
+      chatBtn.className = "px-4 py-2 rounded-lg bg-purple-600 text-white transition";
+      guildsBtn.className = "px-4 py-2 rounded-lg text-gray-400 hover:text-white transition";
+      chatTab.classList.remove('hidden');
+      guildsTab.classList.add('hidden');
+    } else {
+      guildsBtn.className = "px-4 py-2 rounded-lg bg-purple-600 text-white transition";
+      chatBtn.className = "px-4 py-2 rounded-lg text-gray-400 hover:text-white transition";
+      guildsTab.classList.remove('hidden');
+      chatTab.classList.add('hidden');
+    }
+  }
+
+  /* ============ LÓGICA DE CHAT GLOBAL ============ */
+  async function loadChat() {
+    const cont = document.getElementById('chat-messages-container');
+    const supabase = window.FMAuth.getClient();
+    if (!supabase) return;
+
+    try {
+      // Cargar últimos 35 mensajes
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .order('id', { ascending: false })
+        .limit(35);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        cont.innerHTML = `
+          <div class="text-center text-gray-500 py-12 font-medium">
+            <i class="fa-solid fa-comments mr-2 text-xl block mb-2 text-purple-600"></i> ¡Silencio sepulcral! Sé el primero en mandar un grito de guerra aquí.
+          </div>
+        `;
+      } else {
+        // Renderizar del más viejo al más nuevo
+        const sorted = data.reverse();
+        cont.innerHTML = sorted.map(msg => renderMessageHTML(msg)).join('');
+        scrollChatToBottom();
+      }
+
+      // Suscribirse a Supabase Realtime para recibir mensajes nuevos al instante
+      if (chatSubscription) {
+        supabase.removeChannel(chatSubscription);
+      }
+
+      chatSubscription = supabase
+        .channel('public:messages')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+          // Agregar mensaje nuevo en tiempo real
+          const newMsg = payload.new;
+          
+          // Si el contenedor tenía el letrero de "silencio", quitarlo
+          if (cont.querySelector('.fa-comments') || cont.querySelector('.fa-circle-notch')) {
+            cont.innerHTML = '';
+          }
+          
+          cont.innerHTML += renderMessageHTML(newMsg);
+          scrollChatToBottom();
+        })
+        .subscribe();
+
+    } catch (err) {
+      console.error("Error al cargar chat:", err);
+      cont.innerHTML = `
+        <div class="text-center text-red-500 py-12">
+          <i class="fa-solid fa-triangle-exclamation mr-2"></i> Error al cargar el chat global.
+        </div>
+      `;
+    }
+  }
+
+  function renderMessageHTML(msg) {
+    let textClass = "text-gray-300";
+    let isMe = currentProfile && msg.user_id === currentProfile.id;
+    let senderBg = isMe ? "bg-purple-950/20 text-purple-400" : "bg-gray-900 text-gray-400";
+    
+    return `
+      <div class="flex flex-col space-y-0.5 text-left border-l-2 ${isMe ? 'border-purple-500' : 'border-gray-800'} pl-2.5 py-1">
+        <div class="flex items-center gap-1.5">
+          <span class="font-bold text-[11px] ${isMe ? 'text-purple-400' : 'text-yellow-500'}">${msg.apodo}</span>
+          <span class="text-[9px] text-gray-600 font-medium">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        </div>
+        <p class="text-xs text-gray-300">${msg.text}</p>
+      </div>
+    `;
+  }
+
+  function scrollChatToBottom() {
+    const cont = document.getElementById('chat-messages-container');
+    setTimeout(() => {
+      cont.scrollTop = cont.scrollHeight;
+    }, 100);
+  }
+
+  async function sendChatMessage() {
+    const input = document.getElementById('chat-input-text');
+    const text = input.value.trim();
+    if (!text || !currentProfile) return;
+
+    input.value = ''; // limpiar entrada
+    
+    try {
+      const supabase = window.FMAuth.getClient();
+      const { error } = await supabase.from('messages').insert({
+        user_id: currentProfile.id,
+        apodo: currentProfile.apodo,
+        text: text
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error al enviar mensaje:", err);
+      alert("Error al enviar mensaje: " + err.message);
+    }
+  }
+
+  /* ============ LÓGICA DE GREMIOS / CLANES ============ */
+  async function loadGuilds() {
+    const cont = document.getElementById('guilds-container');
+    const supabase = window.FMAuth.getClient();
+    if (!supabase) return;
+
+    try {
+      // Cargar todos los gremios públicos
+      const { data: guilds, error } = await supabase
+        .from('guilds')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Cargar perfil actualizado para ver su guild_id de forma fresca
+      let userGuildId = null;
+      if (currentUser) {
+        const { data: freshProf } = await supabase.from('profiles').select('guild_id').eq('id', currentUser.id).maybeSingle();
+        if (freshProf) {
+          userGuildId = freshProf.guild_id;
+          currentProfile.guild_id = freshProf.guild_id;
+        }
+      }
+
+      if (userGuildId) {
+        // El usuario ya pertenece a un gremio, mostrar su gremio y sus miembros
+        const myGuild = guilds.find(g => g.id === userGuildId);
+        if (!myGuild) {
+          // Gremio fue borrado o no se encuentra en el listado
+          cont.innerHTML = `
+            <div class="text-center text-gray-500 py-12">
+              Error al buscar tu gremio en la base de datos.
+              <button onclick="leaveGuild()" class="mt-3 bg-red-600 hover:bg-red-700 text-white font-bold py-1.5 px-4 rounded text-xs">Desvincular mi cuenta</button>
+            </div>
+          `;
+          return;
+        }
+
+        // Cargar otros miembros del mismo gremio
+        const { data: members } = await supabase
+          .from('profiles')
+          .select('apodo')
+          .eq('guild_id', userGuildId);
+
+        let membersList = members ? members.map(m => m.apodo).join(', ') : 'Tú';
+
+        cont.innerHTML = `
+          <div class="space-y-4 text-left p-4 bg-purple-950/10 border-2 border-purple-900/50 rounded-2xl">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="inline-block bg-purple-600 text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mb-1.5">Tu Gremio</span>
+                <h4 class="fun text-2xl font-bold text-white">${myGuild.name}</h4>
+              </div>
+              <button onclick="leaveGuild()" class="text-red-400 hover:text-red-500 font-bold text-xs">Abandonar</button>
+            </div>
+            
+            <p class="text-xs text-gray-300 italic">"${myGuild.description || 'Sin descripción.'}"</p>
+            
+            <div class="border-t border-purple-900/40 pt-3">
+              <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Miembros del Clan:</span>
+              <p class="text-xs text-purple-200 font-semibold">${membersList}</p>
+            </div>
+          </div>
+        `;
+
+        // Ocultar botón de crear gremio si ya está en uno
+        const createPanel = document.getElementById('guild-create-panel');
+        if (createPanel) createPanel.classList.add('hidden');
+
+      } else {
+        // Mostrar listado de gremios disponibles para unirse
+        if (!guilds || guilds.length === 0) {
+          cont.innerHTML = `
+            <div class="text-center text-gray-500 py-12 font-medium">
+              ¡Aún no hay gremios! Si eres Rango Cabo (50 pts), sé el primero en fundar uno.
+            </div>
+          `;
+        } else {
+          cont.innerHTML = `
+            <p class="text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Gremios de Fit Bros en la Nube:</p>
+            <div class="space-y-2.5">
+              ${guilds.map(g => `
+                <div class="flex justify-between items-center bg-gray-900/40 border border-gray-800 rounded-2xl p-4 hover:border-gray-700 transition">
+                  <div class="text-left space-y-1 pr-4">
+                    <h4 class="font-bold text-sm text-white flex items-center gap-1.5">${g.name}</h4>
+                    <p class="text-[11px] text-gray-400 italic">${g.description || 'Sin descripción.'}</p>
+                  </div>
+                  <button onclick="joinGuild('${g.id}')" ${currentUser ? '' : 'disabled'} class="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold py-1.5 px-4 rounded-xl text-xs shrink-0 transition shadow">
+                    Unirse
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        // Mostrar botón de crear gremio si es rango Cabo o más (>= 50 pts)
+        const createPanel = document.getElementById('guild-create-panel');
+        if (createPanel) {
+          if (currentUser && cloudTotalPoints >= 50) {
+            createPanel.classList.remove('hidden');
+          } else {
+            createPanel.classList.add('hidden');
+          }
+        }
+      }
+
+    } catch (err) {
+      console.error("Error al cargar gremios:", err);
+      cont.innerHTML = `
+        <div class="text-center text-red-500 py-12">
+          Error al cargar los gremios públicos.
+        </div>
+      `;
+    }
+  }
+
+  function openGuildCreateModal() {
+    document.getElementById('guild-create-modal').classList.remove('hidden');
+    document.getElementById('guild-error').classList.add('hidden');
+    document.getElementById('guild-name-input').value = '';
+    document.getElementById('guild-desc-input').value = '';
+  }
+
+  function closeGuildCreateModal() {
+    document.getElementById('guild-create-modal').classList.add('hidden');
+  }
+
+  async function createGuild() {
+    const name = document.getElementById('guild-name-input').value.trim();
+    const desc = document.getElementById('guild-desc-input').value.trim();
+    const errorEl = document.getElementById('guild-error');
+    const btn = document.getElementById('btn-submit-guild');
+
+    if (!name || name.length < 3) {
+      errorEl.textContent = "El nombre del gremio debe tener al menos 3 caracteres.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    if (cloudTotalPoints < 50) {
+      errorEl.textContent = "Requisito denegado: Necesitas ser al menos Rango Cabo (50 pts) para fundar un gremio.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    errorEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Creando...`;
+
+    try {
+      const supabase = window.FMAuth.getClient();
+      
+      // 1) Crear gremio
+      const { data: newGuild, error: err1 } = await supabase
+        .from('guilds')
+        .insert({
+          name: name,
+          description: desc,
+          leader_id: currentUser.id
+        })
+        .select()
+        .single();
+
+      if (err1) throw err1;
+
+      // 2) Unirse al gremio automáticamente
+      const { error: err2 } = await supabase
+        .from('profiles')
+        .update({ guild_id: newGuild.id })
+        .eq('id', currentUser.id);
+
+      if (err2) throw err2;
+
+      closeGuildCreateModal();
+      await checkProfile(currentUser);
+      await loadGuilds();
+
+    } catch (err) {
+      console.error(err);
+      errorEl.textContent = "Hubo un error al fundar el gremio: El nombre podría estar en uso.";
+      errorEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span>Crear Gremio</span> <i class="fa-solid fa-check"></i>`;
+    }
+  }
+
+  async function joinGuild(guildId) {
+    if (!currentUser) return;
+    const supabase = window.FMAuth.getClient();
+
+    try {
+      // 1) Contar cuántos miembros ya tiene el gremio
+      const { data: members, error: countErr } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('guild_id', guildId);
+
+      if (countErr) throw countErr;
+
+      if (members && members.length >= 30) {
+        alert("¡Requisito denegado! Este gremio ya alcanzó el límite máximo de 30 atletas.");
+        return;
+      }
+
+      // 2) Unirse si hay cupo
+      const { error } = await supabase
+        .from('profiles')
+        .update({ guild_id: guildId })
+        .eq('id', currentUser.id);
+
+      if (error) throw error;
+      
+      await checkProfile(currentUser);
+      await loadGuilds();
+    } catch (err) {
+      console.error(err);
+      alert("Error al unirse al gremio: " + err.message);
+    }
+  }
+
+  async function leaveGuild() {
+    if (!currentUser) return;
+    if (!confirm("¿Seguro que quieres salir de este gremio?")) return;
+    
+    const supabase = window.FMAuth.getClient();
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ guild_id: null })
+        .eq('id', currentUser.id);
+
+      if (error) throw error;
+      
+      await checkProfile(currentUser);
+      await loadGuilds();
+    } catch (err) {
+      console.error(err);
+      alert("Error al salir del gremio: " + err.message);
+    }
+  }
+
+  /* ============ GATEKEEPER MODAL LOGIC ============ */
+  function handlePlayClick(e) {
+    if (e) e.preventDefault();
+    if (currentProfile) {
+      window.location.href = "jugar.html";
+    } else {
+      toggleEntranceModal();
+    }
+  }
+
+  // Arrancar cuando cargue la página
+  window.addEventListener('DOMContentLoaded', () => {
+    initAuth();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+/* Fit Match · estilos compartidos de fichas (monedas + reloj) */
+.coin-wrap{position:relative;width:240px;height:240px;}
+.coin-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;}
+.coin-mini{position:relative;width:56px;height:56px;flex:0 0 auto;}
+
+/* reloj de arena epico */
+@keyframes fall{0%{transform:translateY(-6px) scaleY(.6);opacity:0}15%{opacity:1}100%{transform:translateY(60px) scaleY(1);opacity:1}}
+.sand-stream{animation:fall .9s linear infinite;transform-origin:top;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px) rotate(-1deg)}40%{transform:translateX(6px) rotate(1deg)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.shake{animation:shake .5s ease-in-out 3;}
+@keyframes pulseGlow{0%,100%{filter:drop-shadow(0 0 4px rgba(251,191,36,.6))}50%{filter:drop-shadow(0 0 16px rgba(251,191,36,1))}}
+.glow{animation:pulseGlow 1.4s ease-in-out infinite;}
+@keyframes blinkPause{0%,100%{opacity:1}50%{opacity:.35}}
+.paused .fm-hg{filter:grayscale(.5) brightness(.8);transition:filter .2s;}
+.paused-disp{background:#fdba74 !important;animation:blinkPause 1s ease-in-out infinite;}
+
+/* presets de duracion (selector) */
+.preset{transition:transform .12s, box-shadow .12s, filter .12s;opacity:.55;}
+.preset:hover{opacity:.85;}
+.preset.active{opacity:1;transform:translate(-2px,-2px) scale(1.05);box-shadow:5px 5px 0 #111827 !important;outline:3px solid #111827;outline-offset:2px;}
+
+/* monedas ganadas: aparicion */
+@keyframes coinPop{0%{transform:scale(.2) rotate(-25deg);opacity:0}60%{transform:scale(1.12) rotate(6deg)}100%{transform:none;opacity:1}}
+.coin-pop{animation:coinPop .55s cubic-bezier(.2,.8,.2,1) both;}

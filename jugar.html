@@ -1,0 +1,2510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fit Match - Jugar</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fm-fichas.css">
+<style>
+  body{font-family:'Nunito',sans-serif;background:#fdf2f8;color:#1f2937;}
+  button{cursor:pointer;}
+  .fun{font-family:'Fredoka',sans-serif;}
+  .pop{border:3px solid #111827;border-radius:22px;box-shadow:6px 6px 0 #111827;position:relative;overflow:hidden;}
+  .dots{background-image:radial-gradient(rgba(255,255,255,.35) 1.6px, transparent 1.6px);background-size:12px 12px;}
+  .ribbon{border:2.5px solid #111827;border-radius:10px;box-shadow:2px 2px 0 #111827;}
+  .icon-bubble{border:3px solid #111827;border-radius:50%;box-shadow:3px 3px 0 rgba(17,24,39,.55);}
+  .exrow{border:2px solid #111827;border-radius:9px;background:#fff;}
+  .cost-badge{border:2.5px solid #111827;border-radius:999px;background:#fff;color:#111827;box-shadow:2px 2px 0 #111827;}
+  .card-back{aspect-ratio:3/4;background:repeating-linear-gradient(45deg,#a78bfa 0 14px,#8b5cf6 14px 28px);}
+  @keyframes dealIn{0%{transform:rotateY(90deg) scale(.78);opacity:0}55%{transform:rotateY(-8deg) scale(1.04)}100%{transform:none;opacity:1}}
+  .deal-in{animation:dealIn .55s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+  .wobble{animation:wobble 1.6s ease-in-out infinite;}
+  .pcard{transition:transform .15s, box-shadow .15s;}
+  .pcard.retador{box-shadow:6px 6px 0 #111827 !important;outline:3px solid #8b5cf6;outline-offset:2px;}
+  .pcard.retado{box-shadow:6px 6px 0 #111827 !important;outline:3px solid #ef4444;outline-offset:2px;}
+  ::-webkit-scrollbar{width:10px;}::-webkit-scrollbar-track{background:#fce7f3;}
+  ::-webkit-scrollbar-thumb{background:#f9a8d4;border-radius:5px;}
+  /* seleccion de ejercicio en la carta */
+  .exsel{cursor:pointer;transition:transform .12s, box-shadow .12s;}
+  .exsel:hover{transform:translateX(2px);}
+  .exsel.selected{background:linear-gradient(150deg,var(--c1),var(--c2)) !important;color:#fff !important;
+    box-shadow:3px 3px 0 #111827, inset 0 0 0 3px #fff;transform:translateX(2px) scale(1.02);}
+  .exsel.selected .text-amber-300{color:#fff !important;}
+  
+  /* Panel de Chat Lateral Desplizable */
+  .social-sidebar {
+    position: fixed;
+    right: -360px;
+    top: 0;
+    width: 360px;
+    height: 100vh;
+    background: #111827;
+    border-left: 4px solid #111827;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    z-index: 9999;
+    transition: right 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .social-sidebar.open {
+    right: 0;
+  }
+  .social-toggle-btn {
+    position: fixed;
+    right: 14px;
+    bottom: 14px;
+    z-index: 9998;
+    background: #8b5cf6;
+    color: #fff;
+    font-family: Fredoka, sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 10px 16px;
+    border: 2.5px solid #111827;
+    border-radius: 999px;
+    box-shadow: 3px 3px 0 #111827;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .social-toggle-btn:hover {
+    transform: scale(1.05);
+  }
+</style>
+<!-- Supabase JS & Connection -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="fm-supabase.js"></script>
+<script src="fm-routines.js"></script>
+<script src="fm-specialized-routines.js"></script>
+<script src="fm-badges.js"></script>
+<script src="fm-achievements.js"></script>
+<script src="fm-profile.js"></script>
+</head>
+<body class="min-h-screen antialiased">
+<a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#ec4899;color:#fff;font-family:Fredoka,sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:2.5px solid #111827;border-radius:999px;box-shadow:3px 3px 0 #111827;display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
+
+<!-- Botón Flotante para abrir Chat/Social -->
+<button onclick="toggleSocialSidebar()" class="social-toggle-btn">
+  <i class="fa-solid fa-comments"></i> Chat & Fit Bros
+</button>
+
+<!-- PANEL SOCIAL LATERAL INTELIGENTE -->
+<div id="social-sidebar" class="social-sidebar flex flex-col justify-between">
+  <!-- Cabecera -->
+  <div class="bg-gray-900 p-4 border-b border-gray-800 flex items-center justify-between text-white">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-user-astronaut text-purple-400"></i>
+      <span class="fun font-bold text-sm">Comunidad Fit Match</span>
+    </div>
+    <button onclick="toggleSocialSidebar()" class="text-gray-400 hover:text-white text-lg">
+      <i class="fa-solid fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Pestañas -->
+  <div class="bg-gray-950 p-2 flex border-b border-gray-800 text-[11px] font-bold text-gray-400">
+    <button onclick="switchSidebarTab('chat')" id="side-tab-chat" class="flex-1 py-2 text-center rounded-lg bg-purple-600 text-white transition">Chat Global</button>
+    <button onclick="switchSidebarTab('online')" id="side-tab-online" class="flex-1 py-2 text-center rounded-lg hover:text-white transition">Online (<span id="online-count">0</span>)</button>
+    <button onclick="switchSidebarTab('guild')" id="side-tab-guild" class="flex-1 py-2 text-center rounded-lg hover:text-white transition">Clan</button>
+  </div>
+
+  <!-- Contenido Principal -->
+  <div class="flex-grow overflow-y-auto p-4 space-y-4 text-xs" style="background: #0B0B0F;">
+    <!-- CHAT GLOBAL -->
+    <div id="side-content-chat" class="space-y-3 h-full flex flex-col justify-between">
+      <div id="side-chat-messages" class="flex-grow overflow-y-auto space-y-3 pr-1" style="height: 320px;">
+        <p class="text-center text-gray-500 py-12">Cargando mensajes del chat...</p>
+      </div>
+      <div class="border-t border-gray-900 pt-3 flex gap-2">
+        <input type="text" id="side-chat-input" placeholder=" Conéctate para chatear..." disabled class="flex-grow bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 transition">
+        <button onclick="sendSideChatMessage()" id="side-chat-send-btn" disabled class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl transition">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ATLETAS ONLINE / AMIGOS / CITAS / OFFLINE -->
+    <div id="side-content-online" class="hidden space-y-4">
+      <!-- Buzón de Solicitudes y Citas Pendientes -->
+      <div id="side-mailbox-container" class="space-y-2 hidden">
+        <p class="text-left text-[10px] font-bold text-yellow-500 uppercase tracking-wider"><i class="fa-solid fa-bell"></i> Bandeja de Entrada</p>
+        <div id="side-mailbox-list" class="space-y-1.5"></div>
+      </div>
+      
+      <!-- Citas Agendadas Confirmadas -->
+      <div id="side-schedule-container" class="space-y-2 hidden">
+        <p class="text-left text-[10px] font-bold text-purple-400 uppercase tracking-wider"><i class="fa-solid fa-calendar-check"></i> Próximos Entrenos</p>
+        <div id="side-schedule-list" class="space-y-1.5"></div>
+      </div>
+
+      <!-- Atletas en Línea -->
+      <div>
+        <p class="text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Atletas Conectados:</p>
+        <div id="side-online-list" class="space-y-2 mt-2">
+          <p class="text-gray-500 text-center py-4">No hay otros atletas online.</p>
+        </div>
+      </div>
+
+      <!-- Atletas Fuera de Línea -->
+      <div>
+        <p class="text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Atletas Registrados (Offline):</p>
+        <div id="side-offline-list" class="space-y-2 mt-2 max-h-48 overflow-y-auto pr-1">
+          <p class="text-gray-500 text-center py-4">Cargando atletas registrados...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLANES / GREMIOS -->
+    <div id="side-content-guild" class="hidden space-y-3">
+      <div id="side-guild-info">
+        <p class="text-gray-500 text-center py-12">No perteneces a ningún gremio todavía. Únete o funda uno en la página de inicio.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP DE INVITACIÓN A ENTRENAR EN TIEMPO REAL -->
+<div id="invite-alert-popup" class="fixed top-4 right-4 bg-gray-900 border-2 border-purple-500 rounded-2xl p-4 shadow-2xl z-[10000] hidden max-w-xs text-white text-left text-xs space-y-3 animate-bounce">
+  <div class="flex items-center gap-2">
+    <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm border border-purple-400">
+      <i class="fa-solid fa-handshake"></i>
+    </div>
+    <div>
+      <span class="block text-[10px] font-bold uppercase text-purple-400">¡Reto de Entrenamiento!</span>
+      <span class="font-bold text-white text-xs" id="invite-sender-name">Atleta-X</span>
+    </div>
+  </div>
+  <p class="text-gray-300 text-xs">Te está invitando a completar juntos el entrenamiento: <strong id="invite-routine-name" class="text-white">Zeus</strong> en tiempo real.</p>
+  <div class="flex gap-2">
+    <button onclick="acceptTrainingInvite()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-1.5 rounded-lg transition text-center">Aceptar</button>
+    <button onclick="declineTrainingInvite()" class="flex-grow-0 bg-gray-800 hover:bg-gray-700 text-gray-400 font-bold py-1.5 px-3 rounded-lg transition">Ignorar</button>
+  </div>
+</div>
+
+<header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b-2 border-gray-900">
+  <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full icon-bubble flex items-center justify-center" style="background:#ec4899;color:#fff"><i class="fa-solid fa-fire-flame-curved"></i></div>
+      <span class="fun text-2xl font-bold text-gray-900">Fit Match · Jugar</span>
+    </div>
+    <div class="flex items-center gap-2.5">
+      <!-- Mini Perfil Nube -->
+      <div id="play-user-bar" class="hidden sm:flex items-center gap-2 bg-gray-100 border-2 border-gray-900 px-4 py-1.5 rounded-full text-xs font-bold text-gray-800">
+        <span class="w-2.5 h-2.5 rounded-full bg-green-500" id="play-user-dot"></span>
+        <span id="play-user-text">Invitado</span>
+        <span id="play-user-rank" class="bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Recluta</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8">
+
+  <!-- ===== INTRO: elegir modo ===== -->
+  <section id="screen-intro">
+    <div class="text-center mb-8">
+      <h1 class="fun text-4xl sm:text-5xl font-bold text-gray-900 mb-2">Elige tu <span style="color:#ec4899">modo</span></h1>
+      <p class="text-gray-600 font-semibold max-w-xl mx-auto">Entrena tu solo o reta a tus amigos. En ambos llegas a <b>30 puntos</b>.</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+      <button onclick="startTraining()" class="pop bg-white p-7 text-center deal-in" style="box-shadow:8px 8px 0 #111827">
+        <div class="w-16 h-16 mx-auto icon-bubble flex items-center justify-center text-3xl mb-3" style="background:#34d399;color:#06281e"><i class="fa-solid fa-dumbbell"></i></div>
+        <h2 class="fun text-2xl font-bold text-gray-900 mb-1">Entrenamiento Personal</h2>
+        <p class="text-gray-500 font-semibold text-sm">Completa rutinas, crece en el rango militar, haz amigos y disfruta sudando. ¡Tu viaje fitness empieza aquí!</p>
+        <span class="inline-flex items-center gap-2 mt-4 fun font-bold text-white py-2 px-5 rounded-full border-2 border-gray-900" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-play"></i> Entrenar</span>
+      </button>
+      <button onclick="goSetup()" class="pop bg-white p-7 text-center deal-in" style="box-shadow:8px 8px 0 #111827">
+        <div class="w-16 h-16 mx-auto icon-bubble flex items-center justify-center text-3xl mb-3" style="background:#8b5cf6;color:#fff"><i class="fa-solid fa-people-group"></i></div>
+        <h2 class="fun text-2xl font-bold text-gray-900 mb-1">Modo Juego</h2>
+        <p class="text-gray-500 font-semibold text-sm">Completa rutinas, crece en el rango militar, haz amigos y disfruta sudando juntos. ¡Tu viaje fitness empieza aquí!</p>
+        <span class="inline-flex items-center gap-2 mt-4 fun font-bold text-white py-2 px-5 rounded-full border-2 border-gray-900" style="background:#8b5cf6;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-users"></i> Jugar en grupo</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== RUTINAS DE ENTRENAMIENTO (MODO PERSONAL) ===== -->
+  <section id="screen-routine" class="hidden">
+    <div class="text-center mb-8">
+      <h1 class="fun text-4xl sm:text-5xl font-bold text-gray-900 mb-2">Rutinas de <span style="color:#ec4899">Entrenamiento</span></h1>
+      <p class="text-gray-600 font-semibold max-w-xl mx-auto">Elige entre las rutinas legendarias de los Dioses o las rutinas especializadas modernas.</p>
+    </div>
+    
+    <!-- Selector de Categoría Principal -->
+    <div class="flex items-center justify-center gap-3 mb-8">
+      <button onclick="switchCategory('gods')" id="cat-gods-btn" class="fun font-bold text-sm px-6 py-3 rounded-full border-2 border-gray-900 bg-purple-600 text-white shadow-md transition-all">
+        <i class="fa-solid fa-landmark mr-2"></i>Dioses Legendarios
+      </button>
+      <button onclick="switchCategory('specialized')" id="cat-specialized-btn" class="fun font-bold text-sm px-6 py-3 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">
+        <i class="fa-solid fa-dumbbell mr-2"></i>Entrenamiento Moderno
+      </button>
+    </div>
+
+    <!-- Filtros por Cultura (Dioses) -->
+    <div id="culture-filters-container" class="mb-8">
+      <div class="flex items-center justify-center gap-2 flex-wrap" id="culture-filters">
+        <button onclick="filterRoutines('All')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-yellow-400 text-gray-900 shadow-md transition-all">Todos</button>
+        <button onclick="filterRoutines('Grecia')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">Grecia</button>
+        <button onclick="filterRoutines('Nórdicos')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">Nórdicos</button>
+        <button onclick="filterRoutines('Egipto')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">Egipto</button>
+        <button onclick="filterRoutines('China')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">China</button>
+        <button onclick="filterRoutines('Japón')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">Japón</button>
+        <button onclick="filterRoutines('Mongoles')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">Mongoles</button>
+        <button onclick="filterRoutines('Mayas')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">Mayas</button>
+        <button onclick="filterRoutines('Aztecas')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">Aztecas</button>
+        <button onclick="filterRoutines('Incas')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">Incas</button>
+      </div>
+    </div>
+
+    <!-- Filtros por Especialidad (Moderno) -->
+    <div id="specialized-filters-container" class="mb-8 hidden">
+      <div class="flex items-center justify-center gap-2 flex-wrap" id="specialized-filters">
+        <button onclick="filterSpecialized('All')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-yellow-400 text-gray-900 shadow-md transition-all">Todos</button>
+        <button onclick="filterSpecialized('gimnasio')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">
+          <i class="fa-solid fa-dumbbell mr-1"></i>Gimnasio
+        </button>
+        <button onclick="filterSpecialized('yoga')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">
+          <i class="fa-solid fa-spa mr-1"></i>Yoga
+        </button>
+        <button onclick="filterSpecialized('pilates')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">
+          <i class="fa-solid fa-person-running mr-1"></i>Pilates
+        </button>
+        <button onclick="filterSpecialized('cardio')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">
+          <i class="fa-solid fa-heart-pulse mr-1"></i>Cardio
+        </button>
+        <button onclick="filterSpecialized('calistenia')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">
+          <i class="fa-solid fa-person-praying mr-1"></i>Calistenia
+        </button>
+        <button onclick="filterSpecialized('hipopresivos')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">
+          <i class="fa-solid fa-baby mr-1"></i>Hipopresivos
+        </button>
+      </div>
+    </div>
+
+    <!-- Rejilla de Rutinas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="routines-grid">
+      <!-- Inyectado dinámicamente -->
+    </div>
+  </section>
+
+  <!-- ===== MODAL PARA AGENDAR CITA (OFFLINE) ===== -->
+  <div id="appointment-create-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-[100] p-4 text-gray-900">
+    <div class="bg-white border-4 border-gray-900 rounded-3xl p-6 max-w-sm w-full relative shadow-[6px_6px_0_#111827] text-left">
+      <button onclick="closeAppointmentModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-xl font-bold">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      
+      <div class="space-y-4">
+        <div class="text-center">
+          <div class="w-12 h-12 rounded-2xl bg-purple-100 border-2 border-gray-900 text-purple-600 flex items-center justify-center mx-auto mb-2 text-xl">
+            <i class="fa-solid fa-calendar-days"></i>
+          </div>
+          <h3 class="fun text-2xl font-bold text-gray-900">Agendar Cita</h3>
+          <p class="text-gray-500 text-xs mt-1">Invita a <strong id="appt-target-name"></strong> a entrenar en una fecha y hora específicas.</p>
+        </div>
+        
+        <div>
+          <label class="block text-[10px] font-bold text-gray-700 uppercase mb-1">Elige la Rutina</label>
+          <select id="appt-routine-select" class="w-full bg-gray-50 border-2 border-gray-900 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:border-purple-600">
+            <!-- Cargado dinámicamente -->
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-[10px] font-bold text-gray-700 uppercase mb-1">Fecha y Hora de la Cita</label>
+          <input type="datetime-local" id="appt-datetime" class="w-full bg-gray-50 border-2 border-gray-900 rounded-xl px-4 py-2.5 text-xs text-gray-900 focus:outline-none focus:border-purple-600 font-bold">
+        </div>
+        
+        <button onclick="submitAppointment()" id="btn-submit-appt" class="w-full fun font-bold text-white py-3 rounded-xl border-2 border-gray-900 shadow-[3px_3px_0_#111827] bg-purple-600 hover:bg-purple-700 transition flex items-center justify-center gap-1.5 text-xs">
+          <span>Agendar Cita</span> <i class="fa-solid fa-check"></i>
+        </button>
+        
+        <p id="appt-error" class="text-red-500 text-xs font-semibold text-center hidden"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL GUÍA DE EJERCICIO ===== -->
+  <div id="exercise-help-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center hidden z-[100] p-4">
+    <div class="bg-white border-4 border-gray-900 rounded-3xl p-6 max-w-sm w-full relative shadow-[6px_6px_0_#111827] text-gray-900 text-center space-y-4">
+      <button onclick="closeExerciseHelp()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-xl font-bold">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      
+      <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto text-xl border-2 border-gray-900">
+        <i class="fa-solid fa-circle-info"></i>
+      </div>
+      
+      <h3 class="fun text-2xl font-bold text-gray-900" id="help-ex-name">Nombre del Ejercicio</h3>
+      
+      <div class="bg-gray-50 border-2 border-gray-900 rounded-2xl p-4 text-left space-y-3">
+        <div>
+          <span class="block text-[9px] font-bold uppercase text-gray-400">Cómo se hace</span>
+          <p class="text-xs text-gray-700 font-semibold leading-relaxed" id="help-ex-desc">Descripción detallada paso a paso.</p>
+        </div>
+        <div>
+          <span class="block text-[9px] font-bold uppercase text-gray-400">Músculos Trabajados</span>
+          <span class="inline-block bg-blue-50 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 mt-1" id="help-ex-muscles">Core Abdominal</span>
+        </div>
+      </div>
+      
+      <a id="help-ex-video" href="#" target="_blank" rel="noopener" class="w-full fun font-bold text-white py-2.5 px-5 rounded-xl border-2 border-gray-900 shadow-[3px_3px_0_#111827] bg-red-500 hover:bg-red-600 transition-all flex items-center justify-center gap-1.5 text-sm">
+        <i class="fa-brands fa-youtube"></i> Ver Video Tutorial
+      </a>
+    </div>
+  </div>
+
+  <!-- ===== MODAL DETALLE DE RUTINA ===== -->
+  <div id="routine-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white border-4 border-gray-900 rounded-3xl p-6 max-w-lg w-full relative shadow-[8px_8px_0_#111827] text-gray-900">
+      <button onclick="closeRoutineModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-xl font-bold">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      
+      <div id="routine-detail-content" class="space-y-4">
+        <!-- Inyectado dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANTALLA ENTRENAMIENTO ACTIVO (RUTINA) ===== -->
+  <div id="routine-active-modal" class="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center hidden z-50 p-4 overflow-y-auto">
+    <div class="bg-white border-4 border-gray-900 rounded-3xl p-6 max-w-xl w-full relative shadow-[10px_10px_0_#111827] text-gray-900 my-8">
+      <div class="text-center mb-4">
+        <span class="inline-block bg-purple-100 text-purple-800 border-2 border-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase mb-2" id="active-routine-culture">Grecia</span>
+        <h2 class="fun text-3xl font-bold text-gray-900" id="active-routine-name">Zeus (Olimpo)</h2>
+        <p class="text-gray-500 text-xs mt-1" id="active-routine-desc">Realiza las repeticiones a tu propio ritmo con buena técnica. Presiona cada ejercicio al completarlo.</p>
+      </div>
+
+      <div class="bg-gray-100 border-2 border-gray-900 rounded-2xl p-4 mb-5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-stopwatch text-2xl text-purple-600 animate-pulse"></i>
+          <div>
+            <span class="block text-[10px] font-bold uppercase text-gray-500">Tiempo Transcurrido</span>
+            <span class="font-bold text-xl fun text-gray-900" id="active-routine-timer">00:00</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="block text-[10px] font-bold uppercase text-gray-500">Recompensa</span>
+          <span class="font-bold text-lg text-yellow-500 flex items-center justify-end gap-1"><i class="fa-solid fa-bolt"></i> +<span id="active-routine-points">50</span> PX</span>
+        </div>
+      </div>
+
+      <div class="space-y-2.5 mb-6" id="active-routine-list">
+        <!-- Lista de ejercicios con su checkbox gigante -->
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="abortRoutine()" class="fun font-bold text-gray-700 py-3 px-5 rounded-full border-2 border-gray-900 bg-white hover:bg-gray-100 transition-all flex items-center justify-center gap-1 shrink-0"><i class="fa-solid fa-arrow-rotate-left"></i> Cancelar</button>
+        <button id="btn-complete-routine" onclick="finishRoutineWorkout()" class="w-full fun font-bold text-white py-3 px-5 rounded-full border-2 border-gray-900 bg-green-500 hover:bg-green-600 shadow-[4px_4px_0_#111827] transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-trophy text-yellow-300 animate-bounce"></i> ¡Completar Entrenamiento!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SETUP ===== -->
+  <section id="screen-setup" class="hidden">
+    <div class="text-center mb-8">
+      <h1 class="fun text-4xl sm:text-5xl font-bold text-gray-900 mb-2">A <span style="color:#ec4899">Jugar</span></h1>
+      <p class="text-gray-600 font-semibold max-w-xl mx-auto">El banco reparte <b>5 puntos</b> a cada jugador. Apuesta y completa retos para ganar puntos. <b>Primero en llegar a 30 gana.</b></p>
+    </div>
+    <div class="pop bg-white p-8 max-w-lg mx-auto text-center" style="box-shadow:8px 8px 0 #111827">
+      <p class="fun font-bold text-gray-900 text-lg mb-4">Cuantos jugadores?</p>
+      <div id="player-pick" class="grid grid-cols-5 gap-3 mb-6"></div>
+      <div id="bank-preview" class="ribbon fun font-bold text-gray-800 px-4 py-3 mb-6 text-sm" style="background:#fef9c3"></div>
+      <button id="btn-start" class="fun text-white font-bold text-xl py-3 px-10 rounded-full border-2 border-gray-900 inline-flex items-center gap-2" style="background:#22c55e;box-shadow:5px 5px 0 #111827"><i class="fa-solid fa-play"></i> Empezar partida</button>
+    </div>
+  </section>
+
+  <!-- ===== JUEGO ===== -->
+  <section id="screen-game" class="hidden">
+    <!-- banner turno + banco -->
+    <div class="pop p-4 mb-5 flex flex-wrap items-center justify-between gap-3" style="background:radial-gradient(circle at 20% 20%,#7c3aed,#312e81);box-shadow:6px 6px 0 #111827">
+      <div class="flex items-center gap-3 text-white">
+        <div class="w-12 h-12 icon-bubble flex items-center justify-center text-2xl" style="background:#fbbf24;color:#111827"><i class="fa-solid fa-user-ninja"></i></div>
+        <div class="leading-tight">
+          <span id="turn-label" class="block text-[11px] font-bold uppercase text-white/70">Turno (retador)</span>
+          <span id="turn-name" class="fun font-bold" style="font-size:26px">Jugador 1</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div id="bank-ribbon" class="ribbon fun font-bold text-gray-900 px-4 py-2" style="background:#fde68a"><i class="fa-solid fa-building-columns mr-1"></i> Banco: <span id="bank-val">0</span></div>
+        <div id="train-pts" class="hidden ribbon fun font-bold text-gray-900 px-4 py-2" style="background:#bbf7d0"><i class="fa-solid fa-bolt mr-1"></i> Puntos: <span id="train-pts-val">0</span> / 30</div>
+        <button onclick="openRules()" class="fun font-bold text-gray-900 py-2 px-4 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fbbf24;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-book-open"></i> Reglas</button>
+        <button id="btn-endmatch" onclick="endMatch()" class="fun font-bold text-white py-2 px-4 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#ef4444;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-flag-checkered"></i> Terminar partida</button>
+      </div>
+    </div>
+
+    <!-- marcador jugadores -->
+    <div id="scoreboard" class="grid gap-3 mb-6" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- carta -->
+      <div class="pop bg-white p-6 flex flex-col items-center text-center" style="box-shadow:8px 8px 0 #111827">
+        <p id="card-label" class="fun text-gray-500 font-bold mb-4">Elige el modo del turno</p>
+        <div id="spotlight" class="w-full max-w-xs mb-5">
+          <div class="pop card-back flex flex-col items-center justify-center text-white wobble">
+            <i class="fa-solid fa-question text-7xl drop-shadow"></i>
+            <p class="fun font-bold mt-3 text-lg drop-shadow">FIT MATCH</p>
+          </div>
+        </div>
+        <div id="color-picker" class="hidden w-full max-w-xs">
+          <p class="fun font-bold text-gray-700 mb-3"><i class="fa-solid fa-palette mr-1" style="color:#8b5cf6"></i> Elige el color de tu carta</p>
+          <div id="color-tiles" class="grid grid-cols-2 gap-3"></div>
+          <p class="text-gray-400 text-xs font-semibold mt-3">La carta dentro del color sale al azar</p>
+        </div>
+        <div id="ex-video" class="hidden w-full max-w-xs mt-3"></div>
+      </div>
+
+      <!-- panel de accion -->
+      <div class="pop p-6 flex flex-col items-center text-center" style="background:radial-gradient(circle at 50% 14%,#7c3aed,#312e81 62%,#0b1026);box-shadow:8px 8px 0 #111827">
+        <!-- estado: modo -->
+        <div id="g-mode" class="w-full">
+          <p class="fun font-bold text-white mb-1">Tipo de turno</p>
+          <p class="text-white/70 text-sm font-semibold mb-4">Como quieres jugar este turno</p>
+          <div class="grid grid-cols-1 gap-2.5">
+            <button onclick="setMode('ind')"  class="fun font-bold py-2.5 px-4 rounded-xl border-2 border-gray-900 flex items-center justify-between gap-2" style="background:#86efac;box-shadow:3px 3px 0 #111827"><span><i class="fa-solid fa-user mr-2"></i>Individual</span><span class="text-[12px]">tu vs el banco</span></button>
+            <button onclick="setMode('reto')" class="fun font-bold py-2.5 px-4 rounded-xl border-2 border-gray-900 flex items-center justify-between gap-2" style="background:#fcd34d;box-shadow:3px 3px 0 #111827"><span><i class="fa-solid fa-hand-fist mr-2"></i>Reto</span><span class="text-[12px]">retas a un rival</span></button>
+            <button onclick="setMode('comp')" class="fun font-bold text-white py-2.5 px-4 rounded-xl border-2 border-gray-900 flex items-center justify-between gap-2" style="background:#ef4444;box-shadow:3px 3px 0 #111827"><span><i class="fa-solid fa-people-group mr-2"></i>Competencia</span><span class="text-[12px]">cara a cara</span></button>
+          </div>
+        </div>
+        <!-- estado: elegir rival -->
+        <div id="g-rival" class="hidden w-full">
+          <p class="fun font-bold text-white mb-1">Elige a tu rival (retado)</p>
+          <p class="text-white/70 text-sm font-semibold mb-4">El que hara el ejercicio</p>
+          <div id="rival-btns" class="grid grid-cols-1 gap-2.5"></div>
+        </div>
+        <!-- estado: listo para robar / elegir ejercicio -->
+        <div id="g-ready" class="hidden text-white/85 fun font-bold py-8">
+          <i class="fa-solid fa-arrow-left text-3xl mb-3 block"></i>
+          <span id="ready-text">Roba una carta para ver el reto.</span>
+        </div>
+        <!-- estado: apuesta -->
+        <div id="g-bet" class="hidden w-full">
+          <p class="fun font-bold text-white mb-1">Elige tu moneda</p>
+          <p id="bet-hint" class="text-white/70 text-sm font-semibold mb-4">La moneda define puntos y tiempo</p>
+          <div id="bet-btns" class="grid grid-cols-3 gap-2.5"></div>
+        </div>
+        <!-- estado: reloj -->
+        <div id="g-timer" class="hidden w-full flex flex-col items-center">
+          <div id="challenge" class="ribbon fun font-bold text-gray-900 px-4 py-2 mb-3 text-sm" style="background:#fde68a">Tu reto</div>
+          <div id="hg-stage" class="dots p-2 rounded-2xl mb-3"><div id="hourglass" class="fm-hg"></div></div>
+          <div id="hg-display" class="ribbon fun font-bold text-gray-900 px-6 py-2 mb-4" style="background:#fde68a;font-size:34px;letter-spacing:.06em;min-width:150px;text-align:center">0:00</div>
+          <div class="flex items-center justify-center gap-2 flex-wrap">
+            <button onclick="T.start()" class="fun font-bold text-white py-2.5 px-6 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-play"></i> Iniciar</button>
+            <button onclick="T.pause()" class="fun font-bold text-gray-900 py-2.5 px-5 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fff;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-pause"></i></button>
+            <button onclick="T.reset()" class="fun font-bold text-gray-900 py-2.5 px-5 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fff;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-rotate-left"></i></button>
+          </div>
+        </div>
+        <!-- estado: resultado -->
+        <div id="g-result" class="hidden w-full flex flex-col items-center">
+          <div id="result-coin" class="mb-3"></div>
+          <p id="result-text" class="fun font-bold text-white text-lg mb-4">Resultado</p>
+          <div id="result-btns" class="flex items-center justify-center gap-3 flex-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- mercado: ventaja + desventaja lado a lado -->
+    <div id="market-section" class="pop bg-white p-5 mt-6" style="box-shadow:6px 6px 0 #111827">
+      <span class="fun font-bold text-gray-900 block mb-3"><i class="fa-solid fa-store mr-1" style="color:#8b5cf6"></i> Mercado (1 pt c/u)</span>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <!-- ventaja -->
+        <div class="rounded-2xl border-2 border-emerald-300 p-3" style="background:#ecfdf5">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <span class="fun font-bold text-emerald-700 text-sm"><i class="fa-solid fa-shield-halved mr-1"></i> Ventaja <span class="text-emerald-600 font-semibold">(paga el retado)</span></span>
+            <button onclick="buyMod('v')" class="fun font-bold text-white py-2 px-4 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#10b981;box-shadow:2px 2px 0 #111827"><i class="fa-solid fa-plus"></i> Robar</button>
+          </div>
+          <div id="mod-v-area" class="max-w-[220px] mx-auto"></div>
+        </div>
+        <!-- desventaja -->
+        <div class="rounded-2xl border-2 border-red-300 p-3" style="background:#fef2f2">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <span class="fun font-bold text-red-700 text-sm"><i class="fa-solid fa-hand-fist mr-1"></i> Desventaja <span class="text-red-600 font-semibold">(paga el retador)</span></span>
+            <button onclick="buyMod('c')" class="fun font-bold text-white py-2 px-4 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#ef4444;box-shadow:2px 2px 0 #111827"><i class="fa-solid fa-plus"></i> Robar</button>
+          </div>
+          <div id="mod-c-area" class="max-w-[220px] mx-auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- fin de turno -->
+    <div id="endturn-area" class="text-center mt-6">
+      <button onclick="endTurn()" class="fun font-bold text-gray-900 py-3 px-8 rounded-full border-2 border-gray-900 inline-flex items-center gap-2" style="background:#fde68a;box-shadow:4px 4px 0 #111827"><i class="fa-solid fa-forward"></i> Terminar turno</button>
+    </div>
+  </section>
+
+  <!-- ===== VICTORIA / FIN ===== -->
+  <section id="screen-win" class="hidden text-center py-10">
+    <div class="pop bg-white max-w-lg mx-auto p-10" style="box-shadow:8px 8px 0 #111827">
+      <div class="text-7xl mb-3" style="color:#fbbf24"><i class="fa-solid fa-trophy"></i></div>
+      <h2 class="fun font-bold text-gray-900 mb-2" style="font-size:34px"><span id="win-name">Jugador</span> gana!</h2>
+      <p class="text-gray-600 font-semibold mb-6"><span id="win-sub">Llego a la meta.</span></p>
+      <div id="ranking" class="text-left mb-6"></div>
+      <button onclick="location.reload()" class="fun text-white font-bold text-lg py-3 px-8 rounded-full border-2 border-gray-900 inline-flex items-center gap-2" style="background:#8b5cf6;box-shadow:4px 4px 0 #111827"><i class="fa-solid fa-rotate-right"></i> Jugar otra vez</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== MODAL DE REGLAS (repaso rapido) ===== -->
+<div id="rules-modal" class="hidden fixed inset-0 z-[100000] flex items-center justify-center p-4" style="background:rgba(17,24,39,.6)" onclick="if(event.target===this)closeRules()" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+  <div class="pop bg-white w-full max-w-lg max-h-[88vh] overflow-y-auto" style="box-shadow:10px 10px 0 #111827">
+    <div class="dots p-4 text-white flex items-center justify-between sticky top-0" style="background:linear-gradient(150deg,#7c3aed,#312e81)">
+      <h2 id="rules-title" class="fun text-xl font-bold flex items-center gap-2"><i class="fa-solid fa-book-open"></i> Reglas rapidas</h2>
+      <button onclick="closeRules()" aria-label="Cerrar" class="w-9 h-9 rounded-full border-2 border-gray-900 flex items-center justify-center" style="background:#fbbf24;color:#111827;box-shadow:2px 2px 0 #111827"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-5 space-y-4 text-sm text-gray-700">
+      <div>
+        <h3 class="fun font-bold text-gray-900 mb-1"><i class="fa-solid fa-trophy mr-1" style="color:#f59e0b"></i> Objetivo</h3>
+        <p>Inicias con <b>5 puntos</b>. Gana el primero en llegar a <b>30</b> aguantando ejercicios el tiempo exigido.</p>
+      </div>
+      <div>
+        <h3 class="fun font-bold text-gray-900 mb-1"><i class="fa-solid fa-shoe-prints mr-1" style="color:#8b5cf6"></i> Flujo del turno</h3>
+        <p>1) Elige el <b>modo</b>. 2) Elige el <b>color</b> (carta al azar). 3) Toca el <b>ejercicio</b>. 4) Elige la <b>moneda</b> (define puntos y tiempo). 5) Corre el reloj.</p>
+      </div>
+      <div>
+        <h3 class="fun font-bold text-gray-900 mb-2"><i class="fa-solid fa-stopwatch mr-1" style="color:#ef4444"></i> La moneda = puntos y tiempo</h3>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="pop p-2 flex items-center justify-between" style="background:#fff7fb;box-shadow:2px 2px 0 #111827"><span class="font-bold">1 punto</span><span class="font-bold" style="color:#ef4444">1:00</span></div>
+          <div class="pop p-2 flex items-center justify-between" style="background:#fff7fb;box-shadow:2px 2px 0 #111827"><span class="font-bold">2 puntos</span><span class="font-bold" style="color:#d97706">1:30</span></div>
+          <div class="pop p-2 flex items-center justify-between" style="background:#fff7fb;box-shadow:2px 2px 0 #111827"><span class="font-bold">3 puntos</span><span class="font-bold" style="color:#16a34a">2:00</span></div>
+          <div class="pop p-2 flex items-center justify-between" style="background:#1f2937;color:#fff;box-shadow:2px 2px 0 #111827"><span class="font-bold"><i class="fa-solid fa-khanda mr-1" style="color:#fbbf24"></i>Espartano</span><span class="font-bold" style="color:#fbbf24">1:00</span></div>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Espartano: <b>+1 del banco</b>, sin riesgo (si fallas, sin penalizacion).</p>
+      </div>
+      <div>
+        <h3 class="fun font-bold text-gray-900 mb-1"><i class="fa-solid fa-gamepad mr-1" style="color:#10b981"></i> Modos</h3>
+        <ul class="list-disc pl-5 space-y-1">
+          <li><b>Individual:</b> tu vs el banco. Si completas, el banco te paga la apuesta.</li>
+          <li><b>Reto:</b> retas a un rival (el retado ejecuta). El perdedor paga al ganador.</li>
+          <li><b>Competencia:</b> cara a cara; el perdedor paga al ganador.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="fun font-bold text-gray-900 mb-1"><i class="fa-solid fa-store mr-1" style="color:#ec4899"></i> Mercado</h3>
+        <p><b>Ventaja</b> la paga el retado; <b>Desventaja</b> la paga el retador. Adapta el ejercicio a tu nivel, pero respeta el mismo tiempo.</p>
+      </div>
+    </div>
+    <div class="p-4 pt-0">
+      <button onclick="closeRules()" class="fun font-bold text-white w-full py-2.5 rounded-full border-2 border-gray-900" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-check mr-1"></i> Entendido, a sudar</button>
+    </div>
+  </div>
+</div>
+
+<footer class="border-t-2 border-gray-900 py-6 text-center text-sm text-gray-500 font-semibold">
+  Fit Match 2026 · Hecho para sudar y reir
+</footer>
+
+<script src="fm-deck.js"></script>
+<script src="fm-fichas.js"></script>
+<script>
+/* ============ CONFIG ============ */
+const MAX_PLAYERS = 6;
+const GOAL = 30;
+const START_PTS = 5;
+// La MONEDA define puntos Y tiempo: 1pt=1:00, 2pt=1:30, 3pt=2:00.
+const BET_OPTS = [
+  { pts:1, sec:60,  coin:'bronze' },
+  { pts:2, sec:90,  coin:'silver' },
+  { pts:3, sec:120, coin:'gold'   },
+];
+const ESPARTANO_SEC = 60; // Espartano: 1:00, +1 punto bonus del banco
+// apuesta (puntos) -> moneda
+const BET_COIN = { 1:'bronze', 2:'silver', 3:'gold' };
+
+/* ============ MAZO COMPRIMIDO (24) ============ */
+// 24 cartas en bolsas POR COLOR (6 por grupo). Eliges color -> carta al azar de ese color.
+function buildDeckByGroup(){
+  const byGroup={};
+  FMDeck.GROUPS.forEach(g=>{
+    const d = FMDeck.makeGroupDealers(g);
+    const cards=[];
+    for(let i=1;i<=6;i++){
+      cards.push({ group:g, idx:i, ex:{
+        basico:[d.basico(),d.basico()], inter:[d.inter(),d.inter()],
+        avanzado:[d.avanzado(),d.avanzado()], espartano:d.espartano(),
+      }});
+    }
+    byGroup[g.key]=makeBag(cards);
+  });
+  return byGroup;
+}
+function makeBag(arr){ let bag=[]; return ()=>{ if(!bag.length) bag=FMDeck.shuffle(arr); return bag.pop(); }; }
+
+function exRowHTML(g, level, name){
+  const safe = name.replace(/'/g, "\\'");
+  return `<button type="button" class="exsel w-full text-left px-2 py-1.5 text-[11px] font-bold leading-tight"
+      style="border:2px solid #111827;border-radius:9px;background:#fff;color:#1f2937;--c1:${g.c};--c2:${g.c2}"
+      onclick="selectExercise(this,'${level}','${safe}')">${name}</button>`;
+}
+function renderGameCard(card){
+  const g=card.group;
+  const lv = [['basico','Básico','#16a34a'],['inter','Intermedio','#d97706'],['avanzado','Avanzado','#dc2626']];
+  const blocks = lv.map(([id,label,dot])=>{
+    const rows = card.ex[id].map(nm=>exRowHTML(g,id,nm)).join('');
+    return `<div>
+      <div class="flex items-center justify-between mb-1">
+        <span class="fun text-[12px] font-bold text-gray-900 flex items-center"><i class="fa-solid fa-circle text-[8px] mr-1" style="color:${dot}"></i>${label}</span>
+        <span class="text-[10px] font-bold text-gray-400">toca uno</span>
+      </div>
+      <div class="space-y-1">${rows}</div>
+    </div>`;
+  }).join('');
+  const esp = card.ex.espartano.replace(/'/g, "\\'");
+  return `<div class="pop flex flex-col bg-white deal-in">
+    <div class="dots p-4 text-white" style="background:linear-gradient(150deg,${g.c},${g.c2})">
+      <div class="flex items-start justify-between">
+        <div class="w-14 h-14 icon-bubble flex items-center justify-center text-2xl" style="background:#fff;color:${g.c2}"><i class="fa-solid ${g.icon}"></i></div>
+        <span class="cost-badge fun text-[11px] font-bold px-2.5 py-1">#${card.idx}</span>
+      </div>
+      <h3 class="fun text-xl font-bold mt-3 leading-none drop-shadow">${g.name}</h3>
+      <p class="font-bold text-white/90 text-[12px] italic">"${g.tag}"</p>
+    </div>
+    <div class="p-3 space-y-2.5 flex-grow" style="background:#fff7fb">${blocks}</div>
+    <button type="button" class="exsel ribbon m-3 mt-0 px-2.5 py-2 flex items-center gap-2 text-left" style="background:#1f2937;width:calc(100% - 1.5rem);--c1:${g.c};--c2:${g.c2}"
+      onclick="selectExercise(this,'espartano','${esp}')">
+      <i class="fa-solid fa-khanda text-lg" style="color:#fbbf24"></i>
+      <div class="leading-tight">
+        <span class="block text-[9px] font-bold uppercase text-amber-300">Espartano (+1 bonus)</span>
+        <span class="block text-[11px] font-bold text-white">${card.ex.espartano}</span>
+      </div>
+    </button>
+  </div>`;
+}
+
+/* ============ ESTADO ============ */
+const G = { players:[], turn:0, bank:0, deckByGroup:null, modV:null, modC:null, training:false,
+            mode:null, retadorIdx:0, retadoIdx:0, card:null, exercise:null, exLevel:null,
+            bet:0, sec:0, bonus:false, resolved:false };
+
+/* ============ TIMER ============ */
+const T = FM.createTimer({
+  hg: document.getElementById('hourglass'),
+  display: document.getElementById('hg-display'),
+  stage: document.getElementById('hg-stage'),
+  onFinish: ()=>{ setTimeout(showResult, 2300); },
+});
+
+/* ============ SETUP ============ */
+let chosenN = 2;
+function renderPlayerPick(){
+  let h='';
+  for(let n=2;n<=MAX_PLAYERS;n++) h+=`<button onclick="pickN(${n})" id="np-${n}" class="np fun font-bold text-gray-900 py-3 rounded-xl border-2 border-gray-900" style="background:#fff;box-shadow:3px 3px 0 #111827">${n}</button>`;
+  document.getElementById('player-pick').innerHTML=h; pickN(2);
+}
+function pickN(n){
+  chosenN=n;
+  document.querySelectorAll('.np').forEach(b=>{ b.style.background='#fff'; b.style.color='#111827'; });
+  const b=document.getElementById('np-'+n); if(b){ b.style.background='#8b5cf6'; b.style.color='#fff'; }
+  const minted=GOAL*n, dist=START_PTS*n, reserve=minted-dist;
+  document.getElementById('bank-preview').innerHTML =
+    `Con <b>${n}</b> jugadores el banco acuna <b>${minted}</b> pts: reparte <b>${dist}</b> (5 c/u) y guarda <b>${reserve}</b> en reserva.`;
+}
+function startGame(){
+  const n=chosenN;
+  G.training=false;
+  G.players=[]; for(let i=0;i<n;i++) G.players.push({name:'Jugador '+(i+1), pts:START_PTS, coins:[]});
+  G.bank = GOAL*n - START_PTS*n;
+  G.deckByGroup = buildDeckByGroup();
+  G.modV = makeBag(FMDeck.VENTAJAS.slice());
+  G.modC = makeBag(FMDeck.CASTIGOS.slice());
+  G.turn = 0;
+  applyModeUI();
+  showScreen('game'); renderTurn();
+}
+
+/* ----- modos de inicio ----- */
+function goSetup(){ showScreen('setup'); }
+function startTraining(){
+  G.training=true;
+  G.players=[{name:'Tu', pts:0, coins:[]}];
+  G.bank=9999; // en entrenamiento no hay penalizacion ni reserva real
+  G.turn=0;
+  if (cloudProfile) {
+    G.players[0].name = cloudProfile.apodo;
+  }
+  applyModeUI();
+  showScreen('routine');
+  filterRoutines('All');
+}
+function applyModeUI(){
+  const t=G.training;
+  document.getElementById('bank-ribbon').classList.toggle('hidden', t);
+  document.getElementById('train-pts').classList.toggle('hidden', !t);
+  document.getElementById('market-section').classList.toggle('hidden', t);
+  document.getElementById('endturn-area').classList.toggle('hidden', t);
+  document.getElementById('scoreboard').classList.toggle('hidden', t);
+  document.getElementById('turn-label').textContent = t ? 'Entrenamiento personal' : 'Turno (retador)';
+  document.getElementById('btn-endmatch').innerHTML = t
+    ? '<i class="fa-solid fa-door-open"></i> Salir'
+    : '<i class="fa-solid fa-flag-checkered"></i> Terminar partida';
+}
+
+/* ============ PANTALLAS ============ */
+function showScreen(s){ ['intro','setup','game','win','routine'].forEach(x=>document.getElementById('screen-'+x).classList.toggle('hidden', x!==s)); }
+function gShow(which){ ['mode','rival','ready','bet','timer','result'].forEach(s=>document.getElementById('g-'+s).classList.toggle('hidden', s!==which)); }
+
+/* ============ TURNO ============ */
+function retador(){ return G.players[G.retadorIdx]; }
+function retado(){ return G.players[G.retadoIdx]; }
+
+function renderTurn(){
+  G.retadorIdx = G.turn;
+  document.getElementById('turn-name').textContent = retador().name;
+  document.getElementById('bank-val').textContent = G.bank;
+  // reset turno
+  G.mode=null; G.retadoIdx=G.turn; G.card=null; G.exercise=null; G.exLevel=null; G.bet=0; G.sec=0; G.bonus=false; G.resolved=false;
+  document.getElementById('card-label').textContent = 'Elige el modo del turno';
+  document.getElementById('spotlight').innerHTML =
+    '<div class="pop card-back flex flex-col items-center justify-center text-white wobble"><i class="fa-solid fa-question text-7xl drop-shadow"></i><p class="fun font-bold mt-3 text-lg drop-shadow">FIT MATCH</p></div>';
+  document.getElementById('mod-v-area').innerHTML='';
+  document.getElementById('mod-c-area').innerHTML='';
+  document.getElementById('color-picker').classList.add('hidden');
+  document.getElementById('ex-video').classList.add('hidden');
+  if(G.training){
+    document.getElementById('train-pts-val').textContent = G.players[0].pts;
+    document.getElementById('card-label').textContent = 'Entrenamiento personal - elige y suda';
+    G.mode='ind'; G.retadoIdx=0;
+    showColorPicker();
+    return;
+  }
+  document.getElementById('card-label').textContent = 'Elige el modo del turno';
+  renderScoreboard();
+  gShow('mode');
+}
+
+function renderScoreboard(){
+  document.getElementById('scoreboard').innerHTML = G.players.map((p,i)=>{
+    const role = (i===G.retadorIdx) ? 'retador' : (G.mode!=='ind' && i===G.retadoIdx ? 'retado' : '');
+    const tag = role==='retador' ? '<span class="text-[9px] font-bold uppercase" style="color:#8b5cf6">Retador</span>'
+              : role==='retado'  ? '<span class="text-[9px] font-bold uppercase" style="color:#ef4444">Retado</span>' : '';
+    const coins = p.coins.length ? p.coins.slice(-6).map(c=>FM.miniCoin(c,24)).join('') : '<span class="text-gray-300 text-xs font-bold">—</span>';
+    return `<div class="pcard pop bg-white p-3 ${role}" style="box-shadow:4px 4px 0 #111827">
+      <div class="flex items-center justify-between mb-1">
+        <span class="fun font-bold text-gray-900 text-sm">${p.name}</span>
+        <span class="fun font-bold" style="font-size:22px;color:#8b5cf6">${p.pts}</span>
+      </div>
+      <div class="mb-1" style="min-height:12px">${tag}</div>
+      <div class="flex items-center gap-1 flex-wrap" style="min-height:24px">${coins}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ----- modo ----- */
+function setMode(m){
+  G.mode=m;
+  if(m==='ind'){
+    G.retadoIdx=G.turn;
+    document.getElementById('card-label').textContent='Modo Individual · tu vs el banco';
+    renderScoreboard(); showColorPicker();
+  } else {
+    // elegir rival
+    const cont=document.getElementById('rival-btns');
+    cont.innerHTML = G.players.map((p,i)=> i===G.turn ? '' :
+      `<button onclick="setRival(${i})" class="fun font-bold text-gray-900 py-2.5 px-4 rounded-xl border-2 border-gray-900" style="background:#fff;box-shadow:3px 3px 0 #111827">${p.name} <span class="text-gray-400 text-sm">(${p.pts} pts)</span></button>`
+    ).join('');
+    gShow('rival');
+  }
+}
+function setRival(i){
+  G.retadoIdx=i;
+  const m = G.mode==='reto' ? 'Reto' : 'Competencia';
+  document.getElementById('card-label').innerHTML=`${m} · <b style="color:#8b5cf6">${retador().name}</b> vs <b style="color:#ef4444">${retado().name}</b>`;
+  renderScoreboard(); showColorPicker();
+}
+
+/* ----- carta: elige color, carta al azar de ese color ----- */
+function showColorPicker(){
+  document.getElementById('color-tiles').innerHTML = FMDeck.GROUPS.map(g=>`
+    <button onclick="drawColor('${g.key}')" class="pop dots p-3 text-white flex flex-col items-center justify-center" style="background:linear-gradient(150deg,${g.c},${g.c2});min-height:92px;box-shadow:4px 4px 0 #111827">
+      <i class="fa-solid ${g.icon} text-2xl mb-1 drop-shadow"></i>
+      <span class="fun font-bold text-[12px] leading-tight drop-shadow">${g.name}</span>
+    </button>`).join('');
+  document.getElementById('color-picker').classList.remove('hidden');
+  document.getElementById('ready-text').textContent='Elige el color de tu carta (panel izquierdo).';
+  gShow('ready');
+}
+function drawColor(key){
+  if(!G.mode) return;
+  G.card = G.deckByGroup[key]();
+  document.getElementById('spotlight').innerHTML = renderGameCard(G.card);
+  document.getElementById('color-picker').classList.add('hidden');
+  document.getElementById('ex-video').classList.add('hidden');
+  G.exercise=null; G.exLevel=null;
+  document.getElementById('ready-text').innerHTML = 'Toca un <b>ejercicio</b> en la carta para seleccionarlo.';
+  gShow('ready');
+}
+
+// quien ejecuta el ejercicio
+function performer(){ return G.mode==='ind' ? retador() : retado(); }
+
+// el jugador toca un ejercicio en la carta
+function selectExercise(btn, level, name){
+  document.querySelectorAll('#spotlight .exsel.selected').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  G.exLevel = level; G.exercise = name;
+  renderExVideo(name);
+  showBet();
+}
+
+// liga el ejercicio con su video de YouTube + QR (misma formula que ejercicios.html)
+function videoUrl(name){
+  return 'https://www.youtube.com/results?search_query=' + encodeURIComponent('como hacer ' + name + ' ejercicio tecnica');
+}
+function renderExVideo(name){
+  const url=videoUrl(name);
+  const box=document.getElementById('ex-video');
+  box.innerHTML = `<div class="pop bg-white p-3 flex items-center gap-3" style="box-shadow:4px 4px 0 #111827">
+    <a id="ex-qr" href="${url}" target="_blank" rel="noopener" class="shrink-0 bg-white p-1 rounded-md border-2 border-gray-900" title="Escanea para ver el video"></a>
+    <div class="text-left leading-tight">
+      <p class="fun font-bold text-gray-900 text-[12px]">${name}</p>
+      <a href="${url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[12px] font-bold mt-1" style="color:#ef4444"><i class="fa-brands fa-youtube"></i> Ver video</a>
+      <p class="text-gray-400 text-[10px] font-semibold mt-0.5">o escanea el QR</p>
+    </div>
+  </div>`;
+  box.classList.remove('hidden');
+  const qr=document.getElementById('ex-qr'); qr.innerHTML='';
+  try{ new QRCode(qr,{text:url,width:64,height:64,correctLevel:QRCode.CorrectLevel.M}); }catch(e){}
+}
+
+/* ----- moneda = puntos + tiempo (1pt=1:00, 2pt=1:30, 3pt=2:00) ----- */
+function maxBet(){
+  if(G.mode==='ind') return Math.min(3, Math.max(1, G.bank));
+  return Math.min(3, retador().pts, retado().pts);
+}
+function showBet(){
+  const cont=document.getElementById('bet-btns');
+  if(G.exLevel==='espartano'){
+    document.getElementById('bet-hint').innerHTML = 'Espartano: 1:00 - si lo logras, +1 del banco (sin riesgo)';
+    cont.className='grid grid-cols-1 gap-2.5';
+    cont.innerHTML = `<button onclick="chooseEspartano()" class="fun font-bold text-white py-3 rounded-xl border-2 border-gray-900 flex items-center justify-center gap-2" style="background:#1f2937;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-khanda" style="color:#fbbf24"></i> Aceptar Espartano (1:00 - +1)</button>`;
+    gShow('bet'); return;
+  }
+  const mx=maxBet();
+  document.getElementById('bet-hint').innerHTML = G.mode==='ind'
+    ? 'La moneda define puntos y tiempo. Si completas, el banco paga.'
+    : `La moneda define puntos y tiempo (max ${mx} segun puntos).`;
+  cont.className='grid grid-cols-3 gap-2.5';
+  cont.innerHTML = BET_OPTS.map(o=>{
+    const dis = o.pts>mx;
+    return `<button ${dis?'disabled':''} onclick="chooseBet(${o.pts})" class="fun font-bold py-3 rounded-xl border-2 border-gray-900 flex flex-col items-center" style="background:${dis?'#e5e7eb':'#fff'};color:#111827;box-shadow:3px 3px 0 #111827;opacity:${dis?'.5':'1'}">
+      ${FM.miniCoin(o.coin,40)}<span class="text-[12px] mt-1">${o.pts} pt${o.pts>1?'s':''}</span><span class="text-[11px] text-gray-500">${FM.fmt(o.sec)}</span></button>`;
+  }).join('');
+  gShow('bet');
+}
+function startTimerFor(label){
+  document.getElementById('challenge').innerHTML = `<i class="fa-solid fa-bolt mr-1"></i>${label}`;
+  T.set(G.sec); gShow('timer'); T.start();
+}
+function chooseBet(pts){
+  const o=BET_OPTS.find(x=>x.pts===pts); if(!o) return;
+  if(o.pts>maxBet()) return;
+  G.bet=o.pts; G.sec=o.sec; G.bonus=false;
+  const who = performer().name;
+  startTimerFor(`${who}: ${G.exercise} - ${FM.fmt(G.sec)} - ${G.bet} pt${G.bet>1?'s':''}`);
+}
+function chooseEspartano(){
+  G.bet=1; G.sec=ESPARTANO_SEC; G.bonus=true;
+  const who = performer().name;
+  startTimerFor(`${who}: ESPARTANO ${G.exercise} - ${FM.fmt(G.sec)} - +1 bonus`);
+}
+
+/* ----- resultado ----- */
+function showResult(){
+  const coin = FM.miniCoin(G.bonus ? 'bronze' : (BET_COIN[G.bet]||'bronze'), 92);
+  document.getElementById('result-coin').innerHTML = coin;
+  const rt=document.getElementById('result-text'), rb=document.getElementById('result-btns');
+  if(G.bonus){
+    rt.innerHTML = `<b style="color:#fbbf24">${performer().name}</b> intento el ESPARTANO <b>${G.exercise}</b>.<br>Lo logro? (+1 del banco, sin riesgo)`;
+    rb.innerHTML = `
+      <button onclick="resolveEspartano(true)"  class="fun font-bold text-white py-2.5 px-6 rounded-full border-2 border-gray-900" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-check"></i> Si</button>
+      <button onclick="resolveEspartano(false)" class="fun font-bold text-gray-900 py-2.5 px-6 rounded-full border-2 border-gray-900" style="background:#fff;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-xmark"></i> No</button>`;
+    gShow('result'); return;
+  }
+  if(G.mode==='ind'){
+    rt.innerHTML = G.training
+      ? `Terminaste <b>${G.exercise}</b>?<br>Si lo lograste sumas <b>${G.bet}</b> punto${G.bet>1?'s':''}.`
+      : `Termino <b>${G.exercise}</b>.<br>Completaste? Ganas <b>${G.bet}</b> del banco.`;
+    rb.innerHTML = `
+      <button onclick="resolveInd(true)"  class="fun font-bold text-white py-2.5 px-6 rounded-full border-2 border-gray-900" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-check"></i> Lo logre</button>
+      <button onclick="resolveInd(false)" class="fun font-bold text-gray-900 py-2.5 px-6 rounded-full border-2 border-gray-900" style="background:#fff;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-xmark"></i> No pude</button>`;
+  } else if(G.mode==='reto'){
+    rt.innerHTML = `<b style="color:#ef4444">${retado().name}</b> intento <b>${G.exercise}</b>.<br>Lo logro? (apuesta ${G.bet})`;
+    rb.innerHTML = `
+      <button onclick="resolveReto(true)"  class="fun font-bold text-white py-2.5 px-6 rounded-full border-2 border-gray-900" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-check"></i> Si, gano el retado</button>
+      <button onclick="resolveReto(false)" class="fun font-bold text-gray-900 py-2.5 px-6 rounded-full border-2 border-gray-900" style="background:#fff;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-xmark"></i> No, gano el retador</button>`;
+  } else { // comp
+    rt.innerHTML = `Competencia: <b>${G.exercise}</b>.<br>Quien gano? (apuesta ${G.bet})`;
+    rb.innerHTML = `
+      <button onclick="resolveComp('retador')" class="fun font-bold text-white py-2.5 px-5 rounded-full border-2 border-gray-900" style="background:#8b5cf6;box-shadow:3px 3px 0 #111827">${retador().name}</button>
+      <button onclick="resolveComp('retado')"  class="fun font-bold text-white py-2.5 px-5 rounded-full border-2 border-gray-900" style="background:#ef4444;box-shadow:3px 3px 0 #111827">${retado().name}</button>`;
+  }
+  gShow('result');
+}
+
+function transfer(winner, loser, amount){
+  const pay = Math.min(amount, loser.pts);
+  winner.pts += pay; loser.pts -= pay; winner.coins.push(BET_COIN[amount]||'bronze');
+}
+
+function resolveInd(ok){
+  let pay=0;
+  if(ok){ pay=Math.min(G.bet, G.bank); retador().pts+=pay; G.bank-=pay; retador().coins.push(BET_COIN[G.bet]||'bronze'); }
+  finishResolve(ok ? `${retador().name} gano ${pay} del banco.` : 'Sin puntos esta vez.');
+  // Sincronizar en la nube
+  syncWorkoutToCloud(ok, G.bet, G.exLevel, G.exercise);
+}
+function resolveReto(retadoGano){
+  if(retadoGano) transfer(retado(), retador(), G.bet);
+  else transfer(retador(), retado(), G.bet);
+  finishResolve(retadoGano ? `${retado().name} vencio el reto.` : `${retador().name} se quedo la apuesta.`);
+  // Sincronizar en la nube si participa el atleta logueado
+  if (cloudProfile && retado().name === cloudProfile.apodo) {
+    syncWorkoutToCloud(retadoGano, G.bet, G.exLevel, G.exercise);
+  }
+}
+function resolveComp(winner){
+  const won = winner==='retador' ? retador() : retado();
+  const lost = winner==='retador' ? retado() : retador();
+  transfer(won, lost, G.bet);
+  finishResolve(`Gano ${won.name}.`);
+  // Sincronizar en la nube si participa el atleta logueado
+  if (cloudProfile) {
+    if (retador().name === cloudProfile.apodo) {
+      syncWorkoutToCloud(winner === 'retador', G.bet, G.exLevel, G.exercise);
+    } else if (retado().name === cloudProfile.apodo) {
+      syncWorkoutToCloud(winner === 'retado', G.bet, G.exLevel, G.exercise);
+    }
+  }
+}
+function resolveEspartano(ok){
+  let pay=0;
+  if(ok){ pay=Math.min(1, G.bank); performer().pts+=pay; G.bank-=pay; performer().coins.push('bronze'); }
+  finishResolve(ok ? `${performer().name} gano +${pay} (bonus Espartano).` : 'Espartano fallido, sin penalizacion.');
+  // Sincronizar en la nube
+  syncWorkoutToCloud(ok, 1, 'espartano', G.exercise);
+}
+function finishResolve(msg){
+  G.resolved=true;
+  if(G.training){
+    document.getElementById('train-pts-val').textContent = G.players[0].pts;
+    if(G.players[0].pts>=GOAL) return win(G.players[0], 'Entrenamiento completado: '+G.players[0].pts+' puntos. A presumir!');
+    gShow('ready');
+    document.getElementById('ready-text').innerHTML = msg+'<br><button onclick="renderTurn()" class="fun font-bold text-white py-2 px-5 rounded-full border-2 border-gray-900 mt-3 inline-flex items-center gap-2" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-forward"></i> Siguiente ejercicio</button>';
+    return;
+  }
+  document.getElementById('bank-val').textContent=G.bank;
+  renderScoreboard();
+  const w = G.players.find(p=>p.pts>=GOAL);
+  if(w){ return win(w, 'Llego a '+w.pts+' puntos. Espartano de verdad!'); }
+  gShow('ready');
+  document.getElementById('ready-text').innerHTML = msg+'<br>Compra en el mercado o termina el turno.';
+}
+
+/* ----- mercado ----- */
+function buyMod(kind){
+  if(!G.mode){ flash('Primero elige el modo del turno.'); return; }
+  if(G.exercise && !G.resolved){ flash('Resuelve el reto antes de comprar.'); return; }
+  // quien paga: ventaja -> retado | desventaja -> retador
+  const payer = kind==='v' ? retado() : retador();
+  if(payer.pts < 1){ flash(`${payer.name} no tiene puntos para pagar.`); return; }
+  payer.pts -= 1; G.bank += 1;
+  const item = kind==='v' ? G.modV() : G.modC();
+  document.getElementById(kind==='v'?'mod-v-area':'mod-c-area').innerHTML = FMDeck.modCard(item, kind);
+  document.getElementById('bank-val').textContent=G.bank;
+  renderScoreboard();
+}
+
+/* ----- fin ----- */
+function endTurn(){ G.turn=(G.turn+1)%G.players.length; renderTurn(); }
+function win(p, sub){
+  document.getElementById('win-name').textContent=p.name;
+  document.getElementById('win-sub').textContent=sub||'';
+  document.getElementById('ranking').innerHTML = rankingHTML();
+  showScreen('win');
+}
+function endMatch(){
+  if(G.training){ G.training=false; showScreen('intro'); return; }
+  const lead=[...G.players].sort((a,b)=>b.pts-a.pts)[0];
+  win(lead, 'Partida terminada. Lider con '+lead.pts+' puntos.');
+}
+function rankingHTML(){
+  const sorted=[...G.players].sort((a,b)=>b.pts-a.pts);
+  return '<div class="space-y-2">'+sorted.map((p,i)=>`
+    <div class="flex items-center justify-between ribbon px-3 py-2 ${i===0?'':'opacity-80'}" style="background:${i===0?'#fde68a':'#fff'}">
+      <span class="fun font-bold text-gray-900">${i+1}. ${p.name}</span>
+      <span class="fun font-bold" style="color:#8b5cf6">${p.pts} pts</span>
+    </div>`).join('')+'</div>';
+}
+
+function flash(msg){
+  const el=document.getElementById('card-label');
+  const old=el.innerHTML; el.innerHTML=`<span style="color:#dc2626">${msg}</span>`;
+  setTimeout(()=>{ el.innerHTML=old; }, 1800);
+}
+
+/* ============ MODAL DE REGLAS ============ */
+function openRules(){ document.getElementById('rules-modal').classList.remove('hidden'); }
+function closeRules(){ document.getElementById('rules-modal').classList.add('hidden'); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeRules(); });
+
+/* ==================== INIT ==================== */
+renderPlayerPick();
+document.getElementById('btn-start').onclick = startGame;
+
+/* ==================== INIT ==================== */
+renderPlayerPick();
+document.getElementById('btn-start').onclick = startGame;
+
+/* ============= LÓGICA SOCIAL Y CHAT LATERAL EN JUGAR ============= */
+let sideActiveTab = 'chat';
+let sideChatSubscription = null;
+let sidePresenceChannel = null;
+let currentOnlineUsers = {};
+
+function toggleSocialSidebar() {
+  const sidebar = document.getElementById('social-sidebar');
+  sidebar.classList.toggle('open');
+  if (sidebar.classList.contains('open')) {
+    loadSideChat();
+    initPresenceTracker();
+    loadSideGuild();
+    loadMailboxAndSchedules();
+  }
+}
+
+function switchSidebarTab(tab) {
+  sideActiveTab = tab;
+  
+  const tabs = ['chat', 'online', 'guild'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`side-tab-${t}`);
+    const content = document.getElementById(`side-content-${t}`);
+    if (t === tab) {
+      btn.className = "flex-1 py-2 text-center rounded-lg bg-purple-600 text-white transition";
+      content.classList.remove('hidden');
+    } else {
+      btn.className = "flex-1 py-2 text-center rounded-lg hover:text-white transition";
+      content.classList.add('hidden');
+    }
+  });
+}
+
+async function loadSideChat() {
+  const cont = document.getElementById('side-chat-messages');
+  const input = document.getElementById('side-chat-input');
+  const btn = document.getElementById('side-chat-send-btn');
+  const supabase = window.FMAuth.getClient();
+  if (!supabase) return;
+
+  // Habilitar controles si está logueado
+  if (cloudUser) {
+    input.disabled = false;
+    btn.disabled = false;
+    input.placeholder = " Escribe un mensaje...";
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(35);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      cont.innerHTML = `<div class="text-center text-gray-500 py-12">¡Envía el primer mensaje!</div>`;
+    } else {
+      cont.innerHTML = data.reverse().map(msg => `
+        <div class="text-left border-l-2 ${cloudProfile && msg.user_id === cloudProfile.id ? 'border-purple-500' : 'border-gray-800'} pl-2 py-0.5">
+          <span class="font-bold text-yellow-500 text-[10px]">${msg.apodo}</span>
+          <p class="text-gray-300 text-[11px]">${msg.text}</p>
+        </div>
+      `).join('');
+      cont.scrollTop = cont.scrollHeight;
+    }
+
+    // Suscribirse a mensajes nuevos
+    if (sideChatSubscription) supabase.removeChannel(sideChatSubscription);
+    sideChatSubscription = supabase
+      .channel('side:messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+        const m = payload.new;
+        if (cont.querySelector('.fa-comments') || cont.innerHTML.includes('Cargando')) cont.innerHTML = '';
+        cont.innerHTML += `
+          <div class="text-left border-l-2 ${cloudProfile && m.user_id === cloudProfile.id ? 'border-purple-500' : 'border-gray-800'} pl-2 py-0.5">
+            <span class="font-bold text-yellow-500 text-[10px]">${m.apodo}</span>
+            <p class="text-gray-300 text-[11px]">${m.text}</p>
+          </div>
+        `;
+        cont.scrollTop = cont.scrollHeight;
+      })
+      .subscribe();
+
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function sendSideChatMessage() {
+  const input = document.getElementById('side-chat-input');
+  const txt = input.value.trim();
+  if (!txt || !cloudProfile) return;
+  input.value = '';
+
+  try {
+    const supabase = window.FMAuth.getClient();
+    await supabase.from('messages').insert({
+      user_id: cloudUser.id,
+      apodo: cloudProfile.apodo,
+      text: txt
+    });
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+/* ============ PRESENCE (SISTEMA ONLINE / OFFLINE) ============ */
+async function initPresenceTracker() {
+  if (!cloudProfile) return;
+  const supabase = window.FMAuth.getClient();
+  if (!supabase) return;
+
+  if (sidePresenceChannel) return;
+
+  sidePresenceChannel = supabase.channel('online-lobby', {
+    config: {
+      presence: { key: cloudProfile.apodo }
+    }
+  });
+
+  sidePresenceChannel
+    .on('presence', { event: 'sync' }, () => {
+      currentOnlineUsers = sidePresenceChannel.presenceState();
+      renderOnlineList();
+    })
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await sidePresenceChannel.track({
+          id: cloudUser.id,
+          apodo: cloudProfile.apodo,
+          points: cloudTotalPoints,
+          online_at: new Date().toISOString()
+        });
+      }
+    });
+
+  // Oír invitaciones de entrenamiento instantáneas (Broadcast)
+  supabase.channel('invites').on('broadcast', { event: 'workout-invite' }, payload => {
+    if (cloudProfile && payload.payload.target === cloudProfile.apodo) {
+      showIncomingInvite(payload.payload);
+    }
+  }).subscribe();
+}
+
+async function renderOnlineList() {
+  const onlineCont = document.getElementById('side-online-list');
+  const countSpan = document.getElementById('online-count');
+  const supabase = window.FMAuth.getClient();
+  if (!supabase) return;
+  
+  const keys = Object.keys(currentOnlineUsers);
+  countSpan.textContent = keys.length;
+
+  // Renderizar la lista de atletas conectados
+  if (keys.length <= 1) {
+    onlineCont.innerHTML = `<p class="text-gray-500 text-center py-4">No hay otros atletas online actualmente.</p>`;
+  } else {
+    onlineCont.innerHTML = keys.map(k => {
+      if (cloudProfile && k === cloudProfile.apodo) return '';
+      const state = currentOnlineUsers[k][0];
+      const rank = getMilitaryRank(state.points || 0);
+
+      return `
+        <div class="flex justify-between items-center bg-gray-900 border border-gray-800 rounded-xl p-3">
+          <div class="text-left">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <span class="font-bold text-white text-xs">${state.apodo}</span>
+            </div>
+            <span class="text-[9px] text-gray-500 uppercase font-bold">${rank} (${state.points || 0} pts)</span>
+          </div>
+          <button onclick="sendTrainingInvite('${state.apodo}', '${state.id}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-2.5 rounded-lg text-[10px] transition shadow">
+            ¿Entrenamos?
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Cargar Atletas Fuera de Línea (Offline)
+  loadRegisteredOfflineList(keys);
+}
+
+async function loadRegisteredOfflineList(onlineKeys) {
+  const offlineCont = document.getElementById('side-offline-list');
+  const supabase = window.FMAuth.getClient();
+  if (!supabase) return;
+
+  try {
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('id, apodo');
+
+    if (error) throw error;
+
+    if (!profiles || profiles.length === 0) {
+      offlineCont.innerHTML = `<p class="text-gray-500 text-center py-4">No hay otros atletas registrados.</p>`;
+      return;
+    }
+
+    // Filtrar para mostrar solo los que no están online y no somos nosotros
+    const offlineUsers = profiles.filter(p => {
+      let isMe = cloudProfile && p.id === cloudProfile.id;
+      let isOnline = onlineKeys.includes(p.apodo);
+      return !isMe && !isOnline;
+    });
+
+    if (offlineUsers.length === 0) {
+      offlineCont.innerHTML = `<p class="text-gray-500 text-center py-4">Todos los atletas están conectados.</p>`;
+      return;
+    }
+
+    offlineCont.innerHTML = offlineUsers.map(p => {
+      return `
+        <div class="flex justify-between items-center bg-gray-900/60 border border-gray-900 rounded-xl p-3">
+          <div class="text-left">
+            <span class="font-bold text-gray-400 text-xs flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-gray-600"></span> ${p.apodo}</span>
+            <span class="text-[9px] text-gray-500 uppercase font-bold">Desconectado</span>
+          </div>
+          <div class="flex gap-1.5">
+            <button onclick="openAppointmentModal('${p.apodo}', '${p.id}')" class="bg-gray-800 hover:bg-gray-700 text-purple-400 border border-purple-900/40 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow">
+              <i class="fa-solid fa-calendar-days"></i> Cita
+            </button>
+            <button onclick="sendFriendRequest('${p.id}', '${p.apodo}')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow">
+              <i class="fa-solid fa-user-plus"></i> Amigo
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  } catch(e) {
+    console.error("Error al cargar registrados offline:", e);
+    offlineCont.innerHTML = `<p class="text-red-500 text-center py-4">Error al cargar listado.</p>`;
+  }
+}
+
+/* ============ SISTEMA DE CITAS Y SOLICITUDES ============ */
+let activeIncomingInvite = null;
+let currentApptTarget = null;
+
+function openAppointmentModal(targetApodo, targetId) {
+  // Cerrar el sidebar automáticamente para despejar la pantalla en celulares y tablets
+  const sidebar = document.getElementById('social-sidebar');
+  if (sidebar && sidebar.classList.contains('open')) {
+    sidebar.classList.remove('open');
+  }
+
+  currentApptTarget = { id: targetId, apodo: targetApodo };
+  document.getElementById('appt-target-name').textContent = targetApodo;
+  
+  // Rellenar el selector dinámicamente con todas las 72 rutinas de window.FMRoutines
+  const select = document.getElementById('appt-routine-select');
+  if (select) {
+    select.innerHTML = '';
+    
+    // Agrupar y ordenar rutinas por Cultura, luego por Nombre
+    const sortedRoutines = [...(window.FMRoutines || [])].sort((a, b) => {
+      if (a.culture !== b.culture) return a.culture.localeCompare(b.culture);
+      return a.name.localeCompare(b.name);
+    });
+
+    sortedRoutines.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = "[" + r.culture + "] " + r.name + " (" + r.level.toUpperCase() + ")";
+      
+      // Marcar la seleccionada por defecto
+      if (selectedRoutine && selectedRoutine.id === r.id) {
+        opt.selected = true;
+      } else if (!selectedRoutine && r.id === 'zeus') {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    });
+  }
+  
+  document.getElementById('appt-error').classList.add('hidden');
+  document.getElementById('appointment-create-modal').classList.remove('hidden');
+}
+
+function closeAppointmentModal() {
+  document.getElementById('appointment-create-modal').classList.add('hidden');
+  currentApptTarget = null;
+}
+
+async function submitAppointment() {
+  const dtVal = document.getElementById('appt-datetime').value;
+  const errorEl = document.getElementById('appt-error');
+  const btn = document.getElementById('btn-submit-appt');
+  const supabase = window.FMAuth.getClient();
+
+  if (!dtVal) {
+    errorEl.textContent = "Por favor, selecciona una fecha y hora.";
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  errorEl.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Agendando...`;
+
+  try {
+    const select = document.getElementById('appt-routine-select');
+    const routineId = select ? select.value : 'zeus';
+    const rObj = (window.FMRoutines || []).find(x => x.id === routineId);
+    const routineName = rObj ? rObj.name : "Zeus (Rey del Olimpo)";
+
+    const { error } = await supabase.from('appointments').insert({
+      sender_id: cloudUser.id,
+      sender_apodo: cloudProfile.apodo,
+      receiver_id: currentApptTarget.id,
+      receiver_apodo: currentApptTarget.apodo,
+      routine_name: routineName,
+      routine_id: routineId,
+      scheduled_at: new Date(dtVal).toISOString()
+    });
+
+    if (error) throw error;
+
+    alert(`¡Cita agendada con éxito para entrenar con ${currentApptTarget.apodo}!`);
+    closeAppointmentModal();
+    loadMailboxAndSchedules();
+  } catch(e) {
+    console.error(e);
+    errorEl.textContent = "Error al agendar: " + e.message;
+    errorEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<span>Agendar Cita</span> <i class="fa-solid fa-check"></i>`;
+  }
+}
+
+async function loadMailboxAndSchedules() {
+  const mailboxCont = document.getElementById('side-mailbox-container');
+  const mailboxList = document.getElementById('side-mailbox-list');
+  const scheduleCont = document.getElementById('side-schedule-container');
+  const scheduleList = document.getElementById('side-schedule-list');
+  const supabase = window.FMAuth.getClient();
+  if (!supabase || !cloudUser) return;
+
+  try {
+    // 1) CARGAR SOLICITUDES / CITAS RECIBIDAS (PENDIENTES)
+    const { data: pendingAppts } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('receiver_id', cloudUser.id)
+      .eq('status', 'pendiente');
+
+    const { data: pendingFriends } = await supabase
+      .from('friendships')
+      .select('*')
+      .eq('friend_id', cloudUser.id)
+      .eq('status', 'pendiente');
+
+    // Cargar apodos de remitentes de amistad
+    let friendRequestHTML = '';
+    if (pendingFriends && pendingFriends.length > 0) {
+      const { data: senderProfiles } = await supabase
+        .from('profiles')
+        .select('id, apodo')
+        .in('id', pendingFriends.map(f => f.user_id));
+
+      friendRequestHTML = pendingFriends.map(f => {
+        const prof = senderProfiles ? senderProfiles.find(p => p.id === f.user_id) : null;
+        const name = prof ? prof.apodo : 'Atleta';
+        return `
+          <div class="flex justify-between items-center bg-yellow-500/10 border border-yellow-500/40 rounded-xl p-3 text-xs">
+            <div class="text-left font-semibold">
+              <span class="block text-[9px] font-bold text-yellow-500 uppercase tracking-wider mb-0.5">Amistad</span>
+              <span>¡${name} quiere ser tu amigo!</span>
+            </div>
+            <button onclick="acceptFriendship('${f.user_id}')" class="bg-yellow-500 text-gray-950 font-bold px-2 py-1 rounded text-[10px]">Aceptar</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const apptRequestsHTML = pendingAppts ? pendingAppts.map(a => {
+      const dt = new Date(a.scheduled_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+      return `
+        <div class="flex justify-between items-center bg-purple-500/10 border border-purple-500/40 rounded-xl p-3 text-xs">
+          <div class="text-left font-semibold">
+            <span class="block text-[9px] font-bold text-purple-400 uppercase tracking-wider mb-0.5">Cita de Entreno</span>
+            <span>${a.sender_apodo} invita a <b>${a.routine_name}</b> el ${dt}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <button onclick="respondAppointment('${a.id}', 'aceptada')" class="bg-green-600 text-white font-bold px-2 py-0.5 rounded text-[9px]">Aceptar</button>
+            <button onclick="respondAppointment('${a.id}', 'rechazada')" class="bg-gray-800 text-gray-400 font-bold px-2 py-0.5 rounded text-[9px]">Rechazar</button>
+          </div>
+        </div>
+      `;
+    }).join('') : '';
+
+    if (friendRequestHTML || apptRequestsHTML) {
+      mailboxCont.classList.remove('hidden');
+      mailboxList.innerHTML = friendRequestHTML + apptRequestsHTML;
+    } else {
+      mailboxCont.classList.add('hidden');
+    }
+
+    // 2) CARGAR CITAS AGENDADAS CONFIRMADAS (PRÓXIMAS)
+    const { data: acceptedAppts } = await supabase
+      .from('appointments')
+      .select('*')
+      .or(`sender_id.eq.${cloudUser.id},receiver_id.eq.${cloudUser.id}`)
+      .eq('status', 'aceptada');
+
+    if (acceptedAppts && acceptedAppts.length > 0) {
+      scheduleCont.classList.remove('hidden');
+      scheduleList.innerHTML = acceptedAppts.map(a => {
+        const dt = new Date(a.scheduled_at).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+        const partner = a.sender_id === cloudUser.id ? a.receiver_apodo : a.sender_apodo;
+        return `
+          <div class="flex justify-between items-center bg-gray-900 border border-gray-800 rounded-xl p-3 text-xs">
+            <div class="text-left font-semibold space-y-0.5">
+              <span class="block text-[10px] text-white font-bold">${a.routine_name}</span>
+              <span class="block text-[9px] text-gray-500">Con ${partner} - ${dt}</span>
+            </div>
+            <button onclick="launchCoopSession('${a.routine_id}', '${partner}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-2.5 py-1.5 rounded-xl text-[10px] shadow">
+              <i class="fa-solid fa-play"></i> Iniciar
+            </button>
+          </div>
+        `;
+      }).join('');
+    } else {
+      scheduleCont.classList.add('hidden');
+    }
+
+  } catch(e) {
+    console.error("Error al cargar buzón y agenda:", e);
+  }
+}
+
+async function respondAppointment(apptId, status) {
+  const supabase = window.FMAuth.getClient();
+  try {
+    const { error } = await supabase
+      .from('appointments')
+      .update({ status: status })
+      .eq('id', apptId);
+
+    if (error) throw error;
+    alert(`Cita ${status === 'aceptada' ? 'aceptada' : 'rechazada'} con éxito.`);
+    loadMailboxAndSchedules();
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function sendFriendRequest(friendId, friendApodo) {
+  if (!cloudUser) return;
+  const supabase = window.FMAuth.getClient();
+  try {
+    const { error } = await supabase.from('friendships').insert({
+      user_id: cloudUser.id,
+      friend_id: friendId
+    });
+    if (error) throw error;
+    alert(`¡Solicitud de amistad enviada con éxito a ${friendApodo}!`);
+    loadMailboxAndSchedules();
+  } catch(e) {
+    console.error(e);
+    alert("Ya enviaste una solicitud a este atleta.");
+  }
+}
+
+async function acceptFriendship(senderId) {
+  const supabase = window.FMAuth.getClient();
+  try {
+    const { error } = await supabase
+      .from('friendships')
+      .update({ status: 'aceptada' })
+      .eq('user_id', senderId)
+      .eq('friend_id', cloudUser.id);
+
+    if (error) throw error;
+    alert("¡Felicidades! Ahora son Fit Bros oficiales.");
+    loadMailboxAndSchedules();
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+/* ============ COOPERATIVO EN TIEMPO REAL (SINCRONIZADO) ============ */
+let activeCoopChannel = null;
+
+async function launchCoopSession(routineId, partnerApodo) {
+  const supabase = window.FMAuth.getClient();
+  
+  // Detener canal viejo de cooperativo si existe
+  if (activeCoopChannel) {
+    supabase.removeChannel(activeCoopChannel);
+  }
+
+  // Crear una sala de cooperativo única por el nombre de los dos atletas
+  const sortedNames = [cloudProfile.apodo, partnerApodo].sort();
+  const roomId = `coop-${routineId}-${sortedNames[0]}-${sortedNames[1]}`;
+  
+  activeCoopChannel = supabase.channel(roomId);
+  
+  activeCoopChannel
+    .on('broadcast', { event: 'coop-sync-checked' }, payload => {
+      syncCoopChecklistUI(payload.payload.checked);
+    })
+    .on('broadcast', { event: 'coop-sync-next-round' }, payload => {
+      syncCoopNextRoundUI(payload.payload.round);
+    })
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        console.log(`¡Conectado a la sala cooperativa en tiempo real: ${roomId}!`);
+        // Abrir la rutina y entrar de inmediato
+        openRoutineDetail(routineId);
+        setTimeout(() => {
+          startRoutineWorkout();
+        }, 300);
+      }
+    });
+}
+
+function syncCoopChecklistUI(checkedIndices) {
+  const divs = document.querySelectorAll('#active-routine-list > div');
+  divs.forEach((div, i) => {
+    const box = div.querySelector('.check-box-marker');
+    if (checkedIndices.includes(i)) {
+      div.classList.add('bg-purple-50');
+      div.classList.add('border-purple-600');
+      box.className = "w-7 h-7 rounded-lg border-2 border-purple-600 flex items-center justify-center bg-purple-600 text-white transition-all check-box-marker";
+    } else {
+      div.classList.remove('bg-purple-50');
+      div.classList.remove('border-purple-600');
+      box.className = "w-7 h-7 rounded-lg border-2 border-gray-900 flex items-center justify-center bg-white text-white transition-all check-box-marker";
+    }
+  });
+
+  // Re-evaluar botón de completar
+  const total = selectedRoutine.exercises.length;
+  const btn = document.getElementById('btn-complete-routine');
+  if (checkedIndices.length === total) {
+    btn.disabled = false;
+    btn.style.opacity = "1";
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = "0.5";
+  }
+}
+
+function syncCoopNextRoundUI(nextRoundVal) {
+  currentRound = nextRoundVal;
+  updateRoutineNameUI();
+  generateActiveChecklist();
+  updateRoutineButtonUI();
+  document.getElementById('routine-active-modal').scrollTop = 0;
+}
+
+// Sobrecargar toggleExerciseCheck y finishRoutineWorkout para mandar ráfagas cooperativas
+const oldToggleCheck = toggleExerciseCheck;
+toggleExerciseCheck = function(el) {
+  oldToggleCheck(el);
+  
+  if (activeCoopChannel) {
+    const checkedIndices = Array.from(document.querySelectorAll('#active-routine-list > div')).map((div, i) => div.classList.contains('bg-purple-50') ? i : -1).filter(i => i !== -1);
+    activeCoopChannel.send({
+      type: 'broadcast',
+      event: 'coop-sync-checked',
+      payload: { checked: checkedIndices }
+    });
+  }
+};
+
+async function sendTrainingInvite(targetApodo, targetId) {
+  if (!cloudProfile) return;
+  const supabase = window.FMAuth.getClient();
+  
+  const selectedRoutineName = selectedRoutine ? selectedRoutine.name : "Zeus (Rey del Olimpo)";
+  const selectedRoutineId = selectedRoutine ? selectedRoutine.id : "zeus";
+
+  try {
+    await supabase.channel('invites').send({
+      type: 'broadcast',
+      event: 'workout-invite',
+      payload: {
+        sender: cloudProfile.apodo,
+        target: targetApodo,
+        routine: selectedRoutineName,
+        routineId: selectedRoutineId
+      }
+    });
+    alert(`¡Invitación instantánea enviada con éxito a ${targetApodo}! Esperando respuesta...`);
+    
+    // Iniciar sala de escucha de cooperativo localmente de forma proactiva
+    launchCoopSession(selectedRoutineId, targetApodo);
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function showIncomingInvite(payload) {
+  activeIncomingInvite = payload;
+  document.getElementById('invite-sender-name').textContent = payload.sender;
+  document.getElementById('invite-routine-name').textContent = payload.routine;
+  document.getElementById('invite-alert-popup').classList.remove('hidden');
+  
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+    osc.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+  } catch(e){}
+}
+
+function acceptTrainingInvite() {
+  document.getElementById('invite-alert-popup').classList.add('hidden');
+  if (!activeIncomingInvite) return;
+  
+  // Unirse a la sesión sincronizada
+  launchCoopSession(activeIncomingInvite.routineId, activeIncomingInvite.sender);
+}
+
+function declineTrainingInvite() {
+  document.getElementById('invite-alert-popup').classList.add('hidden');
+  activeIncomingInvite = null;
+}
+
+/* ============ LÓGICA DE CLAN EN EL SIDEBAR ============ */
+async function loadSideGuild() {
+  const cont = document.getElementById('side-guild-info');
+  const supabase = window.FMAuth.getClient();
+  if (!supabase || !cloudProfile) return;
+
+  try {
+    const { data: freshProf } = await supabase.from('profiles').select('guild_id').eq('id', cloudUser.id).maybeSingle();
+    if (!freshProf || !freshProf.guild_id) {
+      cont.innerHTML = `<p class="text-gray-500 text-center py-12">No perteneces a ningún clan todavía. Únete o funda uno en la página de inicio para chatear con tu escuadrón.</p>`;
+      return;
+    }
+
+    const { data: myGuild } = await supabase.from('guilds').select('*').eq('id', freshProf.guild_id).single();
+    const { data: members } = await supabase.from('profiles').select('apodo').eq('guild_id', freshProf.guild_id);
+    
+    let membersList = members ? members.map(m => `
+      <div class="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1.5 px-3">
+        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+        <span class="text-white font-medium">${m.apodo}</span>
+      </div>
+    `).join('') : '';
+
+    cont.innerHTML = `
+      <div class="text-left space-y-3">
+        <div class="bg-purple-950/15 border-2 border-purple-900/40 rounded-2xl p-4">
+          <span class="text-[9px] font-bold uppercase text-purple-400">Escuadrón Oficial</span>
+          <h4 class="fun text-xl font-bold text-white">${myGuild.name}</h4>
+          <p class="text-[11px] text-gray-400 italic mt-1">"${myGuild.description || 'Sin descripción'}"</p>
+        </div>
+        
+        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Miembros del Gremio:</p>
+        <div class="grid grid-cols-2 gap-1.5">
+          ${membersList}
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+// Enlazar enter en el chat del sidebar
+document.getElementById('side-chat-input').addEventListener('keypress', e => {
+  if (e.key === 'Enter') sendSideChatMessage();
+});
+
+/* ============ SUPABASE LOGIC & CLOUD TRACKING ============ */
+let cloudUser = null;
+let cloudProfile = null;
+let cloudTotalPoints = 0;
+
+function getMilitaryRank(points) {
+  if (points >= 1000) return 'General';
+  if (points >= 700) return 'Mayor';
+  if (points >= 400) return 'Capitán';
+  if (points >= 200) return 'Teniente';
+  if (points >= 100) return 'Sargento';
+  if (points >= 50) return 'Cabo';
+  if (points >= 16) return 'Soldado';
+  return 'Recluta';
+}
+
+async function initCloudProfile() {
+  if (!window.FMAuth || !window.FMAuth.isConfigured()) return;
+  const supabase = window.FMAuth.getClient();
+  if (!supabase) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    cloudUser = user;
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    if (profile) {
+      cloudProfile = profile;
+      
+      // Obtener todos los entrenamientos de este usuario para sumar puntos y calcular estadísticas
+      const { data: workouts, error } = await supabase.from('workouts').select('*').eq('user_id', user.id);
+      
+      if (workouts) {
+        cloudTotalPoints = workouts.reduce((sum, w) => sum + (w.puntos || 0), 0);
+        
+        // Contar por dificultades para estadísticas
+        let countBasico = workouts.filter(w => w.nivel === 'basico' && w.puntos > 0).length;
+        let countInter = workouts.filter(w => w.nivel === 'inter' && w.puntos > 0).length;
+        let countAvanzado = workouts.filter(w => w.nivel === 'avanzado' && w.puntos > 0).length;
+        let countEspartano = workouts.filter(w => w.nivel === 'espartano' && w.puntos > 0).length;
+        
+        console.log(`Estadísticas de ${profile.apodo} - Básico: ${countBasico}, Intermedio: ${countInter}, Avanzado: ${countAvanzado}, Espartano: ${countEspartano}`);
+        
+        // Guardar estadísticas locales por si se quieren mostrar en interfaz más adelante
+        window.FMAthleteStats = { basico: countBasico, inter: countInter, avanzado: countAvanzado, espartano: countEspartano };
+      }
+      
+      const rank = getMilitaryRank(cloudTotalPoints);
+      
+      // Actualizar UI en la cabecera
+      const userBar = document.getElementById('play-user-bar');
+      if (userBar) {
+        userBar.classList.remove('hidden');
+        document.getElementById('play-user-text').innerHTML = `${profile.apodo} <span class="text-gray-500 font-normal">(${cloudTotalPoints} pts)</span>`;
+        document.getElementById('play-user-rank').textContent = rank;
+      }
+      
+      // Si estamos en entrenamiento, reemplazar el jugador 'Tu' con el apodo de la nube
+      if (G.training && G.players && G.players[0] && (G.players[0].name === 'Tu' || G.players[0].name === 'Invitado')) {
+        G.players[0].name = profile.apodo;
+        renderTurn();
+      }
+    }
+  }
+}
+
+async function syncWorkoutToCloud(ok, points, level, exercise) {
+  if (!cloudUser) return;
+  const supabase = window.FMAuth.getClient();
+  if (!supabase) return;
+
+  try {
+    const { error } = await supabase.from('workouts').insert({
+      user_id: cloudUser.id,
+      puntos: ok ? points : 0,
+      modo: G.training ? 'entrenamiento' : 'juego',
+      nivel: level,
+      ejercicio: exercise
+    });
+    if (error) throw error;
+    console.log("¡Entrenamiento sincronizado en la nube!");
+    await initCloudProfile();
+  } catch (err) {
+    console.error("Error al sincronizar con Supabase:", err);
+  }
+}
+
+// Inicializar cabecera de perfil en la nube al cargar
+window.addEventListener('DOMContentLoaded', () => {
+  initCloudProfile();
+});
+
+/* ============ LÓGICA DE RUTINAS DE ENTRENAMIENTO ============ */
+let activeFilter = 'All';
+let activeCategory = 'gods'; // 'gods' o 'specialized'
+let activeSpecialFilter = 'All';
+let selectedRoutine = null;
+let routineTimerInterval = null;
+let routineSecondsElapsed = 0;
+
+// Función para cambiar entre categorías (Dioses vs Especializadas)
+function switchCategory(category) {
+  activeCategory = category;
+  
+  // Actualizar botones de categoría principal
+  const godsBtn = document.getElementById('cat-gods-btn');
+  const specializedBtn = document.getElementById('cat-specialized-btn');
+  
+  if (category === 'gods') {
+    godsBtn.className = "fun font-bold text-sm px-6 py-3 rounded-full border-2 border-gray-900 bg-purple-600 text-white shadow-md transition-all";
+    specializedBtn.className = "fun font-bold text-sm px-6 py-3 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all";
+    document.getElementById('culture-filters-container').classList.remove('hidden');
+    document.getElementById('specialized-filters-container').classList.add('hidden');
+    activeFilter = 'All';
+  } else {
+    specializedBtn.className = "fun font-bold text-sm px-6 py-3 rounded-full border-2 border-gray-900 bg-purple-600 text-white shadow-md transition-all";
+    godsBtn.className = "fun font-bold text-sm px-6 py-3 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all";
+    document.getElementById('culture-filters-container').classList.add('hidden');
+    document.getElementById('specialized-filters-container').classList.remove('hidden');
+    activeSpecialFilter = 'All';
+  }
+  
+  renderRoutinePicker();
+}
+
+// Función para filtrar rutinas especializadas
+function filterSpecialized(category) {
+  activeSpecialFilter = category;
+  
+  // Actualizar estilo de los botones de filtro especializado
+  const buttons = document.querySelectorAll('#specialized-filters button');
+  buttons.forEach(btn => {
+    const text = btn.textContent.trim();
+    if ((category === 'All' && text === 'Todos') || text.toLowerCase().includes(category)) {
+      btn.className = "fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-yellow-400 text-gray-900 shadow-md transition-all";
+    } else {
+      btn.className = "fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all";
+    }
+  });
+
+  renderRoutinePicker();
+}
+
+function filterRoutines(culture) {
+  activeFilter = culture;
+  
+  // Actualizar estilo de los botones de filtro
+  const buttons = document.querySelectorAll('#culture-filters button');
+  buttons.forEach(btn => {
+    const text = btn.textContent.trim();
+    if ((culture === 'All' && text === 'Todos') || text.includes(culture)) {
+      btn.className = "fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-yellow-400 text-gray-900 shadow-md transition-all";
+    } else {
+      btn.className = "fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all";
+    }
+  });
+
+  renderRoutinePicker();
+}
+
+function renderRoutinePicker() {
+  const grid = document.getElementById('routines-grid');
+  let list = [];
+  
+  // Seleccionar la lista apropiada según la categoría activa
+  if (activeCategory === 'gods') {
+    list = window.FMRoutines || [];
+    if (activeFilter !== 'All') {
+      list = list.filter(r => r.culture === activeFilter);
+    }
+  } else {
+    list = window.FMSpecializedRoutines || [];
+    if (activeSpecialFilter !== 'All') {
+      list = list.filter(r => r.category === activeSpecialFilter);
+    }
+  }
+
+  grid.innerHTML = list.map(r => {
+    let borderCol = "border-green-500";
+    let bgBadge = "bg-green-100 text-green-800";
+    if (r.level === 'intermedio') { borderCol = "border-amber-500"; bgBadge = "bg-amber-100 text-amber-800"; }
+    else if (r.level === 'avanzado') { borderCol = "border-red-500"; bgBadge = "bg-red-100 text-red-800"; }
+    else if (r.level === 'espartano') { borderCol = "border-purple-600"; bgBadge = "bg-purple-100 text-purple-800"; }
+
+    // Determinar la etiqueta (culture para dioses, category para especializadas)
+    const badgeText = activeCategory === 'gods' ? r.culture : r.category;
+    const badgeIcon = activeCategory === 'gods' ? '' : getCategoryIcon(r.category);
+
+    return `
+      <div onclick="openRoutineDetail('${r.id}', '${activeCategory}')" class="pop bg-white p-5 cursor-pointer transition hover:-translate-y-1.5 border-4 ${borderCol} flex flex-col justify-between" style="box-shadow: 6px 6px 0 #111827">
+        <div>
+          <div class="flex justify-between items-start mb-2">
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border-2 border-gray-900 ${bgBadge}">${badgeIcon}${badgeText}</span>
+            <span class="text-xs font-bold text-gray-500 uppercase">${r.level}</span>
+          </div>
+          <h3 class="fun text-xl font-bold text-gray-900 mb-1">${r.name}</h3>
+          <p class="text-gray-500 text-xs font-semibold leading-relaxed mb-4">${r.description}</p>
+        </div>
+        
+        <div class="flex items-center justify-between border-t border-gray-100 pt-3">
+          <span class="text-xs font-bold text-gray-400"><i class="fa-solid fa-list-check mr-1"></i> ${r.exercises.length} Ejercicios</span>
+          <span class="fun font-bold text-sm text-yellow-500 flex items-center gap-1"><i class="fa-solid fa-bolt"></i> +${r.points} PX</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function getCategoryIcon(category) {
+  const icons = {
+    'gimnasio': '<i class="fa-solid fa-dumbbell mr-1"></i>',
+    'yoga': '<i class="fa-solid fa-spa mr-1"></i>',
+    'pilates': '<i class="fa-solid fa-person-running mr-1"></i>',
+    'cardio': '<i class="fa-solid fa-heart-pulse mr-1"></i>',
+    'calistenia': '<i class="fa-solid fa-person-praying mr-1"></i>',
+    'hipopresivos': '<i class="fa-solid fa-baby mr-1"></i>'
+  };
+  return icons[category] || '';
+}
+
+function openRoutineDetail(id, category = 'gods') {
+  const list = category === 'gods' ? (window.FMRoutines || []) : (window.FMSpecializedRoutines || []);
+  const r = list.find(x => x.id === id);
+  if (!r) return;
+  selectedRoutine = r;
+
+  let borderCol = "border-green-500";
+  let bgBadge = "bg-green-100 text-green-800";
+  if (r.level === 'intermedio') { borderCol = "border-amber-500"; bgBadge = "bg-amber-100 text-amber-800"; }
+  else if (r.level === 'avanzado') { borderCol = "border-red-500"; bgBadge = "bg-red-100 text-red-800"; }
+  else if (r.level === 'espartano') { borderCol = "border-purple-600"; bgBadge = "bg-purple-100 text-purple-800 font-bold"; }
+
+  const content = document.getElementById('routine-detail-content');
+  content.innerHTML = `
+    <div class="text-center pb-2">
+      <span class="inline-block border-2 border-gray-900 px-3 py-1 rounded-full text-xs font-bold uppercase mb-2 ${bgBadge}">${r.culture}</span>
+      <h3 class="fun text-3xl font-bold text-gray-900">${r.name}</h3>
+      <p class="text-gray-500 text-xs italic mt-1 font-semibold">"${r.description}"</p>
+    </div>
+
+    <div class="border-y-2 border-gray-100 py-3 flex items-center justify-between">
+      <span class="text-sm font-bold text-gray-700">Dificultad: <b class="uppercase" style="color: ${r.level === 'espartano' ? '#9333ea' : r.level === 'avanzado' ? '#dc2626' : r.level === 'intermedio' ? '#d97706' : '#16a34a'}">${r.level}</b></span>
+      <span class="fun font-bold text-base text-yellow-500 flex items-center gap-1"><i class="fa-solid fa-bolt"></i> +${r.points} Puntos de Rango</span>
+    </div>
+
+    <div>
+      <p class="fun font-bold text-gray-800 text-sm mb-2"><i class="fa-solid fa-list-check mr-1 text-purple-600"></i> Tabla de Ejercicios (Repeticiones):</p>
+      <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+        ${r.exercises.map(ex => `
+          <div class="flex justify-between items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm font-semibold">
+            <span class="text-gray-800 flex items-center gap-1.5 text-left">
+              ${ex.name}
+              <button onclick="showExerciseHelp('${ex.name.replace(/'/g, "\\'")}', event)" class="text-blue-500 hover:text-blue-700 text-xs focus:outline-none flex items-center justify-center" title="Ver guía de técnica">
+                <i class="fa-solid fa-circle-info"></i>
+              </button>
+            </span>
+            <span class="bg-gray-200 text-gray-800 text-xs px-2.5 py-1 rounded-md border border-gray-300 font-bold">${ex.reps} rep${ex.reps > 1 ? 'es' : ''}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div id="routine-play-options-container" class="mt-4">
+      <!-- Inyectado dinámicamente según estado de login -->
+    </div>
+  `;
+
+  // Renderizar las opciones de juego dinámicamente
+  const optsCont = document.getElementById('routine-play-options-container');
+  if (cloudUser) {
+    optsCont.innerHTML = `
+      <div class="space-y-2.5">
+        <button onclick="startRoutineWorkout()" class="w-full fun font-bold text-white py-3 px-6 rounded-2xl border-2 border-gray-900 shadow-[4px_4px_0_#111827] bg-green-500 hover:bg-green-600 transition-all flex items-center justify-center gap-2 text-base">
+          <i class="fa-solid fa-dumbbell"></i> ¡Comenzar Solo!
+        </button>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button onclick="launchClanSession('${r.id}')" class="fun font-bold text-white py-2.5 px-4 rounded-xl border-2 border-gray-900 bg-purple-600 hover:bg-purple-700 transition flex items-center justify-center gap-1.5 text-xs">
+            <i class="fa-solid fa-shield-halved"></i> Entrenar con mi Clan
+          </button>
+          
+          <button onclick="createRoomCodeSession('${r.id}')" class="fun font-bold text-white py-2.5 px-4 rounded-xl border-2 border-gray-900 bg-blue-600 hover:bg-blue-700 transition flex items-center justify-center gap-1.5 text-xs">
+            <i class="fa-solid fa-gamepad"></i> Crear Sala (Código)
+          </button>
+        </div>
+        
+        <button onclick="joinRoomCodeSessionPrompt()" class="w-full fun font-bold text-gray-700 py-2.5 px-4 rounded-xl border-2 border-gray-900 bg-gray-50 hover:bg-gray-100 transition flex items-center justify-center gap-1.5 text-xs">
+          <i class="fa-solid fa-key"></i> Unirse a una Sala con Código
+        </button>
+      </div>
+    `;
+  } else {
+    optsCont.innerHTML = `
+      <button onclick="startRoutineWorkout()" class="w-full fun font-bold text-white py-3.5 px-6 rounded-2xl border-2 border-gray-900 shadow-[4px_4px_0_#111827] bg-green-500 hover:bg-green-600 transition-all flex items-center justify-center gap-2 text-lg">
+        <i class="fa-solid fa-dumbbell"></i> ¡Comenzar Entrenamiento!
+      </button>
+    `;
+  }
+
+  document.getElementById('routine-modal').classList.remove('hidden');
+}
+
+function closeRoutineModal() {
+  document.getElementById('routine-modal').classList.add('hidden');
+}
+
+let currentRound = 1;
+
+function startRoutineWorkout() {
+  closeRoutineModal();
+  if (!selectedRoutine) return;
+
+  const r = selectedRoutine;
+  currentRound = 1;
+  
+  // Rellenar datos
+  document.getElementById('active-routine-culture').textContent = r.culture;
+  updateRoutineNameUI();
+  document.getElementById('active-routine-points').textContent = r.points;
+  
+  // Generar checklist
+  generateActiveChecklist();
+
+  // Reiniciar y arrancar cronómetro
+  routineSecondsElapsed = 0;
+  document.getElementById('active-routine-timer').textContent = "00:00";
+  updateRoutineButtonUI();
+
+  if (routineTimerInterval) clearInterval(routineTimerInterval);
+  routineTimerInterval = setInterval(() => {
+    routineSecondsElapsed++;
+    const m = Math.floor(routineSecondsElapsed / 60);
+    const s = routineSecondsElapsed % 60;
+    document.getElementById('active-routine-timer').textContent = String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
+  }, 1000);
+
+  document.getElementById('routine-active-modal').classList.remove('hidden');
+}
+
+function updateRoutineNameUI() {
+  const r = selectedRoutine;
+  document.getElementById('active-routine-name').innerHTML = r.name + ' <span class="text-purple-600 block sm:inline text-lg sm:text-xl font-bold ml-1">(Ronda ' + currentRound + ' de ' + r.rounds + ')</span>';
+}
+
+function generateActiveChecklist() {
+  const r = selectedRoutine;
+  const listCont = document.getElementById('active-routine-list');
+  listCont.innerHTML = r.exercises.map((ex, idx) => {
+    return `
+      <div onclick="toggleExerciseCheck(this)" class="flex justify-between items-center bg-white border-2 border-gray-900 rounded-2xl px-5 py-3.5 cursor-pointer transition-all hover:bg-purple-50 group">
+        <div class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg border-2 border-gray-900 flex items-center justify-center bg-white text-white transition-all group-hover:border-purple-600 check-box-marker">
+            <i class="fa-solid fa-check text-xs"></i>
+          </div>
+          <span class="text-gray-800 font-bold text-sm group-hover:text-purple-700 transition-all text-left flex items-center gap-1.5">
+            ${ex.name}
+            <button onclick="showExerciseHelp('${ex.name.replace(/'/g, "\\'")}', event)" class="text-blue-500 hover:text-blue-700 text-xs focus:outline-none flex items-center justify-center" title="Ver guía de técnica">
+              <i class="fa-solid fa-circle-info"></i>
+            </button>
+          </span>
+        </div>
+        <span class="bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded-lg border-2 border-gray-900 font-bold font-mono">${ex.reps} rep${ex.reps > 1 ? 'es' : ''}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateRoutineButtonUI() {
+  const r = selectedRoutine;
+  const btn = document.getElementById('btn-complete-routine');
+  btn.disabled = true;
+  btn.style.opacity = "0.5";
+  
+  if (currentRound < r.rounds) {
+    btn.innerHTML = `<span>Siguiente Ronda (${currentRound + 1}/${r.rounds})</span> <i class="fa-solid fa-arrow-right"></i>`;
+  } else {
+    btn.innerHTML = `<span>¡Completar Entrenamiento!</span> <i class="fa-solid fa-trophy text-yellow-300"></i>`;
+  }
+}
+
+function toggleExerciseCheck(el) {
+  const box = el.querySelector('.check-box-marker');
+  el.classList.toggle('bg-purple-50');
+  el.classList.toggle('border-purple-600');
+  
+  if (el.classList.contains('bg-purple-50')) {
+    box.className = "w-7 h-7 rounded-lg border-2 border-purple-600 flex items-center justify-center bg-purple-600 text-white transition-all check-box-marker";
+  } else {
+    box.className = "w-7 h-7 rounded-lg border-2 border-gray-900 flex items-center justify-center bg-white text-white transition-all check-box-marker";
+  }
+
+  // Verificar si todos están listos
+  const total = selectedRoutine.exercises.length;
+  const checked = document.querySelectorAll('#active-routine-list .bg-purple-50').length;
+  const btn = document.getElementById('btn-complete-routine');
+  
+  if (checked === total) {
+    btn.disabled = false;
+    btn.style.opacity = "1";
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = "0.5";
+  }
+}
+
+function abortRoutine() {
+  if (confirm("¿Estás seguro de que quieres cancelar este entrenamiento? Tu progreso actual no se guardará.")) {
+    if (routineTimerInterval) clearInterval(routineTimerInterval);
+    document.getElementById('routine-active-modal').classList.add('hidden');
+  }
+}
+
+async function finishRoutineWorkout() {
+  const r = selectedRoutine;
+  if (!r) return;
+
+  // Si aún faltan rondas, avanzar de ronda en lugar de finalizar
+  if (currentRound < r.rounds) {
+    currentRound++;
+    updateRoutineNameUI();
+    generateActiveChecklist();
+    updateRoutineButtonUI();
+    
+    // Scroll al inicio del modal
+    document.getElementById('routine-active-modal').scrollTop = 0;
+    return;
+  }
+
+  // Si completó la última ronda, finalizar de verdad
+  if (routineTimerInterval) clearInterval(routineTimerInterval);
+  document.getElementById('routine-active-modal').classList.add('hidden');
+
+  // Actualizar puntos locales del jugador
+  G.players[0].pts += r.points;
+
+  // Registrar en la nube si está conectado
+  if (cloudUser) {
+    await syncWorkoutToCloud(true, r.points, r.level, r.name);
+  }
+
+  // Mostrar victoria con un hermoso mensaje mitológico
+  win(G.players[0], `¡Fabuloso entrenamiento de los Dioses! Completaste las ${r.rounds} rondas de la rutina ${r.name} en ${Math.floor(routineSecondsElapsed/60)} minutos con ${routineSecondsElapsed%60} segundos.`);
+}
+
+/* ============ BASE DE DATOS DE EXPLICACIÓN DE EJERCICIOS ============ */
+const FM_EX_HELP_DB = {
+  // BÁSICOS
+  "Flexiones de pared controladas": {
+    desc: "Párate frente a una pared a un brazo de distancia. Coloca las manos en ella al ancho de tus hombros y baja doblando los codos lentamente. Mantén el abdomen y el cuerpo completamente rectos.",
+    muscles: "Pecho, Hombros y Tríceps"
+  },
+  "Sentadillas clásicas asistidas": {
+    desc: "Sostente ligeramente de un marco de puerta, silla o mesa firme para no perder el equilibrio. Baja la cadera flexionando las rodillas con el peso en los talones y mantén la espalda recta.",
+    muscles: "Piernas (Cuádriceps y Glúteos)"
+  },
+  "Abdominales cortos (Heel Taps)": {
+    desc: "Acuéstate boca arriba con rodillas dobladas y pies planos. Levanta la cabeza y hombros del suelo y estira tus brazos lateralmente alternando para tocar el talón izquierdo y luego el derecho.",
+    muscles: "Abdomen (Core y Oblicuos)"
+  },
+  "Superman básico en suelo": {
+    desc: "Acuéstate boca abajo con brazos y piernas completamente estiradas. Contrae la espalda baja y los glúteos para despegar simultáneamente el pecho, las manos y los muslos del suelo unos centímetros.",
+    muscles: "Espalda Baja, Lumbar y Glúteos"
+  },
+  "Puente de glúteos clásico": {
+    desc: "Boca arriba con rodillas dobladas y pies en el suelo. Empuja con tus talones elevando la pelvis hacia el techo hasta alinear hombros, cadera y rodillas. Aprieta fuertemente los glúteos 2 segundos arriba.",
+    muscles: "Glúteos e Isquiotibiales"
+  },
+  "Ángeles de pared (Wall Angels)": {
+    desc: "Apóyate contra la pared de espaldas (cabeza, hombros y glúteos tocando). Coloca tus brazos en forma de cactus (90 grados) tocando la pared y deslízalos lentamente hacia arriba y abajo.",
+    muscles: "Espalda Alta, Postura y Hombros"
+  },
+  "Estiramiento lumbar Gato-Camello": {
+    desc: "En cuatro apoyos (rodillas y manos), arquea la espalda hacia el techo metiendo la barbilla (gato), y luego dobla la espalda hacia abajo levantando la cabeza y sacando glúteos (camello) de forma fluida.",
+    muscles: "Movilidad Espinal y Espalda"
+  },
+  "Abdominales Bird-Dog controlados": {
+    desc: "En cuadrupedia, estira firmemente tu brazo derecho hacia el frente y tu pierna izquierda hacia atrás hasta quedar paralelos al suelo. Mantén 1s para asegurar el equilibrio, baja y alterna de lado.",
+    muscles: "Core, Lumbar y Glúteos"
+  },
+  "Zancadas laterales suaves": {
+    desc: "De pie, da un paso amplio hacia la derecha doblando esa rodilla mientras mantienes la pierna izquierda completamente estirada. Empuja fuerte con el pie flexionado para regresar al centro.",
+    muscles: "Piernas (Aductores e Interior del Muslo)"
+  },
+  "Plancha escapular sobre rodillas": {
+    desc: "En posición de plancha apoyando rodillas, deja caer el pecho juntando las paletas/omóplatos sin doblar los codos, luego empuja el suelo con fuerza abriendo y redondeando la espalda alta.",
+    muscles: "Hombros, Serrato y Espalda Alta"
+  },
+  
+  // INTERMEDIOS
+  "Flexiones de pecho clásicas": {
+    desc: "Posición de plancha alta con manos al ancho de hombros. Baja el pecho hacia el suelo doblando codos a 45 grados (no abiertos lateralmente). Empuja con fuerza manteniendo tu cuerpo firme como una tabla.",
+    muscles: "Pecho, Tríceps y Hombro Anterior"
+  },
+  "Abdominales cortos (Crunch)": {
+    desc: "Acuéstate boca arriba con pies planos. Coloca manos detrás de las orejas y contrae el abdomen para despegar únicamente los omóplatos del suelo. No tires de tu cuello hacia adelante.",
+    muscles: "Abdomen Superior"
+  },
+  "Giros rusos estables (Russian Twists)": {
+    desc: "Sentado con rodillas flexionadas, inclina el torso hacia atrás para sentir tensión abdominal. Gira todo el tronco de lado a lado llevando tus manos unidas a tocar el suelo en cada costado.",
+    muscles: "Abdomen (Core y Oblicuos)"
+  },
+  "Zancadas alternas hacia atrás": {
+    desc: "De pie, da un paso amplio hacia atrás con un pie y baja la cadera verticalmente hasta que ambas rodillas formen un ángulo de 90 grados. Empuja con la pierna delantera para volver a pararte.",
+    muscles: "Piernas (Cuádriceps y Glúteos)"
+  },
+  "Plancha tradicional isométrica (segundos)": {
+    desc: "Apoya los antebrazos y las puntas de los pies en el suelo. Mantén el cuerpo en una línea horizontal perfecta, apretando el abdomen, los glúteos y las piernas sin dejar caer la pelvis.",
+    muscles: "Core Total (Abdomen, Espalda y Hombros)"
+  },
+  "Burpees tradicionales controlados": {
+    desc: "De pie, baja a cuclillas, apoya manos y salta con ambos pies hacia atrás a plancha. Haz una lagartija (opcional), regresa los pies al frente de un salto y levántate con un brinco aplaudiendo arriba.",
+    muscles: "Cardio, Resistencia y Cuerpo Completo"
+  },
+  "Sentadillas clásicas con salto vertical": {
+    desc: "Haz una sentadilla clásica profunda, y al subir empuja con tus talones de forma explosiva despegando los pies del suelo con un brinco. Cae suavemente amortiguando el impacto doblando rodillas.",
+    muscles: "Fuerza de Piernas y Potencia Cardíaca"
+  },
+  "Saltos de estrella rápidos (Jacks)": {
+    desc: "El clásico Jumping Jack: salta abriendo piernas y subiendo manos sobre la cabeza para tocar las palmas, luego salta de nuevo cerrando pies y bajando brazos al costado a ritmo veloz.",
+    muscles: "Cardio, Hombros y Pantorrillas"
+  },
+  "Escaladores de montaña (Mountain Climbers)": {
+    desc: "En plancha alta con manos apoyadas debajo de hombros, lleva alternadamente tus rodillas hacia el pecho de forma rápida y rítmica como si estuvieras corriendo cuesta arriba en posición horizontal.",
+    muscles: "Core, Resistencia y Hombros"
+  },
+  "Flexiones Spiderman alternas": {
+    desc: "Al bajar el pecho en tu flexión tradicional, flexiona una rodilla por el costado del cuerpo y llévala a tocar tu codo del mismo lado. Alterna de pierna en la siguiente repetición.",
+    muscles: "Pecho, Tríceps, Core y Oblicuos"
+  },
+
+  // AVANZADOS
+  "Sentadillas búlgaras estrictas (por pierna)": {
+    desc: "Coloca un pie apoyado hacia atrás en una silla o sillón. Con el otro pie al frente, desciende verticalmente doblando la rodilla delantera hasta que el muslo quede paralelo al suelo. Espalda recta.",
+    muscles: "Cuádriceps, Glúteos e Isquiotibiales"
+  },
+  "Zancadas con salto alternas y explosivas": {
+    desc: "Inicia en zancada/desplante bajo. Salta verticalmente de forma explosiva despegando del suelo, y en el aire intercambia la posición de tus piernas para caer amortiguando en la zancada contraria.",
+    muscles: "Potencia, Resistencia de Piernas y Cardio"
+  },
+  "Puente de glúteos a una pierna (por lado)": {
+    desc: "Acuéstate boca arriba, dobla una rodilla apoyando el pie, y estira la otra pierna al aire. Empuja con el talón del suelo para elevar tus caderas manteniendo la pierna elevada estirada.",
+    muscles: "Glúteos, Femoral y Core"
+  },
+  "Flexiones de picas estrictas (Pike Pushups)": {
+    desc: "Forma una V invertida con tu cuerpo (pies y manos apoyados, caderas empujadas hacia el techo). Baja la coronilla de tu cabeza hacia el suelo flexionando codos hacia atrás, y empuja fuerte.",
+    muscles: "Hombros (Deltoides) y Tríceps"
+  },
+  "Flexiones declinadas estrictas": {
+    desc: "Posición de flexión pero colocando tus pies elevados sobre una silla, banco o sofá, apoyando las manos en el suelo. Baja el pecho de forma controlada y empuja para subir.",
+    muscles: "Pecho Superior, Hombros y Tríceps"
+  },
+  "Abdominales de limpiaparabrisas (Wipers)": {
+    desc: "Boca arriba, brazos abiertos en cruz para apoyarte. Levanta ambas piernas juntas completamente estiradas a 90 grados, y desciéndelas juntas de lado a lado rozando el suelo con control.",
+    muscles: "Oblicuos, Core e Hip Flexors"
+  },
+  "Plancha de antebrazos con balanceo (Body Saw)": {
+    desc: "En posición de plancha baja, utiliza únicamente la punta de tus pies para deslizar todo tu cuerpo rígido unos centímetros hacia adelante y hacia atrás. No dobles la cintura ni bajes la cadera.",
+    muscles: "Core Abdominal Profundo"
+  },
+  "Abdominales Hollow Body Hold (segundos)": {
+    desc: "Túmbate boca arriba. Despega la cabeza, omóplatos y tus piernas del suelo (solo unos 10-15 centímetros) apretando el abdomen. Lo vital es que la zona lumbar esté 100% pegada al suelo.",
+    muscles: "Abdomen Profundo (Core Isométrico)"
+  },
+  "Flexiones de arquero controladas (Archer Pushups)": {
+    desc: "Coloca tus manos muy abiertas en el suelo. Al descender, dobla solo un codo inclinando el peso a ese lado, mientras el otro brazo permanece totalmente estirado de lado. Sube y alterna.",
+    muscles: "Fuerza Unilateral de Pecho, Brazos y Hombros"
+  },
+
+  // ESPARTANOS
+  "Flexiones de pecho explosivas con despegue": {
+    desc: "Realiza una flexión normal con control, pero empuja el suelo de forma tan explosiva y veloz que tus manos se despeguen completamente del suelo unos centímetros en el punto más alto del recorrido.",
+    muscles: "Potencia Explosiva de Pecho y Brazos"
+  },
+  "Flexiones haciendo el pino asistido (Handstand)": {
+    desc: "Apoya las manos a unos centímetros de la pared y da una patada al aire para subir los pies apoyándote de cabeza contra la pared. Desciende doblando codos controladamente y empuja arriba.",
+    muscles: "Hombros Extremos, Tríceps y Core"
+  },
+  "Dominadas estrictas (Pull-ups)": {
+    desc: "Cuelga de una barra con manos más abiertas que tus hombros. Jala el cuerpo con tu espalda y bíceps hasta que tu barbilla pase cómodamente sobre la barra, bajando lentamente sin balancearte.",
+    muscles: "Espalda Completa (Dorsal) y Bíceps"
+  },
+  "Burpees espartanos con lagartija doble": {
+    desc: "Haz un burpee clásico, pero cuando los pies salten hacia atrás para la plancha, realiza DOS flexiones de pecho completas seguidas en el suelo antes de saltar al frente y brincar.",
+    muscles: "Fuerza de Combate, Cardio y Resistencia Total"
+  },
+  "Abdominales dobles completos (V-Ups estrictos)": {
+    desc: "Acuéstate boca arriba estirado. Eleva de forma veloz y simultánea el torso y tus piernas rectas, formando una V con el cuerpo y tocando la punta de tus pies en el aire con tus manos.",
+    muscles: "Core Abdominal Completo"
+  },
+  "Sostener sentadilla isométrica profunda (segundos)": {
+    desc: "Baja a posición de sentadilla profunda (muslos paralelos o más abajo del nivel del suelo). Mantén tu espalda recta y aprieta las piernas sosteniendo esa postura estática como una roca.",
+    muscles: "Resistencia e Isometría de Piernas y Glúteos"
+  }
+};
+
+function showExerciseHelp(name, event) {
+  if (event) {
+    event.stopPropagation(); // Evitar marcar la casilla al dar clic en info
+  }
+  
+  const helpExName = document.getElementById('help-ex-name');
+  const helpExDesc = document.getElementById('help-ex-desc');
+  const helpExMuscles = document.getElementById('help-ex-muscles');
+  const helpExVideo = document.getElementById('help-ex-video');
+
+  const info = FM_EX_HELP_DB[name] || {
+    desc: "Realiza este ejercicio manteniendo una técnica controlada, respirando de manera constante y apretando los músculos involucrados. Evita acelerarte para prevenir lesiones.",
+    muscles: "Músculos Estabilizadores y Cuerpo Completo"
+  };
+
+  helpExName.textContent = name;
+  helpExDesc.textContent = info.desc;
+  helpExMuscles.textContent = info.muscles;
+  helpExVideo.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent('como hacer ' + name + ' ejercicio tecnica calistenia');
+
+  document.getElementById('exercise-help-modal').classList.remove('hidden');
+}
+
+function closeExerciseHelp() {
+  document.getElementById('exercise-help-modal').classList.add('hidden');
+}
+
+/* ============ MULTIJUGADOR DILUVIAL (CLAN Y CÓDIGOS DE SALA) ============ */
+async function launchClanSession(routineId) {
+  const supabase = window.FMAuth.getClient();
+  if (!supabase || !cloudProfile || !cloudProfile.guild_id) {
+    alert("¡Necesitas unirte a un clan antes de entrenar con ellos!");
+    return;
+  }
+  
+  const clanId = cloudProfile.guild_id;
+  // Detener canal viejo cooperativo si existe
+  if (activeCoopChannel) {
+    supabase.removeChannel(activeCoopChannel);
+  }
+
+  const roomId = `coop-clan-${routineId}-${clanId}`;
+  activeCoopChannel = supabase.channel(roomId);
+  
+  activeCoopChannel
+    .on('broadcast', { event: 'coop-sync-checked' }, payload => {
+      syncCoopChecklistUI(payload.payload.checked);
+    })
+    .on('broadcast', { event: 'coop-sync-next-round' }, payload => {
+      syncCoopNextRoundUI(payload.payload.round);
+    })
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        console.log(`¡Unido al entrenamiento de clan en tiempo real: ${roomId}!`);
+        openRoutineDetail(routineId);
+        setTimeout(() => {
+          startRoutineWorkout();
+          // Alerta al clan por el chat general
+          sendGeneralChatNotice(`¡Acabo de iniciar un Entrenamiento de Clan para la rutina de los Dioses! ¡Entrenen conmigo con un solo clic!`);
+        }, 300);
+      }
+    });
+}
+
+async function createRoomCodeSession(routineId) {
+  const supabase = window.FMAuth.getClient();
+  if (!supabase || !cloudProfile) return;
+
+  // Generar código al azar de 4 letras legibles
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  // Detener canal cooperativo si existe
+  if (activeCoopChannel) {
+    supabase.removeChannel(activeCoopChannel);
+  }
+
+  const roomId = `coop-room-code-${code}`;
+  activeCoopChannel = supabase.channel(roomId);
+  
+  activeCoopChannel
+    .on('broadcast', { event: 'coop-sync-checked' }, payload => {
+      syncCoopChecklistUI(payload.payload.checked);
+    })
+    .on('broadcast', { event: 'coop-sync-next-round' }, payload => {
+      syncCoopNextRoundUI(payload.payload.round);
+    })
+    // Responder a solicitudes de sincronización de nuevos usuarios que entran con el código
+    .on('broadcast', { event: 'coop-request-sync' }, payload => {
+      const checkedIndices = Array.from(document.querySelectorAll('#active-routine-list > div')).map((div, i) => div.classList.contains('bg-purple-50') ? i : -1).filter(i => i !== -1);
+      activeCoopChannel.send({
+        type: 'broadcast',
+        event: 'coop-sync-routine',
+        payload: { routineId: routineId, checked: checkedIndices }
+      });
+    })
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        console.log(`¡Creada sala con código: ${code}!`);
+        openRoutineDetail(routineId);
+        setTimeout(() => {
+          startRoutineWorkout();
+          alert(`¡Tu sala ha sido creada!\n\nEl Código de Sala es: ${code}\n\nCompártelo con tus amigos para que entrenen en tiempo real con este código.`);
+          // Notificar en el chat de forma proactiva
+          sendGeneralChatNotice(`¡He abierto una Sala Multijugador! Únanse a mí con el Código: ${code}`);
+        }, 300);
+      }
+    });
+}
+
+async function joinRoomCodeSessionPrompt() {
+  const code = prompt("Escribe el Código de Sala (4 letras) de tu amigo o clan:").trim().toUpperCase();
+  if (!code || code.length !== 4) {
+    alert("Código inválido. Debe ser de exactamente 4 letras.");
+    return;
+  }
+
+  const supabase = window.FMAuth.getClient();
+  if (!supabase || !cloudProfile) return;
+
+  if (activeCoopChannel) {
+    supabase.removeChannel(activeCoopChannel);
+  }
+
+  const roomId = `coop-room-code-${code}`;
+  activeCoopChannel = supabase.channel(roomId);
+
+  activeCoopChannel
+    .on('broadcast', { event: 'coop-sync-routine' }, payload => {
+      // Recibimos la rutina del host, la abrimos y lanzamos el workout
+      const routineId = payload.payload.routineId;
+      openRoutineDetail(routineId);
+      setTimeout(() => {
+        startRoutineWorkout();
+        // Sincronizar el checklist actual que nos mande el host
+        if (payload.payload.checked) {
+          syncCoopChecklistUI(payload.payload.checked);
+        }
+      }, 300);
+    })
+    .on('broadcast', { event: 'coop-sync-checked' }, payload => {
+      syncCoopChecklistUI(payload.payload.checked);
+    })
+    .on('broadcast', { event: 'coop-sync-next-round' }, payload => {
+      syncCoopNextRoundUI(payload.payload.round);
+    })
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        console.log(`¡Unido al canal con código de sala: ${code}!`);
+        // Pedir sincronización de rutina al creador de la sala
+        activeCoopChannel.send({
+          type: 'broadcast',
+          event: 'coop-request-sync',
+          payload: { requester: cloudProfile.apodo }
+        });
+      }
+    });
+}
+
+async function sendGeneralChatNotice(text) {
+  if (!cloudProfile) return;
+  const supabase = window.FMAuth.getClient();
+  if (!supabase) return;
+
+  try {
+    await supabase.from('messages').insert({
+      user_id: cloudUser.id,
+      apodo: "[SALA EN VIVO] " + cloudProfile.apodo,
+      text: text
+    });
+  } catch(e) {
+    console.error(e);
+  }
+}
+</script>
+</body>
+</html>

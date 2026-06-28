@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fit Match - Monedas & Reloj</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fm-fichas.css">
+<style>
+  body{font-family:'Nunito',sans-serif;background:#fdf2f8;color:#1f2937;}
+  button{cursor:pointer;}
+  .fun{font-family:'Fredoka',sans-serif;}
+  .pop{border:3px solid #111827;border-radius:22px;box-shadow:6px 6px 0 #111827;position:relative;overflow:hidden;}
+  .dots{background-image:radial-gradient(rgba(255,255,255,.35) 1.6px, transparent 1.6px);background-size:12px 12px;}
+  .ribbon{border:2.5px solid #111827;border-radius:10px;box-shadow:2px 2px 0 #111827;}
+  .icon-bubble{border:3px solid #111827;border-radius:50%;box-shadow:3px 3px 0 rgba(17,24,39,.55);}
+  ::-webkit-scrollbar{width:10px;}::-webkit-scrollbar-track{background:#fce7f3;}
+  ::-webkit-scrollbar-thumb{background:#f9a8d4;border-radius:5px;}
+  @media print{
+    .no-print{display:none !important;}
+    body{background:#fff;}
+    .pop{break-inside:avoid;box-shadow:4px 4px 0 #111827;}
+    .sand-stream{animation:none !important;}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+  }
+</style>
+</head>
+<body class="min-h-screen antialiased">
+<style>@media print{.fm-home{display:none !important;}}</style>
+<a href="index.html" class="fm-home no-print" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#ec4899;color:#fff;font-family:Fredoka,sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:2.5px solid #111827;border-radius:999px;box-shadow:3px 3px 0 #111827;display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
+
+<header class="no-print sticky top-0 z-50 bg-white/90 backdrop-blur border-b-2 border-gray-900">
+  <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full icon-bubble flex items-center justify-center" style="background:#ec4899;color:#fff"><i class="fa-solid fa-fire-flame-curved"></i></div>
+      <span class="fun text-2xl font-bold text-gray-900">Fit Match · Monedas & Reloj</span>
+    </div>
+    <button onclick="window.print()" class="fun text-white font-semibold py-2 px-5 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#ec4899;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-print"></i> Imprimir</button>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-10 space-y-16">
+
+  <section class="text-center">
+    <h1 class="fun text-4xl sm:text-5xl font-bold text-gray-900 mb-2">Fichas de <span style="color:#ec4899">Fit Match</span></h1>
+    <p class="text-gray-600 max-w-2xl mx-auto font-semibold">Monedas estilo griego con greca y el logo al centro, y el reloj de arena con temporizador real. Para jugar de verdad usa el <a href="cartas.html#simulador" class="underline font-bold" style="color:#8b5cf6">Simulador</a>.</p>
+  </section>
+
+  <!-- MONEDAS -->
+  <section>
+    <div class="flex items-center gap-3 mb-8">
+      <span class="ribbon fun text-lg font-bold px-4 py-1.5" style="background:#fde68a">1 · Monedas de Puntos</span>
+      <span class="text-gray-500 font-semibold text-sm">Greca griega · logo Fit Match al centro</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-10 justify-items-center" id="coins"></div>
+  </section>
+
+  <!-- RELOJ DE ARENA EPICO + TEMPORIZADOR -->
+  <section>
+    <div class="flex items-center gap-3 mb-8">
+      <span class="ribbon fun text-lg font-bold px-4 py-1.5" style="background:#a7f3d0">2 · Reloj de Arena Epico</span>
+      <span class="text-gray-500 font-semibold text-sm">Temporizador real 1:00 · 1:30 · 2:00</span>
+    </div>
+    <div class="flex flex-col items-center gap-7">
+      <div id="hg-stage" class="pop dots p-8" style="background:radial-gradient(circle at 50% 18%,#7c3aed,#312e81 60%,#0b1026);box-shadow:8px 8px 0 #111827">
+        <div id="hourglass" class="fm-hg"></div>
+      </div>
+      <div id="hg-display" class="ribbon fun font-bold text-gray-900 px-8 py-3" style="background:#fde68a;font-size:46px;letter-spacing:.06em;min-width:200px;text-align:center">1:00</div>
+      <div class="no-print flex flex-wrap items-center justify-center gap-3">
+        <button id="pre-60"  onclick="pick(60)"  class="preset fun font-bold text-gray-900 py-2.5 px-6 rounded-full border-2 border-gray-900" style="background:#86efac;box-shadow:3px 3px 0 #111827">Basico 1:00</button>
+        <button id="pre-90"  onclick="pick(90)"  class="preset fun font-bold text-gray-900 py-2.5 px-6 rounded-full border-2 border-gray-900" style="background:#fcd34d;box-shadow:3px 3px 0 #111827">Intermedio 1:30</button>
+        <button id="pre-120" onclick="pick(120)" class="preset fun font-bold text-white py-2.5 px-6 rounded-full border-2 border-gray-900" style="background:#ef4444;box-shadow:3px 3px 0 #111827">Avanzado 2:00</button>
+      </div>
+      <div class="no-print flex items-center justify-center gap-3">
+        <button onclick="T.start()" class="fun font-bold text-white text-lg py-3 px-8 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#8b5cf6;box-shadow:4px 4px 0 #111827"><i class="fa-solid fa-play"></i> Iniciar</button>
+        <button onclick="T.pause()" class="fun font-bold text-gray-900 py-3 px-6 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fff;box-shadow:4px 4px 0 #111827"><i class="fa-solid fa-pause"></i> Pausa</button>
+        <button onclick="T.reset()" class="fun font-bold text-gray-900 py-3 px-6 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fff;box-shadow:4px 4px 0 #111827"><i class="fa-solid fa-rotate-left"></i> Reiniciar</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="no-print border-t-2 border-gray-900 py-6 text-center text-sm text-gray-500 font-semibold">
+  Fit Match 2026 · Hecho para sudar y reir
+</footer>
+
+<script src="fm-fichas.js"></script>
+<script>
+  document.getElementById('coins').innerHTML = FM.coinsHTML();
+  const T = FM.createTimer({
+    hg: document.getElementById('hourglass'),
+    display: document.getElementById('hg-display'),
+    stage: document.getElementById('hg-stage'),
+  });
+  function pick(sec){
+    T.set(sec);
+    document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));
+    const btn=document.getElementById('pre-'+sec); if(btn) btn.classList.add('active');
+  }
+  pick(60);
+</script>
+</body>
+</html>

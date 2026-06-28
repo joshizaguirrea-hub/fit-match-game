@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fit Match - Cartas (Divertidas + Selector)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fm-fichas.css">
+<style>
+  body{font-family:'Nunito',sans-serif;background:#fdf2f8;color:#1f2937;}
+  .fun{font-family:'Fredoka',sans-serif;}
+  .pop{border:3px solid #111827;border-radius:22px;box-shadow:6px 6px 0 #111827;transition:transform .15s, box-shadow .15s;position:relative;overflow:hidden;}
+  .pop:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 #111827;}
+  .dots{background-image:radial-gradient(rgba(255,255,255,.35) 1.6px, transparent 1.6px);background-size:12px 12px;}
+  .cost-badge{border:2.5px solid #111827;border-radius:999px;background:#fff;color:#111827;box-shadow:2px 2px 0 #111827;}
+  .icon-bubble{border:3px solid #111827;border-radius:50%;box-shadow:3px 3px 0 rgba(17,24,39,.55);}
+  .ribbon{border:2.5px solid #111827;border-radius:10px;box-shadow:2px 2px 0 #111827;}
+  .exrow{border:2px solid #111827;border-radius:9px;background:#fff;}
+  ::-webkit-scrollbar{width:10px;}::-webkit-scrollbar-track{background:#fce7f3;}
+  ::-webkit-scrollbar-thumb{background:#f9a8d4;border-radius:5px;}
+  /* ---- Selector / robo de carta ---- */
+  @keyframes dealIn{0%{transform:rotateY(90deg) scale(.78);opacity:0}55%{transform:rotateY(-8deg) scale(1.04)}100%{transform:none;opacity:1}}
+  .deal-in{animation:dealIn .55s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+  .wobble{animation:wobble 1.6s ease-in-out infinite;}
+  .card-back{aspect-ratio:3/4;background:repeating-linear-gradient(45deg,#a78bfa 0 14px,#8b5cf6 14px 28px);}
+  @media print{
+    @page{size:A4;margin:8mm;}
+    .no-print{display:none !important;}
+    body{background:#fff;}
+    .pop{break-inside:avoid;box-shadow:4px 4px 0 #111827;}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+  }
+</style>
+</head>
+<body class="min-h-screen antialiased">
+<style>@media print{.fm-home{display:none !important;}}</style>
+<a href="index.html" class="fm-home no-print" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#ec4899;color:#fff;font-family:Fredoka,sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:2.5px solid #111827;border-radius:999px;box-shadow:3px 3px 0 #111827;display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
+
+<header class="no-print sticky top-0 z-50 bg-white/90 backdrop-blur border-b-2 border-gray-900">
+  <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full icon-bubble flex items-center justify-center" style="background:#ec4899;color:#fff"><i class="fa-solid fa-fire-flame-curved"></i></div>
+      <span class="fun text-2xl font-bold text-gray-900">Fit Match · Cartas</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="robarCarta()" class="fun text-white font-semibold py-2 px-5 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#8b5cf6;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-wand-magic-sparkles"></i> Robar carta</button>
+      <button onclick="generar()" class="fun text-gray-900 font-semibold py-2 px-5 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fde68a;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-shuffle"></i> Regenerar</button>
+      <button onclick="window.print()" class="fun text-white font-semibold py-2 px-5 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#ec4899;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-print"></i> Imprimir</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-10 space-y-14">
+
+  <section class="text-center">
+    <h1 class="fun text-4xl sm:text-5xl font-bold text-gray-900 mb-2">El Mazo de <span style="color:#ec4899">Fit Match</span></h1>
+    <p class="text-gray-600 max-w-2xl mx-auto font-semibold">32 cartas de color (8 por grupo) con 7 ejercicios aleatorios cada una, mas heroes y villanos. Pulsa <em>Regenerar</em> para barajar.</p>
+  </section>
+
+  <!-- SIMULADOR DE JUEGO (online) -->
+  <section id="simulador" class="no-print">
+    <div class="flex items-center gap-3 mb-6">
+      <span class="ribbon fun text-lg font-bold px-4 py-1.5" style="background:#c4b5fd">&#9733; Simulador de Juego</span>
+      <span class="text-gray-500 font-semibold text-sm">Roba carta &#8594; elige nivel &#8594; corre el reloj &#8594; gana monedas</span>
+    </div>
+
+    <!-- MARCADOR -->
+    <div class="pop bg-white p-4 mb-6 flex flex-wrap items-center justify-between gap-4" style="box-shadow:6px 6px 0 #111827">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 icon-bubble flex items-center justify-center text-2xl" style="background:#fbbf24;color:#111827"><i class="fa-solid fa-trophy"></i></div>
+        <div class="leading-tight">
+          <span class="block text-[11px] font-bold uppercase text-gray-500">Tu marcador</span>
+          <span class="fun font-bold text-gray-900" style="font-size:34px"><span id="score">0</span> <span class="text-gray-400" style="font-size:18px">pts</span></span>
+        </div>
+      </div>
+      <div id="coin-tray" class="flex items-center gap-2 flex-wrap"></div>
+      <button onclick="resetGame()" class="fun font-bold text-gray-900 py-2 px-5 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fff;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-trash-can"></i> Reiniciar partida</button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- COLUMNA IZQUIERDA: carta -->
+      <div class="pop bg-white p-6 flex flex-col items-center text-center" style="box-shadow:8px 8px 0 #111827">
+        <p id="spotlight-label" class="fun text-gray-500 font-bold mb-4">Pulsa el boton y deja que el azar elija tu grupo muscular</p>
+        <div id="spotlight" class="w-full max-w-xs mb-5">
+          <div class="pop card-back flex flex-col items-center justify-center text-white wobble">
+            <i class="fa-solid fa-question text-7xl drop-shadow"></i>
+            <p class="fun font-bold mt-3 text-lg drop-shadow">FIT MATCH</p>
+          </div>
+        </div>
+        <button onclick="robarCarta()" class="fun text-white font-bold text-lg py-3 px-8 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#8b5cf6;box-shadow:4px 4px 0 #111827"><i class="fa-solid fa-wand-magic-sparkles"></i> Robar carta</button>
+      </div>
+
+      <!-- COLUMNA DERECHA: reto + reloj -->
+      <div class="pop p-6 flex flex-col items-center text-center" style="background:radial-gradient(circle at 50% 14%,#7c3aed,#312e81 62%,#0b1026);box-shadow:8px 8px 0 #111827">
+        <!-- estado 0: sin carta -->
+        <div id="sim-empty" class="text-white/80 fun font-bold py-10">
+          <i class="fa-solid fa-arrow-left text-3xl mb-3 block"></i>
+          Primero roba una carta para ver tus retos.
+        </div>
+
+        <!-- estado 1: elegir nivel -->
+        <div id="sim-levels" class="hidden w-full">
+          <p class="fun font-bold text-white mb-1">Elige tu reto</p>
+          <p class="text-white/70 text-sm font-semibold mb-4">Cada nivel vale puntos y tiempo distintos</p>
+          <div id="level-btns" class="grid grid-cols-1 gap-2.5"></div>
+        </div>
+
+        <!-- estado 2: reloj corriendo -->
+        <div id="sim-timer" class="hidden w-full flex flex-col items-center">
+          <div id="challenge" class="ribbon fun font-bold text-gray-900 px-4 py-2 mb-4 text-sm" style="background:#fde68a">Tu reto</div>
+          <div id="hg-stage" class="dots p-2 rounded-2xl mb-3">
+            <div id="hourglass" class="fm-hg"></div>
+          </div>
+          <div id="hg-display" class="ribbon fun font-bold text-gray-900 px-6 py-2 mb-4" style="background:#fde68a;font-size:38px;letter-spacing:.06em;min-width:160px;text-align:center">0:00</div>
+          <div class="flex items-center justify-center gap-2 flex-wrap">
+            <button onclick="T.start()" class="fun font-bold text-white py-2.5 px-6 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-play"></i> Iniciar</button>
+            <button onclick="T.pause()" class="fun font-bold text-gray-900 py-2.5 px-5 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fff;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-pause"></i> Pausa</button>
+            <button onclick="T.reset()" class="fun font-bold text-gray-900 py-2.5 px-5 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fff;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-rotate-left"></i></button>
+          </div>
+        </div>
+
+        <!-- estado 3: resultado -->
+        <div id="sim-result" class="hidden w-full flex flex-col items-center">
+          <div id="result-coin" class="mb-3"></div>
+          <p id="result-text" class="fun font-bold text-white text-lg mb-4">¿Completaste el reto?</p>
+          <div class="flex items-center justify-center gap-3">
+            <button onclick="claim(true)"  class="fun font-bold text-white py-2.5 px-6 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#22c55e;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-check"></i> ¡Lo logre!</button>
+            <button onclick="claim(false)" class="fun font-bold text-gray-900 py-2.5 px-6 rounded-full border-2 border-gray-900 flex items-center gap-2" style="background:#fff;box-shadow:3px 3px 0 #111827"><i class="fa-solid fa-xmark"></i> No pude</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCION 1: CARTAS DE COLOR -->
+  <section>
+    <div class="flex items-center gap-3 mb-6">
+      <span class="ribbon fun text-lg font-bold px-4 py-1.5" style="background:#fde68a">1 · Cartas de Color</span>
+      <span class="text-gray-500 font-semibold text-sm">32 cartas · 8 por grupo muscular</span>
+    </div>
+    <div id="grid-color" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+  </section>
+
+  <!-- SECCION 2: VENTAJAS -->
+  <section>
+    <div class="flex items-center gap-3 mb-6">
+      <span class="ribbon fun text-lg font-bold px-4 py-1.5" style="background:#86efac">2 · Cartas de Ventaja</span>
+      <span class="text-gray-500 font-semibold text-sm">Tus poderes de heroe · cuestan 1 punto</span>
+    </div>
+    <div id="grid-ventajas" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5"></div>
+  </section>
+
+  <!-- SECCION 3: CASTIGOS -->
+  <section>
+    <div class="flex items-center gap-3 mb-6">
+      <span class="ribbon fun text-lg font-bold px-4 py-1.5" style="background:#fca5a5">3 · Cartas de Castigo</span>
+      <span class="text-gray-500 font-semibold text-sm">Tus trampas de villano · cuestan 1 punto</span>
+    </div>
+    <div id="grid-castigos" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5"></div>
+  </section>
+
+</main>
+
+<footer class="no-print border-t-2 border-gray-900 py-6 text-center text-sm text-gray-500 font-semibold">
+  Fit Match 2026 · Hecho para sudar y reir
+</footer>
+
+<script src="fm-fichas.js"></script>
+<script>
+/* ===== GRUPOS (cartas de color) ===== */
+const GROUPS = [
+  { key:'R',  name:'PECHO & TRICEPS',   tag:'Empuja hasta el limite', icon:'fa-dumbbell',       c:'#fb7185', c2:'#e11d48' },
+  { key:'AM', name:'ABDOMEN & CORE',    tag:'El centro del poder',    icon:'fa-fire',           c:'#fcd34d', c2:'#f59e0b' },
+  { key:'AZ', name:'PIERNAS & GLUTEOS', tag:'La base del campeon',    icon:'fa-person-running', c:'#60a5fa', c2:'#2563eb' },
+  { key:'M',  name:'ESPALDA & HOMBROS', tag:'Postura de titan',       icon:'fa-hand-back-fist', c:'#c084fc', c2:'#9333ea' },
+];
+
+/* ===== POOLS DE EJERCICIOS REALES ===== */
+const POOLS = {
+  R: {
+    basico: ['Flexiones de pared','Flexiones inclinadas (silla/mesa)','Aperturas de pecho con botellas','Flexiones de rodillas','Fondos en silla asistidos','Extension de triceps sentado','Fondos de triceps cortos (Dips)','Flexiones cerradas en pared','Extension de triceps en banco','Patada de triceps ligera'],
+    inter: ['Flexiones clasicas','Flexiones diamante','Flexiones declinadas','Press de piso con botellas','Flexiones Spiderman','Fondos de triceps clasicos (banco)','Rompecraneos con botellas','Flexiones codos pegados','Extension de triceps a un brazo','Fondos en paralelas entre 2 sillas'],
+    avanzado: ['Flexiones arquero (Archer)','Flexiones con palmada (Plyo)','Cruces de pecho con toallas','Flexiones de un solo brazo','Flexiones declinadas con palmada','Fondos en paralelas profundos','Flexiones a una mano','Flexiones Esfinge','Flexiones de triceps explosivas'],
+    espartano: ['Flexiones aztecas','Flexiones a pino (Handstand)','Flexiones diamante explosivas','Flexiones a una mano muy inclinadas','Fondos en L (L-sit dips)','Handstand hold 60s','Muscle-ups en barra de puerta'],
+  },
+  AM: {
+    basico: ['Respiracion diafragmatica','Crunch basico','Elevacion de talones (Heel Taps)','Plancha isometrica (rodillas)','Puente de gluteos','Abdominales cortos (cortaunas)','Bicicleta estatica suave','Plancha lateral apoyada (rodillas)'],
+    inter: ['Plancha tradicional','Giros rusos (Russian Twists)','Abdominales inversos','Bicycle crunches (codo-rodilla)','Escaladores (Mountain Climbers)','Dead Bug (bicho muerto)','Toque de pies (Toe Touches)','Plancha lateral clasica'],
+    avanzado: ['Hollow Body Hold','Mountain climbers cruzados','Bird-Dog en plancha','Limpiaparabrisas (Wipers)','V-Ups','Plancha lateral con Hip Dips','Plancha a pica (Pike)','Elevacion de piernas estiradas'],
+    espartano: ['Dragon Flag','Abdominales en barra (rodillas)','Abdominales en barra (piernas rectas)','Abdominales con rueda (Ab Wheel)','Plancha con saltos (Plank Jacks)','L-Sit colgado','Escaladores Spiderman','Plancha con caminata (Comandos)','Roll to V-up','Body Saw'],
+  },
+  AZ: {
+    basico: ['Sentadilla clasica (Air Squat)','Puente de gluteos','Zancada hacia atras (Reverse Lunge)','Patada de gluteo (Donkey Kick)','Elevacion de talones','Sentadilla de lado a lado (Lateral)','Abduccion lateral acostada','Sentadilla de sumo','Puente de gluteos a una pierna','Aperturas de almeja (Clamshell)'],
+    inter: ['Sentadilla con salto (Jump Squat)','Zancada con salto (Jump Lunge)','Sentadilla bulgara','Sentadilla cosaca','Patada de gluteo pierna estirada','Puente de gluteos con banda','Caminata de canguro (Crab Walks)','Peso muerto rumano a una pierna','Zancada cruzada (Curtsy)','Sentadilla isometrica en pared (Wall Sit)'],
+    avanzado: ['Hip Thrust en suelo/silla','Sentadilla con peso (Goblet)','Peso muerto rumano con peso','Zancada caminando con mancuernas','Sentadilla a una pierna (Pistol)','Sentadilla bulgara con peso','Hip thrust a una pierna con peso','Sentadilla 1 y 1/2','Puente con pausa larga','Step-ups con peso'],
+    espartano: ['Mountain Climbers con salto','Burpees con salto y sentadilla','Skater jumps (sentadilla lateral)','Tabata de sentadillas (4 min)','Combo espartano de gluteos','Sentadilla con salto sostenido'],
+  },
+  M: {
+    basico: ['Angel de pared (Wall Angels)','Superman basico','Flexiones de rodillas','Remo con toalla isometrico','Elevaciones laterales con botellas','Elevaciones frontales','Pajaros (deltoide posterior) sentados','Press militar sentado con mancuernas'],
+    inter: ['Remo con mancuerna a un brazo','Remo invertido con mesa','Flexiones escapulares','Pajaro de pie (Pec-Deck inv.)','Press Arnold','Encoge de hombros (Shrugs)','Superman en Y y T','Remo al menton con banda'],
+    avanzado: ['Dominadas (Pull-ups)','Flexiones de picas (Pike)','Remo Pendlay a 90 grados','Face Pulls con banda','Flexiones en T','Pajaro con banda elastica','Dominadas supinas (Chin-ups)','Elevaciones laterales en bisagra'],
+    espartano: ['Flexiones haciendo el pino (Handstand)','Dominadas arquero (Archer Pull-ups)','Dominadas explosivas (Muscle-up prog.)','Paseo del granjero con garrafas','Front Lever raise con toalla','Plancha invertida (Back lever)'],
+  },
+};
+
+const LEVELS = [
+  { id:'basico',   label:'Básico',     pts:'1 pt',  time:'1:00', n:2, dot:'#16a34a' },
+  { id:'inter',    label:'Intermedio', pts:'2 pts', time:'1:30', n:2, dot:'#d97706' },
+  { id:'avanzado', label:'Avanzado',   pts:'3 pts', time:'2:00', n:2, dot:'#dc2626' },
+];
+
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+// Repartidor tipo "bolsa barajada": entrega sin repetir hasta agotar, luego rebaraja.
+function makeDealer(arr){
+  let bag = [];
+  return ()=>{
+    if(bag.length===0) bag = shuffle(arr);
+    return bag.pop();
+  };
+}
+
+// Crea un set fresco de dealers para un grupo (DRY: usado por mazo y selector).
+function makeGroupDealers(group){
+  const pool = POOLS[group.key];
+  return {
+    basico: makeDealer(pool.basico),
+    inter: makeDealer(pool.inter),
+    avanzado: makeDealer(pool.avanzado),
+    espartano: makeDealer(pool.espartano),
+  };
+}
+
+function levelGroup(level, names){
+  const rows = names.map(nm => `<div class="exrow px-2 py-1 text-[11px] font-bold text-gray-800 leading-tight">${nm}</div>`).join('');
+  return `<div>
+    <div class="flex items-center justify-between mb-1">
+      <span class="fun text-[12px] font-bold text-gray-900 flex items-center"><i class="fa-solid fa-circle text-[8px] mr-1" style="color:${level.dot}"></i>${level.label}</span>
+      <span class="text-[10px] font-bold text-gray-700">${level.pts} · ${level.time}</span>
+    </div>
+    <div class="space-y-1">${rows}</div>
+  </div>`;
+}
+
+function colorCard(group, idx, dealers){
+  const blocks = LEVELS.map(l => {
+    const names = [];
+    for(let i=0;i<l.n;i++) names.push(dealers[l.id]());
+    return levelGroup(l, names);
+  }).join('');
+  const spartan = dealers.espartano();
+  return `<div class="pop flex flex-col bg-white">
+    <div class="dots p-4 text-white" style="background:linear-gradient(150deg,${group.c},${group.c2})">
+      <div class="flex items-start justify-between">
+        <div class="w-14 h-14 icon-bubble flex items-center justify-center text-2xl" style="background:#fff;color:${group.c2}"><i class="fa-solid ${group.icon}"></i></div>
+        <span class="cost-badge fun text-[11px] font-bold px-2.5 py-1">#${idx}</span>
+      </div>
+      <h3 class="fun text-xl font-bold mt-3 leading-none drop-shadow">${group.name}</h3>
+      <p class="font-bold text-white/90 text-[12px] italic">"${group.tag}"</p>
+    </div>
+    <div class="p-3 space-y-2.5 flex-grow" style="background:#fff7fb">
+      ${blocks}
+    </div>
+    <div class="ribbon m-3 mt-0 px-2.5 py-2 flex items-center gap-2" style="background:#1f2937">
+      <i class="fa-solid fa-khanda text-lg" style="color:#fbbf24"></i>
+      <div class="leading-tight">
+        <span class="block text-[9px] font-bold uppercase text-amber-300">Espartano · +1 pt extra (banca)</span>
+        <span class="block text-[11px] font-bold text-white">${spartan}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ===== SIMULADOR DE JUEGO ===== */
+function robarCarta(){
+  const group = GROUPS[Math.floor(Math.random()*GROUPS.length)];
+  const idx = Math.floor(Math.random()*8)+1;
+  const dealers = makeGroupDealers(group);
+  const sp = document.getElementById('spotlight');
+  sp.innerHTML = colorCard(group, idx, dealers);
+  sp.firstElementChild.classList.add('deal-in');
+  document.getElementById('spotlight-label').innerHTML =
+    `&#127942; Te toco <b style="color:${group.c2}">${group.name}</b> · carta #${idx}. ¡Elige tu reto!`;
+  game.group = group;
+  showLevels();
+  document.getElementById('simulador').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ===== VENTAJAS / CASTIGOS ===== */
+const VENTAJAS = [
+  ['Suplente de Emergencia','fa-people-arrows','Cambia de atleta a mitad del cronometro.'],
+  ['Descuento de Tiempo','fa-tags','Resta 15 segundos al reloj del reto.'],
+  ['Zona de Confort','fa-mug-hot','Version facil del ejercicio por 20 seg.'],
+  ['Escudo de Fichas','fa-shield-halved','Si fallas, las fichas vuelven al banco, no al rival.'],
+  ['Pausa Hidratacion','fa-bottle-water','Congela el reloj 10 seg sin soltar la postura.'],
+  ['Socio Comercial','fa-handshake','Obliga a un rival a sufrir contigo; si desiste, tu tiempo baja 50%.'],
+  ['Seguro de Vida','fa-heart-pulse','Si fallas, recuperas el 50% de lo apostado.'],
+  ['Inmunidad Color','fa-shield-virus','Inmune a castigos durante toda la ronda.'],
+  ['Transferencia de Impuestos','fa-money-bill-transfer','Si ganas, el retador te paga 1 punto extra.'],
+  ['Segunda Oportunidad','fa-rotate-left','Reinicia el reloj una vez si fallas en los primeros 10 seg.'],
+];
+const CASTIGOS = [
+  ['Gravedad Aumentada','fa-weight-hanging','El rival carga a un companero liviano.'],
+  ['Doble Impacto','fa-bolt','Alterna un segundo ejercicio durante el reto.'],
+  ['Privacion Sensorial','fa-eye-slash','Ejecuta todo con los ojos cerrados.'],
+  ['Anclaje Isometrico','fa-anchor','Manten el punto mas dificil 15 seg sin moverte.'],
+  ['Camara Lenta','fa-gauge-simple-high','Cada repeticion: 4 seg de bajada y 4 de subida.'],
+  ['El Saboteador','fa-face-laugh-squint','Te gritan y cuentan mal cerca de la cara.'],
+  ['Apoyo Restringido','fa-hand','Levanta una mano o un pie por 20 seg.'],
+  ['Viento en Contra','fa-wind','Te abanican o soplan aire en la cara.'],
+  ['El Extensor','fa-stopwatch','Suma 20 seg sorpresa al final del reloj.'],
+  ['Traccion de Cadera','fa-link','Te jalan con banda para desestabilizar el core.'],
+];
+
+function modCard(item, kind){
+  const isV = kind==='v';
+  const head = isV ? '#10b981' : '#ef4444';
+  const head2 = isV ? '#059669' : '#dc2626';
+  const tagText = isV ? 'VENTAJA' : 'CASTIGO';
+  const tagIcon = isV ? 'fa-shield-halved' : 'fa-hand-fist';
+  const persona = isV ? 'fa-mask' : 'fa-skull';
+  return `<div class="pop flex flex-col bg-white">
+    <div class="dots px-3 py-2 flex items-center justify-between text-white" style="background:linear-gradient(120deg,${head},${head2})">
+      <span class="fun text-[11px] font-bold"><i class="fa-solid ${tagIcon} mr-1"></i>${tagText}</span>
+      <i class="fa-solid ${persona} text-white/80"></i>
+    </div>
+    <div class="p-4 flex flex-col items-center text-center flex-grow">
+      <div class="w-16 h-16 icon-bubble flex items-center justify-center text-3xl mb-3" style="background:${isV?'#d1fae5':'#fee2e2'};color:${head2}"><i class="fa-solid ${item[1]}"></i></div>
+      <h4 class="fun text-base font-bold text-gray-900 leading-tight">${item[0]}</h4>
+      <p class="text-gray-600 text-xs font-semibold mt-1.5 flex-grow">${item[2]}</p>
+      <span class="cost-badge fun text-xs font-bold px-3 py-1 mt-3"><i class="fa-solid fa-coins mr-1" style="color:#f59e0b"></i>Cuesta 1 pt</span>
+    </div>
+  </div>`;
+}
+
+function generar(){
+  let html = '';
+  GROUPS.forEach(g=>{
+    const dealers = makeGroupDealers(g);
+    for(let i=1;i<=8;i++){ html += colorCard(g, i, dealers); }
+  });
+  document.getElementById('grid-color').innerHTML = html;
+}
+
+generar();
+document.getElementById('grid-ventajas').innerHTML = VENTAJAS.map(v=>modCard(v,'v')).join('');
+document.getElementById('grid-castigos').innerHTML = CASTIGOS.map(c=>modCard(c,'c')).join('');
+
+/* ===== LOGICA DEL SIMULADOR ===== */
+// niveles del reto: tiempo (s), puntos y moneda asociada
+const SIM_LEVELS = [
+  { id:'basico',   label:'Básico',     sec:60,  pts:1, coin:'bronze', bg:'#86efac', txt:'#111827' },
+  { id:'inter',    label:'Intermedio', sec:90,  pts:2, coin:'silver', bg:'#fcd34d', txt:'#111827' },
+  { id:'avanzado', label:'Avanzado',   sec:120, pts:3, coin:'gold',   bg:'#ef4444', txt:'#ffffff' },
+  { id:'espartano',label:'Espartano (bonus)', sec:60, pts:1, coin:'bronze', bonus:true, bg:'#1f2937', txt:'#fbbf24' },
+];
+
+const game = { group:null, level:null, exercise:null, score:0, coins:[] };
+
+// instancia unica del temporizador (modulo compartido)
+const T = FM.createTimer({
+  hg: document.getElementById('hourglass'),
+  display: document.getElementById('hg-display'),
+  stage: document.getElementById('hg-stage'),
+  onFinish: ()=>{ setTimeout(showResult, 2300); }, // tras el flash de ¡TIEMPO!
+});
+
+function simShow(which){
+  ['empty','levels','timer','result'].forEach(s=>{
+    document.getElementById('sim-'+s).classList.toggle('hidden', s!==which);
+  });
+}
+
+function showLevels(){
+  const cont = document.getElementById('level-btns');
+  cont.innerHTML = SIM_LEVELS.map(l=>`
+    <button onclick="elegirNivel('${l.id}')" class="fun font-bold py-2.5 px-4 rounded-xl border-2 border-gray-900 flex items-center justify-between gap-2" style="background:${l.bg};color:${l.txt};box-shadow:3px 3px 0 #111827">
+      <span><i class="fa-solid ${l.bonus?'fa-khanda':'fa-circle-play'} mr-1"></i>${l.label}</span>
+      <span class="text-[12px]">${FM.fmt(l.sec)} · ${l.bonus?'+':''}${l.pts} pt${l.pts>1?'s':''}</span>
+    </button>`).join('');
+  simShow('levels');
+}
+
+function elegirNivel(id){
+  const lvl = SIM_LEVELS.find(l=>l.id===id);
+  game.level = lvl;
+  // ejercicio al azar del grupo actual para ese nivel
+  const pool = POOLS[game.group.key][id];
+  game.exercise = pool[Math.floor(Math.random()*pool.length)];
+  document.getElementById('challenge').innerHTML =
+    `<i class="fa-solid fa-bolt mr-1"></i>${game.exercise} · ${FM.fmt(lvl.sec)}`;
+  T.set(lvl.sec);
+  simShow('timer');
+  T.start();
+}
+
+function showResult(){
+  const lvl = game.level; if(!lvl) return;
+  document.getElementById('result-coin').innerHTML = miniCoin(lvl.coin, 92);
+  document.getElementById('result-text').innerHTML =
+    `Se acabo el tiempo de <b>${game.exercise}</b>.<br>¿Lo completaste? Ganas <b>${lvl.bonus?'+':''}${lvl.pts} pt${lvl.pts>1?'s':''}</b>.`;
+  simShow('result');
+}
+
+function claim(ok){
+  const lvl = game.level;
+  if(ok && lvl){
+    game.score += lvl.pts;
+    game.coins.push(lvl.coin);
+    document.getElementById('score').textContent = game.score;
+    renderTray();
+  }
+  // siguiente turno: vuelve a pedir robar carta
+  game.level=null; game.exercise=null;
+  document.getElementById('spotlight-label').innerHTML = ok
+    ? '&#127881; ¡Sumaste puntos! Roba otra carta para el siguiente turno.'
+    : 'Sin problema. Roba otra carta y vuelve a intentarlo.';
+  simShow('empty');
+}
+
+// moneda chica para la bandeja del marcador (reusa estilo de la grande)
+function miniCoin(coinId, size){
+  const c = FM.coinById(coinId);
+  const s = size||56;
+  return `<div class="coin-pop" style="position:relative;width:${s}px;height:${s}px">
+    <svg viewBox="0 0 240 240" width="${s}" height="${s}">
+      <circle cx="120" cy="120" r="116" fill="#111827"/>
+      <circle cx="120" cy="120" r="110" fill="${c.c2}"/>
+      <circle cx="120" cy="120" r="86" fill="${c.cInner}" opacity=".5" stroke="#111827" stroke-width="4"/>
+    </svg>
+    <span class="fun font-bold" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#111827;font-size:${Math.round(s*0.5)}px">${c.pts}</span>
+  </div>`;
+}
+
+function renderTray(){
+  const tray = document.getElementById('coin-tray');
+  if(game.coins.length===0){ tray.innerHTML = '<span class="text-gray-400 font-semibold text-sm">Aun sin monedas</span>'; return; }
+  // agrupa por tipo y muestra contador
+  const counts = {};
+  game.coins.forEach(id=>counts[id]=(counts[id]||0)+1);
+  tray.innerHTML = Object.keys(counts).map(id=>`
+    <div class="flex items-center gap-1">${miniCoin(id,44)}<span class="fun font-bold text-gray-700">x${counts[id]}</span></div>`).join('');
+}
+
+function resetGame(){
+  game.score=0; game.coins=[]; game.level=null; game.exercise=null;
+  document.getElementById('score').textContent='0';
+  renderTray();
+  document.getElementById('spotlight-label').innerHTML='Pulsa el boton y deja que el azar elija tu grupo muscular';
+  document.getElementById('spotlight').innerHTML='<div class="pop card-back flex flex-col items-center justify-center text-white wobble"><i class="fa-solid fa-question text-7xl drop-shadow"></i><p class="fun font-bold mt-3 text-lg drop-shadow">FIT MATCH</p></div>';
+  simShow('empty');
+}
+
+renderTray();
+simShow('empty');
+</script>
+</body>
+</html>
