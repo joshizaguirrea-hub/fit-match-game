@@ -6,11 +6,8 @@
    ============================================================ */
 
 // Variables globales del perfil
-// Cliente de Supabase: lo tomamos del singleton de FMAuth (la libreria global
-// window.supabase NO es un cliente, solo trae createClient). Sin esto, loadProfileData
-// fallaba en silencio y el perfil mostraba "Usuario"/"Recluta" sin datos.
-const supabase = (window.FMAuth && window.FMAuth.getClient) ? window.FMAuth.getClient() : null;
-
+// NOTA: el cliente de Supabase se obtiene DENTRO de cada funcion con
+// window.FMAuth.getClient() (window.supabase es solo la libreria, no el cliente).
 let userProfile = {
   stats: {
     totalHours: 0,
@@ -345,6 +342,8 @@ function switchProfileTab(tabName) {
 // Función para cargar datos del perfil
 async function loadProfileData(targetUserId) {
   try {
+    const supabase = window.FMAuth.getClient();
+    if (!supabase) return;
     // Usuario logueado
     const { data: { user } } = await supabase.auth.getUser();
     // A quién mostramos: si nos pasan targetUserId es un amigo; si no, soy yo
@@ -444,6 +443,8 @@ async function loadPhotos(userId) {
   if (!grid) return;
 
   try {
+    const supabase = window.FMAuth.getClient();
+    if (!supabase) return;
     const { data: photos } = await supabase
       .from('progress_photos')
       .select('*')
@@ -482,6 +483,8 @@ async function handlePhotoUpload(event) {
   if (!file) return;
 
   try {
+    const supabase = window.FMAuth.getClient();
+    if (!supabase) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -523,6 +526,8 @@ async function deletePhoto(photoId) {
   if (!confirm('¿Estás seguro de eliminar esta foto?')) return;
 
   try {
+    const supabase = window.FMAuth.getClient();
+    if (!supabase) return;
     const { error } = await supabase
       .from('progress_photos')
       .delete()
@@ -544,6 +549,8 @@ async function loadBestFitBro(currentUser, profile) {
   if (!content) return;
 
   try {
+    const supabase = window.FMAuth.getClient();
+    if (!supabase) return;
     // Obtener todos los usuarios
     const { data: allUsers } = await supabase
       .from('profiles')
