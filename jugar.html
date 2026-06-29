@@ -111,12 +111,12 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=22"></script>
-<script src="fm-routines.js?v=22"></script>
-<script src="fm-specialized-routines.js?v=22"></script>
-<script src="fm-badges.js?v=22"></script>
-<script src="fm-achievements.js?v=22"></script>
-<script src="fm-profile.js?v=22"></script>
+<script src="fm-supabase.js?v=23"></script>
+<script src="fm-routines.js?v=23"></script>
+<script src="fm-specialized-routines.js?v=23"></script>
+<script src="fm-badges.js?v=23"></script>
+<script src="fm-achievements.js?v=23"></script>
+<script src="fm-profile.js?v=23"></script>
 </head>
 <body class="min-h-screen antialiased">
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
@@ -252,6 +252,26 @@
     <div class="text-center mb-10">
       <h1 class="fun text-4xl sm:text-5xl font-extrabold mb-3" style="color:var(--txt)">Elige tu <span style="background:linear-gradient(90deg,#7c5cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent">modo</span></h1>
       <p class="text-base max-w-xl mx-auto" style="color:var(--txt-soft)">Entrena en solitario o reta a tus amigos. En ambos llegas a <b style="color:var(--txt)">30 puntos</b>.</p>
+    </div>
+
+    <!-- Racha visible (retencion) -->
+    <div id="intro-streak" class="hidden max-w-md mx-auto mb-5 rounded-2xl py-3 px-5 flex items-center justify-center gap-3" style="background:linear-gradient(150deg,#7c2d12,#b45309)">
+      <i class="fa-solid fa-fire" style="color:#fdba74;font-size:26px"></i>
+      <span class="text-white font-bold" id="intro-streak-text">Entrena hoy para encender tu racha</span>
+    </div>
+
+    <!-- Reto del Dia (retencion) -->
+    <div id="intro-challenge" class="hidden max-w-md mx-auto mb-8 rounded-2xl p-5" style="background:linear-gradient(150deg,#312e81,#0e7490);border:1px solid #3b3f6b">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-left">
+          <div class="text-cyan-300 text-[11px] font-bold uppercase tracking-wide"><i class="fa-solid fa-bolt mr-1"></i> Reto del Día</div>
+          <div class="text-white font-extrabold text-lg leading-tight" id="intro-challenge-name">Rutina del día</div>
+          <div class="text-gray-300 text-xs" id="intro-challenge-meta">Compétela hoy y gana bonus</div>
+        </div>
+        <button onclick="startDailyChallenge()" class="shrink-0 fun font-bold text-white py-2.5 px-5 rounded-xl" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1f2937">
+          <i class="fa-solid fa-play"></i> Aceptar
+        </button>
+      </div>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
       <button onclick="startTraining()" class="pop p-8 text-left deal-in group">
@@ -1217,6 +1237,7 @@ function closeMissionComplete(){
   if(ov) ov.classList.add('hidden');
   G.training = false;
   showScreen('intro');
+  if(typeof refreshIntroStreak === 'function') refreshIntroStreak();
 }
 document.addEventListener('keydown', e=>{
   const ov = document.getElementById('mission-complete-overlay');
@@ -1235,6 +1256,52 @@ function shareMissionComplete(){
     alert(texto);
   }
 }
+
+/* ============ RETO DEL DIA + RACHA EN INICIO (retencion) ============ */
+let dailyChallengeRoutine = null;
+
+function fmDayOfYear(){
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now - start) / 86400000);
+}
+
+async function refreshIntroStreak(){
+  const banner = document.getElementById('intro-streak');
+  const txt = document.getElementById('intro-streak-text');
+  if(!banner || !txt) return;
+  if(!cloudUser){ banner.classList.add('hidden'); return; }
+  const streak = await mcGetStreak();
+  banner.classList.remove('hidden');
+  if(streak >= 2) txt.textContent = `¡Racha de ${streak} días seguidos! No la rompas hoy.`;
+  else if(streak === 1) txt.textContent = `¡Llevas 1 día! Entrena hoy para no romper la cadena.`;
+  else txt.textContent = `Entrena hoy para encender tu racha.`;
+}
+
+function initIntroExtras(){
+  // Reto del Dia: rutina deterministica segun el dia del anio
+  try{
+    const list = (window.FMRoutines || []);
+    if(list.length){
+      dailyChallengeRoutine = list[ fmDayOfYear() % list.length ];
+      const nameEl = document.getElementById('intro-challenge-name');
+      const metaEl = document.getElementById('intro-challenge-meta');
+      const card = document.getElementById('intro-challenge');
+      if(nameEl) nameEl.textContent = dailyChallengeRoutine.name;
+      if(metaEl) metaEl.textContent = `${dailyChallengeRoutine.rounds||'?'} rondas · ${dailyChallengeRoutine.points||0} pts · ¡gana hoy!`;
+      if(card) card.classList.remove('hidden');
+    }
+  }catch(e){ /* sin rutinas aun */ }
+  refreshIntroStreak();
+}
+
+function startDailyChallenge(){
+  startTraining();
+  if(dailyChallengeRoutine){
+    setTimeout(()=>openRoutineDetail(dailyChallengeRoutine.id, 'gods'), 50);
+  }
+}
+window.addEventListener('DOMContentLoaded', () => { setTimeout(initIntroExtras, 400); });
 
 /* ============ MODAL DE REGLAS ============ */
 function openRules(){ document.getElementById('rules-modal').classList.remove('hidden'); }
@@ -2019,6 +2086,8 @@ async function initCloudProfile() {
         G.players[0].name = profile.apodo;
         renderTurn();
       }
+      // Refrescar la racha visible del inicio ahora que hay sesion
+      if (typeof refreshIntroStreak === 'function') refreshIntroStreak();
     }
   }
 }
