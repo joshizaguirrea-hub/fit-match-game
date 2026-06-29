@@ -201,6 +201,9 @@ function createProfileModal() {
             <button onclick="switchProfileTab('stats')" class="profile-tab active px-4 py-2 font-bold text-sm border-b-2 border-purple-600 text-purple-600" data-tab="stats">
               <i class="fa-solid fa-chart-line mr-2"></i>Estadísticas
             </button>
+            <button onclick="switchProfileTab('nutrition')" class="profile-tab px-4 py-2 font-bold text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="nutrition">
+              <i class="fa-solid fa-apple-whole mr-2"></i>Nutrición
+            </button>
             <button onclick="switchProfileTab('mailbox')" class="profile-tab px-4 py-2 font-bold text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 relative" data-tab="mailbox">
               <i class="fa-solid fa-bell mr-2"></i>Buzón
               <span id="mailbox-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">0</span>
@@ -254,6 +257,12 @@ function createProfileModal() {
                 <!-- Se llena dinámicamente -->
               </div>
             </div>
+          </div>
+
+          <!-- Tab: Nutricion -->
+          <div id="tab-nutrition" class="profile-tab-content hidden">
+            <div id="nutrition-profile-block" class="rounded-2xl p-4" style="background:#222842;border:1px solid #2c3350"></div>
+            <p class="text-[11px] mt-3" style="color:#8b92b0"><i class="fa-solid fa-circle-info mr-1"></i> Esta información nos sirve para sugerirte recetas a tu medida. No sustituye la asesoría de un médico o nutriólogo.</p>
           </div>
 
           <!-- Tab: Buzon (notificaciones) -->
@@ -374,9 +383,11 @@ async function loadProfileData(targetUserId) {
     const tabPhotos = document.querySelector('.profile-tab[data-tab="photos"]');
     const tabCustom = document.querySelector('.profile-tab[data-tab="customization"]');
     const tabMailbox = document.querySelector('.profile-tab[data-tab="mailbox"]');
+    const tabNutrition = document.querySelector('.profile-tab[data-tab="nutrition"]');
     if (tabPhotos) tabPhotos.style.display = isOwn ? '' : 'none';
     if (tabCustom) tabCustom.style.display = isOwn ? '' : 'none';
     if (tabMailbox) tabMailbox.style.display = isOwn ? '' : 'none';
+    if (tabNutrition) tabNutrition.style.display = isOwn ? '' : 'none';
 
     // Cargar buzon (solo mi propio perfil)
     if (isOwn) loadProfileMailbox(user);
@@ -414,6 +425,9 @@ async function loadProfileData(targetUserId) {
 
     // Mostrar datos físicos / perfil fitness
     renderFitnessProfile(profile, isOwn);
+
+    // Mostrar perfil nutricional (solo el propio)
+    if (isOwn) renderNutritionProfile(profile, isOwn);
 
     // Cargar logros
     loadAchievements(workouts || [], stats.totalPoints);
@@ -953,6 +967,138 @@ async function saveFitnessProfile(){
 }
 window.toggleFitnessEdit = toggleFitnessEdit;
 window.saveFitnessProfile = saveFitnessProfile;
+
+// ===== PERFIL NUTRICIONAL (Fase A) =====
+const FM_NUT_LABELS = {
+  diet_pattern: { omnivoro:'Omnívoro', vegetariano:'Vegetariano', vegano:'Vegano', pescetariano:'Pescetariano' },
+  diet_style:   { ninguno:'Ninguno', keto:'Keto', lowcarb:'Low-carb', mediterraneo:'Mediterráneo', ayuno:'Ayuno intermitente' },
+  nutrition_pace: { lento:'Lento (sostenible)', moderado:'Moderado', agresivo:'Agresivo' },
+  spice_level:  { nada:'Suave', medio:'Medio', picante:'Picante' },
+  cook_time:    { rapido:'Rápido (<15 min)', medio:'Medio (~30 min)', gusta_cocinar:'Me encanta cocinar' },
+  cook_skill:   { principiante:'Principiante', intermedio:'Intermedio', avanzado:'Avanzado' },
+  budget_tier:  { bajo:'Económico', medio:'Medio', alto:'Holgado' }
+};
+function nutChip(icon, label, value){
+  return `<div class="rounded-xl px-3 py-2" style="background:#181c2a;border:1px solid #2c3350">
+    <div class="text-[10px] uppercase tracking-wide" style="color:#8b92b0"><i class="fa-solid ${icon} mr-1"></i>${label}</div>
+    <div class="font-bold text-sm" style="color:#eceefb">${value}</div>
+  </div>`;
+}
+function renderNutritionProfile(profile, isOwn){
+  const box = document.getElementById('nutrition-profile-block');
+  if(!box) return;
+  profile = profile || {};
+  const L = FM_NUT_LABELS;
+  const hasData = profile.diet_pattern || profile.diet_style || profile.budget_tier || profile.country;
+  const editBtn = isOwn ? `<button onclick="toggleNutritionEdit(true)" class="text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#34d399;color:#06281e"><i class="fa-solid fa-pen mr-1"></i>${hasData?'Editar':'Completar'}</button>` : '';
+
+  if(!hasData){
+    box.innerHTML = `<div class="flex items-center justify-between">
+      <div><h3 class="font-bold" style="color:#eceefb"><i class="fa-solid fa-apple-whole mr-1" style="color:#34d399"></i> Tu perfil nutricional</h3>
+      <p class="text-xs mt-1" style="color:#8b92b0">${isOwn ? 'Complétalo para recibir recetas hechas a tu medida.' : 'Sin datos.'}</p></div>
+      ${editBtn}
+    </div>
+    <div id="nutrition-edit-form" class="hidden mt-4"></div>`;
+    if(isOwn) buildNutritionForm(profile);
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-bold" style="color:#eceefb"><i class="fa-solid fa-apple-whole mr-1" style="color:#34d399"></i> Tu perfil nutricional</h3>
+      ${editBtn}
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+      ${profile.diet_pattern ? nutChip('fa-leaf','Dieta', L.diet_pattern[profile.diet_pattern]||profile.diet_pattern) : ''}
+      ${profile.diet_style ? nutChip('fa-seedling','Estilo', L.diet_style[profile.diet_style]||profile.diet_style) : ''}
+      ${profile.meals_per_day ? nutChip('fa-utensils','Comidas/día', profile.meals_per_day) : ''}
+      ${profile.nutrition_pace ? nutChip('fa-gauge-high','Ritmo', L.nutrition_pace[profile.nutrition_pace]||profile.nutrition_pace) : ''}
+      ${profile.allergies ? nutChip('fa-triangle-exclamation','Alergias', profile.allergies) : ''}
+      ${profile.intolerances ? nutChip('fa-ban','Intolerancias', profile.intolerances) : ''}
+      ${profile.dislikes ? nutChip('fa-face-frown','No le gusta', profile.dislikes) : ''}
+      ${profile.spice_level ? nutChip('fa-pepper-hot','Picante', L.spice_level[profile.spice_level]||profile.spice_level) : ''}
+      ${profile.cook_time ? nutChip('fa-clock','Tiempo cocina', L.cook_time[profile.cook_time]||profile.cook_time) : ''}
+      ${profile.cook_skill ? nutChip('fa-kitchen-set','Nivel cocina', L.cook_skill[profile.cook_skill]||profile.cook_skill) : ''}
+      ${profile.kitchen_equipment ? nutChip('fa-blender','Equipo', profile.kitchen_equipment) : ''}
+      ${profile.country ? nutChip('fa-earth-americas','País', profile.country) : ''}
+      ${profile.budget_tier ? nutChip('fa-wallet','Presupuesto', L.budget_tier[profile.budget_tier]||profile.budget_tier) : ''}
+      ${profile.cuisine ? nutChip('fa-bowl-food','Cocina fav.', profile.cuisine) : ''}
+      ${profile.medical_flags ? nutChip('fa-heart-pulse','Salud', profile.medical_flags) : ''}
+    </div>
+    <div id="nutrition-edit-form" class="hidden mt-4"></div>`;
+  if(isOwn) buildNutritionForm(profile);
+}
+function buildNutritionForm(p){
+  const form = document.getElementById('nutrition-edit-form');
+  if(!form) return;
+  const L = FM_NUT_LABELS;
+  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px';
+  const lb = (t)=>`<label class="text-[10px] uppercase" style="color:#8b92b0">${t}</label>`;
+  const noneOpt = (cur)=>`<option value="" ${!cur?'selected':''}>-</option>`;
+  const sel = (id, map, cur)=>`<select id="${id}" style="${inS}">${noneOpt(cur)}${selOpts(map, cur)}</select>`;
+  form.innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div>${lb('Dieta')}${sel('nu-pattern', L.diet_pattern, p.diet_pattern)}</div>
+      <div>${lb('Estilo')}${sel('nu-style', L.diet_style, p.diet_style)}</div>
+      <div>${lb('Comidas/día')}<select id="nu-meals" style="${inS}"><option value="">-</option><option value="3" ${p.meals_per_day==3?'selected':''}>3</option><option value="4" ${p.meals_per_day==4?'selected':''}>4</option><option value="5" ${p.meals_per_day==5?'selected':''}>5</option></select></div>
+      <div>${lb('Ritmo')}${sel('nu-pace', L.nutrition_pace, p.nutrition_pace)}</div>
+      <div>${lb('Picante')}${sel('nu-spice', L.spice_level, p.spice_level)}</div>
+      <div>${lb('Tiempo cocina')}${sel('nu-cooktime', L.cook_time, p.cook_time)}</div>
+      <div>${lb('Nivel cocina')}${sel('nu-cookskill', L.cook_skill, p.cook_skill)}</div>
+      <div>${lb('Presupuesto')}${sel('nu-budget', L.budget_tier, p.budget_tier)}</div>
+      <div>${lb('País')}<input id="nu-country" type="text" value="${p.country||''}" placeholder="México..." style="${inS}"></div>
+      <div>${lb('Alergias')}<input id="nu-allergies" type="text" value="${p.allergies||''}" placeholder="nueces, mariscos..." style="${inS}"></div>
+      <div>${lb('Intolerancias')}<input id="nu-intol" type="text" value="${p.intolerances||''}" placeholder="lactosa..." style="${inS}"></div>
+      <div>${lb('No le gusta')}<input id="nu-dislikes" type="text" value="${p.dislikes||''}" placeholder="hígado..." style="${inS}"></div>
+      <div>${lb('Cocina favorita')}<input id="nu-cuisine" type="text" value="${p.cuisine||''}" placeholder="mexicana, italiana..." style="${inS}"></div>
+      <div>${lb('Equipo de cocina')}<input id="nu-equip" type="text" value="${p.kitchen_equipment||''}" placeholder="estufa, horno, licuadora..." style="${inS}"></div>
+      <div class="md:col-span-3">${lb('Salud (opcional - guia general, no tratamiento)')}<input id="nu-medical" type="text" value="${p.medical_flags||''}" placeholder="diabetes, hipertension, embarazo..." style="${inS}"></div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button onclick="saveNutritionProfile()" class="text-xs font-bold px-4 py-2 rounded-lg" style="background:#34d399;color:#06281e"><i class="fa-solid fa-check mr-1"></i>Guardar</button>
+      <button onclick="toggleNutritionEdit(false)" class="text-xs font-bold px-4 py-2 rounded-lg" style="background:#222842;color:#b2b9d4">Cancelar</button>
+      <span id="nutrition-edit-msg" class="text-xs self-center" style="color:#ef4444"></span>
+    </div>`;
+}
+function toggleNutritionEdit(show){
+  const form = document.getElementById('nutrition-edit-form');
+  if(form) form.classList.toggle('hidden', !show);
+}
+async function saveNutritionProfile(){
+  const msg = document.getElementById('nutrition-edit-msg');
+  try {
+    const supa = window.FMAuth.getClient();
+    const { data: { user } } = await supa.auth.getUser();
+    if(!user) throw new Error('No hay sesión');
+    const v = (id)=>{ const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    const payload = {
+      diet_pattern: v('nu-pattern') || null,
+      diet_style: v('nu-style') || null,
+      meals_per_day: +v('nu-meals') || null,
+      nutrition_pace: v('nu-pace') || null,
+      spice_level: v('nu-spice') || null,
+      cook_time: v('nu-cooktime') || null,
+      cook_skill: v('nu-cookskill') || null,
+      budget_tier: v('nu-budget') || null,
+      country: v('nu-country') || null,
+      allergies: v('nu-allergies') || null,
+      intolerances: v('nu-intol') || null,
+      dislikes: v('nu-dislikes') || null,
+      cuisine: v('nu-cuisine') || null,
+      kitchen_equipment: v('nu-equip') || null,
+      medical_flags: v('nu-medical') || null,
+      nutrition_done: true
+    };
+    const { error } = await supa.from('profiles').update(payload).eq('id', user.id);
+    if(error) throw error;
+    loadProfileData();
+  } catch(err){
+    console.error(err);
+    if(msg) msg.textContent = 'No se pudo guardar: ' + (err.message||err);
+  }
+}
+window.toggleNutritionEdit = toggleNutritionEdit;
+window.saveNutritionProfile = saveNutritionProfile;
 
 window.openProfileModal = openProfileModal;
   window.closeProfileModal = closeProfileModal;
