@@ -39,7 +39,7 @@ END $$;
 -- 3) DIAGNOSTICO: cuantas cuentas hay y sus apodos
 --    (si solo sale 1, tu amigo de pruebas NO tiene cuenta todavia)
 -- ============================================================
-SELECT apodo, total_points, created_at
+SELECT apodo, created_at
 FROM public.profiles
 ORDER BY created_at;
 
