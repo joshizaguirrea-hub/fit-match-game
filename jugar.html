@@ -49,10 +49,15 @@
   ::-webkit-scrollbar-thumb{background:#3a4063;border-radius:5px;}
   ::-webkit-scrollbar-thumb:hover{background:#4a5180;}
   /* Carriles horizontales estilo Netflix */
-  .rail{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:#3a4063 transparent;}
-  .rail::-webkit-scrollbar{height:8px;}
-  .rail::-webkit-scrollbar-thumb{background:#2c3350;border-radius:4px;}
-  .rail::-webkit-scrollbar-track{background:transparent;}
+  .rail{scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;}
+  .rail::-webkit-scrollbar{display:none;}
+  .rail-wrap{position:relative;}
+  .rail-arrow{position:absolute;top:calc(50% - 14px);transform:translateY(-50%);z-index:6;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(15,17,23,.55);backdrop-filter:blur(8px);border:1px solid var(--border);color:var(--txt);font-size:15px;opacity:0;cursor:pointer;transition:opacity .2s, background .2s, transform .2s;}
+  .rail-wrap:hover .rail-arrow{opacity:1;}
+  .rail-arrow:hover{background:rgba(124,92,255,.9);transform:translateY(-50%) scale(1.08);}
+  .rail-arrow-left{left:-8px;}
+  .rail-arrow-right{right:-8px;}
+  @media (hover:none){ .rail-arrow{display:none;} }
   /* seleccion de ejercicio en la carta */
   .exsel{cursor:pointer;transition:transform .12s, box-shadow .12s;}
   .exsel:hover{transform:translateX(2px);}
@@ -102,12 +107,12 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=9"></script>
-<script src="fm-routines.js?v=9"></script>
-<script src="fm-specialized-routines.js?v=9"></script>
-<script src="fm-badges.js?v=9"></script>
-<script src="fm-achievements.js?v=9"></script>
-<script src="fm-profile.js?v=9"></script>
+<script src="fm-supabase.js?v=10"></script>
+<script src="fm-routines.js?v=10"></script>
+<script src="fm-specialized-routines.js?v=10"></script>
+<script src="fm-badges.js?v=10"></script>
+<script src="fm-achievements.js?v=10"></script>
+<script src="fm-profile.js?v=10"></script>
 </head>
 <body class="min-h-screen antialiased">
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
@@ -1975,7 +1980,7 @@ function buildRoutineCard(r){
   `;
 }
 
-// Construye un carril horizontal (estilo Netflix)
+// Construye un carril horizontal (estilo Netflix) con flechas elegantes
 function buildRail(title, iconHtml, accent, routines){
   if(!routines || !routines.length) return '';
   const cards = routines.map(r => `<div class="snap-start shrink-0 w-72">${buildRoutineCard(r)}</div>`).join('');
@@ -1986,9 +1991,22 @@ function buildRail(title, iconHtml, accent, routines){
         <h2 class="fun text-xl font-bold" style="color:var(--txt)">${title}</h2>
         <span class="text-xs ml-1 px-2 py-0.5 rounded-full" style="background:var(--surface2);color:var(--txt-mut)">${routines.length}</span>
       </div>
-      <div class="rail flex gap-4 overflow-x-auto pb-3 snap-x">${cards}</div>
+      <div class="rail-wrap relative">
+        <button onclick="scrollRail(this,-1)" class="rail-arrow rail-arrow-left" aria-label="Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="rail flex gap-4 overflow-x-auto pb-3 snap-x">${cards}</div>
+        <button onclick="scrollRail(this,1)" class="rail-arrow rail-arrow-right" aria-label="Siguiente"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
     </section>
   `;
+}
+
+// Desliza un carril a izquierda (-1) o derecha (1)
+function scrollRail(btn, dir){
+  const wrap = btn.closest('.rail-wrap');
+  if(!wrap) return;
+  const rail = wrap.querySelector('.rail');
+  if(!rail) return;
+  rail.scrollBy({ left: dir * Math.max(304, rail.clientWidth * 0.8), behavior: 'smooth' });
 }
 
 function renderRoutinePicker() {
