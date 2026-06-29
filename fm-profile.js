@@ -263,6 +263,7 @@ function createProfileModal() {
           <div id="tab-nutrition" class="profile-tab-content hidden">
             <div id="nutrition-targets" class="mb-4"></div>
             <div id="nutrition-profile-block" class="rounded-2xl p-4" style="background:#222842;border:1px solid #2c3350"></div>
+            <div id="nutrition-recipes" class="mt-4"></div>
             <p class="text-[11px] mt-3" style="color:#8b92b0"><i class="fa-solid fa-circle-info mr-1"></i> Esta información nos sirve para sugerirte recetas a tu medida. No sustituye la asesoría de un médico o nutriólogo.</p>
           </div>
 
@@ -1028,6 +1029,46 @@ function renderNutritionTargets(profile){
       ${warns.length ? `<div class="mt-3 rounded-xl p-2 text-[11px]" style="background:#3a1010;border:1px solid #7f1d1d;color:#fca5a5"><i class="fa-solid fa-shield-halved mr-1"></i>${warns.join(' ')}</div>`:''}
     </div>`;
 }
+// Tarjetas de recetas sugeridas (Fase C/D)
+function fmTag(txt, color){ return `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded" style="background:${color}22;color:${color};border:1px solid ${color}55">${txt}</span>`; }
+function renderRecipeSuggestions(profile){
+  const box = document.getElementById('nutrition-recipes');
+  if(!box) return;
+  if(!window.FMRecipes){ box.innerHTML=''; return; }
+  const recetas = window.FMRecipes.match(profile||{}, { limit: 6 });
+  if(!recetas.length){
+    box.innerHTML = `<div class="rounded-2xl p-4" style="background:#222842;border:1px solid #2c3350"><p class="text-sm" style="color:#8b92b0">No encontramos recetas que cumplan todos tus filtros. Prueba ampliar tu presupuesto o quitar alguna restricción.</p></div>`;
+    return;
+  }
+  const cards = recetas.map(r => `
+    <div class="rounded-2xl p-4" style="background:#222842;border:1px solid #2c3350">
+      <div class="flex justify-between items-start gap-2">
+        <h4 class="font-bold text-sm" style="color:#eceefb">${r.name}</h4>
+        <span class="text-xs font-bold shrink-0" style="color:#34d399">${r.kcal} kcal</span>
+      </div>
+      <div class="flex flex-wrap gap-1 mt-2">
+        ${fmTag('P '+r.protein_g+'g','#60a5fa')}${fmTag('C '+r.net_carbs+'g net','#fbbf24')}${fmTag('G '+r.fat_g+'g','#f472b6')}
+        ${r.keto_friendly?fmTag('keto','#22d3ee'):''}${r.high_protein?fmTag('alto en proteína','#a78bfa'):''}
+        ${fmTag(r.budget,'#9ca3af')}${fmTag(r.cook_time_min+' min','#9ca3af')}
+      </div>
+      <button onclick="toggleRecipe('${r.id}')" class="text-xs font-bold mt-3" style="color:#34d399"><i class="fa-solid fa-chevron-down mr-1"></i>Ver receta</button>
+      <div id="recipe-${r.id}" class="hidden mt-2 text-xs" style="color:#b2b9d4">
+        <p class="font-bold mb-1" style="color:#eceefb">Ingredientes:</p>
+        <ul class="list-disc list-inside space-y-0.5 mb-2">${r.ingredients.map(i=>`<li>${i}</li>`).join('')}</ul>
+        <p class="font-bold mb-1" style="color:#eceefb">Preparación:</p>
+        <ol class="list-decimal list-inside space-y-0.5">${r.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+      </div>
+    </div>`).join('');
+  box.innerHTML = `
+    <h3 class="font-bold mb-3 flex items-center gap-2" style="color:#eceefb"><i class="fa-solid fa-bowl-food" style="color:#34d399"></i> Recetas para ti <span class="text-xs font-normal" style="color:#8b92b0">(según tu perfil)</span></h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${cards}</div>`;
+}
+function toggleRecipe(id){
+  const el = document.getElementById('recipe-'+id);
+  if(el) el.classList.toggle('hidden');
+}
+window.toggleRecipe = toggleRecipe;
+
 function renderNutritionProfile(profile, isOwn){
   const box = document.getElementById('nutrition-profile-block');
   if(!box) return;
@@ -1035,6 +1076,8 @@ function renderNutritionProfile(profile, isOwn){
   const L = FM_NUT_LABELS;
   // Calcular y mostrar calorias/macros (motor Fase B)
   renderNutritionTargets(profile);
+  // Sugerencias de recetas (Fase C/D)
+  renderRecipeSuggestions(profile);
   const hasData = profile.diet_pattern || profile.diet_style || profile.budget_tier || profile.country;
   const editBtn = isOwn ? `<button onclick="toggleNutritionEdit(true)" class="text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#34d399;color:#06281e"><i class="fa-solid fa-pen mr-1"></i>${hasData?'Editar':'Completar'}</button>` : '';
 
