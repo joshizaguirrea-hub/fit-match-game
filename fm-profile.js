@@ -6,6 +6,11 @@
    ============================================================ */
 
 // Variables globales del perfil
+// Cliente de Supabase: lo tomamos del singleton de FMAuth (la libreria global
+// window.supabase NO es un cliente, solo trae createClient). Sin esto, loadProfileData
+// fallaba en silencio y el perfil mostraba "Usuario"/"Recluta" sin datos.
+const supabase = (window.FMAuth && window.FMAuth.getClient) ? window.FMAuth.getClient() : null;
+
 let userProfile = {
   stats: {
     totalHours: 0,
