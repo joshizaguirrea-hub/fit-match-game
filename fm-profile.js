@@ -973,6 +973,7 @@ window.saveFitnessProfile = saveFitnessProfile;
 const FM_NUT_LABELS = {
   diet_pattern: { omnivoro:'Omnívoro', vegetariano:'Vegetariano', vegano:'Vegano', pescetariano:'Pescetariano' },
   diet_style:   { ninguno:'Ninguno', keto:'Keto', lowcarb:'Low-carb', mediterraneo:'Mediterráneo', ayuno:'Ayuno intermitente' },
+  fasting_protocol: { '16_8':'16:8 (ventana 8h)', '18_6':'18:6 (ventana 6h)', '20_4':'20:4 (Warrior)', 'omad':'OMAD (1 comida)', '5_2':'5:2 (semanal)' },
   nutrition_pace: { lento:'Lento (sostenible)', moderado:'Moderado', agresivo:'Agresivo' },
   spice_level:  { nada:'Suave', medio:'Medio', picante:'Picante' },
   cook_time:    { rapido:'Rápido (<15 min)', medio:'Medio (~30 min)', gusta_cocinar:'Me encanta cocinar' },
@@ -1023,6 +1024,7 @@ function renderNutritionTargets(profile){
       ${bar('Carbohidratos', r.carbs_g, 4, '#fbbf24')}
       ${bar('Grasas', r.fat_g, 9, '#f472b6')}
       ${r.net_carbs_per_meal!=null ? `<p class="text-[11px] mt-2" style="color:#8b92b0">~${r.net_carbs_per_meal}g de carbohidratos por comida</p>`:''}
+      ${profile.diet_style==='ayuno' ? `<div class="mt-3 rounded-xl p-2 text-[11px]" style="background:#10231f;border:1px solid #2c5f4a;color:#7fd9bb"><i class="fa-solid fa-hourglass-half mr-1"></i>Ayuno: come tus <b>${r.calories} kcal</b> dentro de tu ventana${profile.eating_window?` (<b>${profile.eating_window}</b>)`:''}${profile.meals_per_day?` en ${profile.meals_per_day} comida(s)`:''}. El ayuno cambia <b>cuándo</b> comes, no cuánto.</div>`:''}
       ${warns.length ? `<div class="mt-3 rounded-xl p-2 text-[11px]" style="background:#3a1010;border:1px solid #7f1d1d;color:#fca5a5"><i class="fa-solid fa-shield-halved mr-1"></i>${warns.join(' ')}</div>`:''}
     </div>`;
 }
@@ -1056,6 +1058,8 @@ function renderNutritionProfile(profile, isOwn){
       ${profile.diet_pattern ? nutChip('fa-leaf','Dieta', L.diet_pattern[profile.diet_pattern]||profile.diet_pattern) : ''}
       ${profile.diet_style ? nutChip('fa-seedling','Estilo', L.diet_style[profile.diet_style]||profile.diet_style) : ''}
       ${profile.meals_per_day ? nutChip('fa-utensils','Comidas/día', profile.meals_per_day) : ''}
+      ${profile.fasting_protocol ? nutChip('fa-hourglass-half','Ayuno', L.fasting_protocol[profile.fasting_protocol]||profile.fasting_protocol) : ''}
+      ${profile.eating_window ? nutChip('fa-clock','Ventana', profile.eating_window) : ''}
       ${profile.nutrition_pace ? nutChip('fa-gauge-high','Ritmo', L.nutrition_pace[profile.nutrition_pace]||profile.nutrition_pace) : ''}
       ${profile.allergies ? nutChip('fa-triangle-exclamation','Alergias', profile.allergies) : ''}
       ${profile.intolerances ? nutChip('fa-ban','Intolerancias', profile.intolerances) : ''}
@@ -1084,7 +1088,9 @@ function buildNutritionForm(p){
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
       <div>${lb('Dieta')}${sel('nu-pattern', L.diet_pattern, p.diet_pattern)}</div>
       <div>${lb('Estilo')}${sel('nu-style', L.diet_style, p.diet_style)}</div>
-      <div>${lb('Comidas/día')}<select id="nu-meals" style="${inS}"><option value="">-</option><option value="3" ${p.meals_per_day==3?'selected':''}>3</option><option value="4" ${p.meals_per_day==4?'selected':''}>4</option><option value="5" ${p.meals_per_day==5?'selected':''}>5</option></select></div>
+      <div>${lb('Comidas/día')}<select id="nu-meals" style="${inS}"><option value="">-</option><option value="1" ${p.meals_per_day==1?'selected':''}>1 (OMAD)</option><option value="2" ${p.meals_per_day==2?'selected':''}>2</option><option value="3" ${p.meals_per_day==3?'selected':''}>3</option><option value="4" ${p.meals_per_day==4?'selected':''}>4</option><option value="5" ${p.meals_per_day==5?'selected':''}>5</option></select></div>
+      <div>${lb('Protocolo ayuno')}${sel('nu-fasting', L.fasting_protocol, p.fasting_protocol)}</div>
+      <div>${lb('Ventana (si ayunas)')}<input id="nu-window" type="text" value="${p.eating_window||''}" placeholder="12:00 - 20:00" style="${inS}"></div>
       <div>${lb('Ritmo')}${sel('nu-pace', L.nutrition_pace, p.nutrition_pace)}</div>
       <div>${lb('Picante')}${sel('nu-spice', L.spice_level, p.spice_level)}</div>
       <div>${lb('Tiempo cocina')}${sel('nu-cooktime', L.cook_time, p.cook_time)}</div>
@@ -1119,6 +1125,8 @@ async function saveNutritionProfile(){
       diet_pattern: v('nu-pattern') || null,
       diet_style: v('nu-style') || null,
       meals_per_day: +v('nu-meals') || null,
+      fasting_protocol: v('nu-fasting') || null,
+      eating_window: v('nu-window') || null,
       nutrition_pace: v('nu-pace') || null,
       spice_level: v('nu-spice') || null,
       cook_time: v('nu-cooktime') || null,
