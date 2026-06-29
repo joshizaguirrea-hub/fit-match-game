@@ -18,10 +18,10 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=13"></script>
-<script src="fm-badges.js?v=13"></script>
-<script src="fm-achievements.js?v=13"></script>
-<script src="fm-profile.js?v=13"></script>
+<script src="fm-supabase.js?v=14"></script>
+<script src="fm-badges.js?v=14"></script>
+<script src="fm-achievements.js?v=14"></script>
+<script src="fm-profile.js?v=14"></script>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
@@ -1044,28 +1044,28 @@
   // ARREGLO FANTASMA: revisamos la SESIÓN REAL de Supabase (guardada en el navegador),
   // no solo la variable de memoria 'currentProfile' que se vacía al recargar/navegar.
   // BLINDAJE: si la nube no responde en 2.5s, NO nos quedamos colgados.
+  // Revisa de forma INSTANTANEA (sin nube) si hay una sesion guardada en el navegador.
+  // Supabase guarda el token bajo una clave tipo 'sb-<ref>-auth-token'.
+  function hasStoredSession() {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('sb-') && k.endsWith('-auth-token') && localStorage.getItem(k)) return true;
+      }
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+
   async function handlePlayClick(e) {
     if (e) e.preventDefault();
-    // Si el detector de sesion ya confirmo que estas dentro (lo mantiene al dia
-    // onAuthStateChange), entras directo SIN volver a preguntarle a la nube.
-    if (currentUser) { window.location.href = "jugar.html"; return; }
-    // Si no lo sabemos aun, confirmamos rapido con la nube antes de pedir login.
-    const supabase = (window.FMAuth && window.FMAuth.getClient) ? window.FMAuth.getClient() : null;
-    if (supabase) {
-      try {
-        const sessionPromise = supabase.auth.getSession();
-        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 2500));
-        const { data: { session } } = await Promise.race([sessionPromise, timeout]);
-        if (session) {
-          currentUser = session.user;
-          window.location.href = "jugar.html";
-          return;
-        }
-      } catch (err) {
-        console.error("Sesión no disponible o tardó demasiado:", err);
-      }
+    // Si ya hay sesion (en memoria) o hay una sesion guardada en el navegador,
+    // entras directo a jugar.html. jugar.html restaura la sesion solito.
+    // Esto es instantaneo: nunca te manda al login por una nube lenta.
+    if (currentUser || hasStoredSession()) {
+      window.location.href = "jugar.html";
+      return;
     }
-    // No hay sesión -> mostramos el modal de ingreso
+    // Eres invitado de verdad (nunca has iniciado sesion aqui) -> modal de ingreso
     toggleEntranceModal();
   }
 
