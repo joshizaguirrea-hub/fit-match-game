@@ -18,10 +18,10 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=12"></script>
-<script src="fm-badges.js?v=12"></script>
-<script src="fm-achievements.js?v=12"></script>
-<script src="fm-profile.js?v=12"></script>
+<script src="fm-supabase.js?v=13"></script>
+<script src="fm-badges.js?v=13"></script>
+<script src="fm-achievements.js?v=13"></script>
+<script src="fm-profile.js?v=13"></script>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
@@ -1046,6 +1046,10 @@
   // BLINDAJE: si la nube no responde en 2.5s, NO nos quedamos colgados.
   async function handlePlayClick(e) {
     if (e) e.preventDefault();
+    // Si el detector de sesion ya confirmo que estas dentro (lo mantiene al dia
+    // onAuthStateChange), entras directo SIN volver a preguntarle a la nube.
+    if (currentUser) { window.location.href = "jugar.html"; return; }
+    // Si no lo sabemos aun, confirmamos rapido con la nube antes de pedir login.
     const supabase = (window.FMAuth && window.FMAuth.getClient) ? window.FMAuth.getClient() : null;
     if (supabase) {
       try {
@@ -1053,7 +1057,7 @@
         const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 2500));
         const { data: { session } } = await Promise.race([sessionPromise, timeout]);
         if (session) {
-          // Sesión viva -> entras directo, sin pedir login de nuevo
+          currentUser = session.user;
           window.location.href = "jugar.html";
           return;
         }
@@ -1061,7 +1065,7 @@
         console.error("Sesión no disponible o tardó demasiado:", err);
       }
     }
-    // No hay sesión (o la nube no respondió) -> mostramos el modal de ingreso
+    // No hay sesión -> mostramos el modal de ingreso
     toggleEntranceModal();
   }
 
