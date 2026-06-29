@@ -111,16 +111,19 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=31"></script>
-<script src="fm-routines.js?v=31"></script>
-<script src="fm-specialized-routines.js?v=31"></script>
-<script src="fm-badges.js?v=31"></script>
-<script src="fm-achievements.js?v=31"></script>
-<script src="fm-nutrition.js?v=31"></script>
-<script src="fm-recipes.js?v=31"></script>
-<script src="fm-profile.js?v=31"></script>
+<script src="fm-supabase.js?v=32"></script>
+<script src="fm-routines.js?v=32"></script>
+<script src="fm-specialized-routines.js?v=32"></script>
+<script src="fm-badges.js?v=32"></script>
+<script src="fm-achievements.js?v=32"></script>
+<script src="fm-nutrition.js?v=32"></script>
+<script src="fm-recipes.js?v=32"></script>
+<script src="fm-notify.js?v=32"></script>
+<script src="fm-profile.js?v=32"></script>
 </head>
 <body class="min-h-screen antialiased">
+<!-- Contenedor de notificaciones (toasts) -->
+<div id="fm-toasts" style="position:fixed;top:14px;right:14px;z-index:100090;display:flex;flex-direction:column;gap:10px;max-width:340px;width:calc(100% - 28px)"></div>
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
 
 <!-- Botón Flotante para abrir Chat/Social -->
@@ -1725,6 +1728,7 @@ async function submitAppointment() {
     if (error) throw error;
 
     alert(`¡Cita agendada con éxito para entrenar con ${currentApptTarget.apodo}!`);
+    if (window.FMNotify) window.FMNotify.toast({ title: '¡Cita agendada!', message: `Invitaste a ${currentApptTarget.apodo} a entrenar. Le llegará un aviso.`, icon: 'fa-calendar-check', color: '#34d399' });
     closeAppointmentModal();
     loadMailboxAndSchedules();
   } catch(e) {
@@ -2192,6 +2196,12 @@ async function initCloudProfile() {
       if (typeof refreshIntroStreak === 'function') refreshIntroStreak();
       // Revisar buzon para el punto rojo de notificacion
       if (typeof checkInboxBadge === 'function') checkInboxBadge();
+      // Notificaciones: saludo diario + avisos de citas en tiempo real
+      if (window.FMNotify) {
+        window.FMNotify.dailyGreeting(profile.apodo, user.id);
+        window.FMNotify.requestPermission();
+        window.FMNotify.initAppointmentNotifications(supabase, user);
+      }
     }
   }
 }
