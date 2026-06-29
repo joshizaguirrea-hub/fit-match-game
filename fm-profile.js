@@ -201,6 +201,10 @@ function createProfileModal() {
             <button onclick="switchProfileTab('stats')" class="profile-tab active px-4 py-2 font-bold text-sm border-b-2 border-purple-600 text-purple-600" data-tab="stats">
               <i class="fa-solid fa-chart-line mr-2"></i>Estadísticas
             </button>
+            <button onclick="switchProfileTab('mailbox')" class="profile-tab px-4 py-2 font-bold text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 relative" data-tab="mailbox">
+              <i class="fa-solid fa-bell mr-2"></i>Buzón
+              <span id="mailbox-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">0</span>
+            </button>
             <button onclick="switchProfileTab('achievements')" class="profile-tab px-4 py-2 font-bold text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="achievements">
               <i class="fa-solid fa-trophy mr-2"></i>Logros
             </button>
@@ -248,6 +252,20 @@ function createProfileModal() {
               <h3 class="font-bold mb-4" style="color:#eceefb">Actividad Reciente</h3>
               <div id="activity-chart" class="flex items-end gap-2 h-32">
                 <!-- Se llena dinámicamente -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Buzon (notificaciones) -->
+          <div id="tab-mailbox" class="profile-tab-content hidden">
+            <div class="space-y-5">
+              <div>
+                <h3 class="font-bold mb-3 flex items-center gap-2" style="color:#eceefb"><i class="fa-solid fa-user-plus" style="color:#fbbf24"></i> Solicitudes de amistad</h3>
+                <div id="mailbox-friends" class="space-y-2"><p class="text-sm" style="color:#8b92b0">Cargando...</p></div>
+              </div>
+              <div>
+                <h3 class="font-bold mb-3 flex items-center gap-2" style="color:#eceefb"><i class="fa-solid fa-calendar-days" style="color:#a78bfa"></i> Invitaciones a entrenar</h3>
+                <div id="mailbox-appts" class="space-y-2"><p class="text-sm" style="color:#8b92b0">Cargando...</p></div>
               </div>
             </div>
           </div>
@@ -355,8 +373,13 @@ async function loadProfileData(targetUserId) {
     // Ocultar pestañas que solo aplican a TU propio perfil cuando ves a un amigo
     const tabPhotos = document.querySelector('.profile-tab[data-tab="photos"]');
     const tabCustom = document.querySelector('.profile-tab[data-tab="customization"]');
+    const tabMailbox = document.querySelector('.profile-tab[data-tab="mailbox"]');
     if (tabPhotos) tabPhotos.style.display = isOwn ? '' : 'none';
     if (tabCustom) tabCustom.style.display = isOwn ? '' : 'none';
+    if (tabMailbox) tabMailbox.style.display = isOwn ? '' : 'none';
+
+    // Cargar buzon (solo mi propio perfil)
+    if (isOwn) loadProfileMailbox(user);
 
     // Obtener perfil que estamos viendo
     const { data: profile } = await supabase
@@ -408,6 +431,76 @@ async function loadProfileData(targetUserId) {
     console.error('Error al cargar datos del perfil:', error);
   }
 }
+
+// ===== BUZON DE NOTIFICACIONES (Fase 2) =====
+async function loadProfileMailbox(user) {
+  const friendsCont = document.getElementById('mailbox-friends');
+  const apptsCont = document.getElementById('mailbox-appts');
+  const badge = document.getElementById('mailbox-badge');
+  if (!friendsCont || !apptsCont) return;
+  try {
+    const supabase = window.FMAuth.getClient();
+    if (!supabase || !user) return;
+
+    // Solicitudes de amistad pendientes (yo soy el destinatario)
+    const { data: pendingFriends } = await supabase
+      .from('friendships').select('*')
+      .eq('friend_id', user.id).eq('status', 'pendiente');
+
+    // Invitaciones a entrenar pendientes
+    const { data: pendingAppts } = await supabase
+      .from('appointments').select('*')
+      .eq('receiver_id', user.id).eq('status', 'pendiente');
+
+    // Render solicitudes de amistad
+    if (pendingFriends && pendingFriends.length) {
+      const { data: senders } = await supabase
+        .from('profiles').select('id, apodo')
+        .in('id', pendingFriends.map(f => f.user_id));
+      friendsCont.innerHTML = pendingFriends.map(f => {
+        const prof = senders ? senders.find(p => p.id === f.user_id) : null;
+        const name = prof ? prof.apodo : 'Atleta';
+        return `
+          <div class="flex justify-between items-center rounded-xl p-3" style="background:#222842;border:1px solid #2c3350">
+            <span class="text-sm font-semibold" style="color:#eceefb"><i class="fa-solid fa-user-plus mr-2" style="color:#fbbf24"></i>¡${name} quiere ser tu Fit Bro!</span>
+            <div class="flex gap-1.5">
+              <button onclick="acceptFriendship('${f.user_id}')" class="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1 rounded-lg text-xs">Aceptar</button>
+              <button onclick="rejectFriendship('${f.user_id}')" class="bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold px-3 py-1 rounded-lg text-xs">Rechazar</button>
+            </div>
+          </div>`;
+      }).join('');
+    } else {
+      friendsCont.innerHTML = `<p class="text-sm" style="color:#8b92b0">No tienes solicitudes nuevas.</p>`;
+    }
+
+    // Render invitaciones a entrenar
+    if (pendingAppts && pendingAppts.length) {
+      apptsCont.innerHTML = pendingAppts.map(a => {
+        const dt = new Date(a.scheduled_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+        return `
+          <div class="flex justify-between items-center rounded-xl p-3" style="background:#222842;border:1px solid #2c3350">
+            <span class="text-sm font-semibold" style="color:#eceefb"><i class="fa-solid fa-calendar-days mr-2" style="color:#a78bfa"></i>${a.sender_apodo} te invita a <b>${a.routine_name}</b> el ${dt}</span>
+            <div class="flex gap-1.5">
+              <button onclick="respondAppointment('${a.id}', 'aceptada')" class="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1 rounded-lg text-xs">Aceptar</button>
+              <button onclick="respondAppointment('${a.id}', 'rechazada')" class="bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold px-3 py-1 rounded-lg text-xs">Rechazar</button>
+            </div>
+          </div>`;
+      }).join('');
+    } else {
+      apptsCont.innerHTML = `<p class="text-sm" style="color:#8b92b0">No tienes invitaciones a entrenar.</p>`;
+    }
+
+    // Badge con el total pendiente
+    const total = (pendingFriends ? pendingFriends.length : 0) + (pendingAppts ? pendingAppts.length : 0);
+    if (badge) {
+      badge.textContent = total;
+      badge.classList.toggle('hidden', total === 0);
+    }
+  } catch (e) {
+    console.error('Error al cargar buzon del perfil:', e);
+  }
+}
+window.loadProfileMailbox = loadProfileMailbox;
 
 // Función para cargar logros
 function loadAchievements(workouts, totalPoints) {
