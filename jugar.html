@@ -107,12 +107,12 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=18"></script>
-<script src="fm-routines.js?v=18"></script>
-<script src="fm-specialized-routines.js?v=18"></script>
-<script src="fm-badges.js?v=18"></script>
-<script src="fm-achievements.js?v=18"></script>
-<script src="fm-profile.js?v=18"></script>
+<script src="fm-supabase.js?v=19"></script>
+<script src="fm-routines.js?v=19"></script>
+<script src="fm-specialized-routines.js?v=19"></script>
+<script src="fm-badges.js?v=19"></script>
+<script src="fm-achievements.js?v=19"></script>
+<script src="fm-profile.js?v=19"></script>
 </head>
 <body class="min-h-screen antialiased">
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
@@ -1103,6 +1103,8 @@ let sideActiveTab = 'chat';
 let sideChatSubscription = null;
 let sidePresenceChannel = null;
 let currentOnlineUsers = {};
+// El chat grupal solo muestra mensajes de las ultimas N horas (se "limpia" solo).
+const CHAT_VISIBLE_HOURS = 12;
 
 function toggleSocialSidebar() {
   const sidebar = document.getElementById('social-sidebar');
@@ -1147,11 +1149,23 @@ async function loadSideChat() {
   }
 
   try {
-    const { data, error } = await supabase
+    const sinceISO = new Date(Date.now() - CHAT_VISIBLE_HOURS * 3600 * 1000).toISOString();
+    // Solo mensajes recientes (ultimas CHAT_VISIBLE_HOURS horas)
+    let resp = await supabase
       .from('messages')
       .select('*')
+      .gte('created_at', sinceISO)
       .order('id', { ascending: false })
       .limit(35);
+    // Si la tabla no tuviera columna created_at, caemos al modo simple sin romper el chat
+    if (resp.error) {
+      resp = await supabase
+        .from('messages')
+        .select('*')
+        .order('id', { ascending: false })
+        .limit(35);
+    }
+    const { data, error } = resp;
 
     if (error) throw error;
 
