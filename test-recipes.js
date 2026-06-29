@@ -38,5 +38,15 @@ check('Dislike atún -> excluye ensalada de atún', !sinAtun.some(r => r.id === 
 // 7) Limite de resultados
 check('limit respeta tope', R.match({}, { limit:3 }).length <= 3);
 
+// 8) Plan semanal: 7 dias y respeta comidas/dia
+const plan = R.weeklyPlan({ meals_per_day:2 });
+check('Plan tiene 7 dias', plan.days.length === 7);
+check('2 comidas/dia -> 2 slots', plan.days[0].meals.length === 2);
+check('Plan vegano: solo recetas veganas', R.weeklyPlan({ diet_pattern:'vegano' }).days.every(d => d.meals.every(m => !m.recipe || m.recipe.diet === 'vegano')));
+// Regenerar (otro seed) puede cambiar la seleccion
+const p0 = R.weeklyPlan({ meals_per_day:3 }, 0);
+const p1 = R.weeklyPlan({ meals_per_day:3 }, 1);
+check('Regenerar produce un plan valido', p1.days.length === 7);
+
 console.log(`\n${pass} pasaron, ${fail} fallaron`);
 process.exit(fail ? 1 : 0);

@@ -174,7 +174,51 @@
     return list.slice(0, limit);
   }
 
-  const api = { all, match, KETO_NET_CARBS_MAX };
+  // --- Plan semanal (Opcion A) ---
+  const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const SLOT_MEAL = { 'Desayuno':'desayuno','Comida':'comida','Cena':'cena','Snack':'snack' };
+  function slotsFor(meals){
+    if (meals === 1) return ['Comida'];
+    if (meals === 2) return ['Comida','Cena'];
+    if (meals === 4) return ['Desayuno','Comida','Snack','Cena'];
+    if (meals >= 5) return ['Desayuno','Snack','Comida','Snack','Cena'];
+    return ['Desayuno','Comida','Cena'];
+  }
+  function weeklyPlan(profile, seed){
+    profile = profile || {}; seed = seed || 0;
+    const meals = +profile.meals_per_day || 3;
+    const slots = slotsFor(meals);
+    const pool = match(profile); // recetas que pasan los filtros del perfil
+    const NUT = (typeof window !== 'undefined' && window.FMNutrition) ? window.FMNutrition
+              : (typeof globalThis !== 'undefined' && globalThis.FMNutrition) ? globalThis.FMNutrition : null;
+    let dailyTarget = null, perMeal = null;
+    if (NUT) { const r = NUT.macros(profile); if (r) { dailyTarget = r.calories; perMeal = r.calories / meals; } }
+
+    function poolForSlot(slot){
+      const mt = SLOT_MEAL[slot];
+      let list = pool.filter(r => r.meal === mt);
+      if (!list.length) list = pool.slice();
+      if (perMeal) list = list.slice().sort((a,b) => Math.abs(a.kcal - perMeal) - Math.abs(b.kcal - perMeal));
+      return list;
+    }
+
+    const days = DAYS.map((dayName, di) => {
+      const mealsArr = slots.map((slot, si) => {
+        const list = poolForSlot(slot);
+        if (!list.length) return { slot, recipe: null };
+        const idx = (di + si + seed) % list.length; // rota para dar variedad
+        return { slot, recipe: list[idx] };
+      });
+      const totals = mealsArr.reduce((t, m) => {
+        if (m.recipe) { t.kcal += m.recipe.kcal; t.protein += m.recipe.protein_g; t.carbs += m.recipe.carbs_g; t.fat += m.recipe.fat_g; }
+        return t;
+      }, { kcal:0, protein:0, carbs:0, fat:0 });
+      return { day: dayName, meals: mealsArr, totals };
+    });
+    return { days, dailyTarget, perMeal, meals };
+  }
+
+  const api = { all, match, weeklyPlan, KETO_NET_CARBS_MAX };
   const root = (typeof window !== 'undefined') ? window
              : (typeof globalThis !== 'undefined') ? globalThis : this;
   root.FMRecipes = api;

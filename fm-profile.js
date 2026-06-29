@@ -264,6 +264,7 @@ function createProfileModal() {
             <div id="nutrition-targets" class="mb-4"></div>
             <div id="nutrition-profile-block" class="rounded-2xl p-4" style="background:#222842;border:1px solid #2c3350"></div>
             <div id="nutrition-recipes" class="mt-4"></div>
+            <div id="nutrition-weekplan" class="mt-4"></div>
             <p class="text-[11px] mt-3" style="color:#8b92b0"><i class="fa-solid fa-circle-info mr-1"></i> Esta información nos sirve para sugerirte recetas a tu medida. No sustituye la asesoría de un médico o nutriólogo.</p>
           </div>
 
@@ -1072,6 +1073,47 @@ function toggleRecipe(id){
 }
 window.toggleRecipe = toggleRecipe;
 
+// Plan semanal de comidas (Opcion A)
+let _fmPlanSeed = 0;
+let _fmPlanProfile = null;
+function renderWeeklyPlan(profile){
+  _fmPlanProfile = profile || {};
+  const box = document.getElementById('nutrition-weekplan');
+  if(!box) return;
+  if(!window.FMRecipes || !window.FMRecipes.weeklyPlan){ box.innerHTML=''; return; }
+  const plan = window.FMRecipes.weeklyPlan(_fmPlanProfile, _fmPlanSeed);
+  const hayRecetas = plan.days.some(d => d.meals.some(m => m.recipe));
+  if(!hayRecetas){
+    box.innerHTML = `<div class="rounded-2xl p-4" style="background:#222842;border:1px solid #2c3350"><p class="text-sm" style="color:#8b92b0">No hay recetas suficientes para armar tu plan. Ajusta tus filtros (presupuesto, dieta).</p></div>`;
+    return;
+  }
+  const t = plan.dailyTarget;
+  const dayCards = plan.days.map(d => {
+    const diff = t ? d.totals.kcal - t : null;
+    const diffTxt = (diff!=null) ? `<span style="color:${Math.abs(diff)<=250?'#34d399':'#fbbf24'}">${diff>0?'+':''}${diff} vs meta</span>` : '';
+    const rows = d.meals.map(m => m.recipe
+      ? `<div class="flex justify-between items-center text-xs py-1" style="border-top:1px solid #2c3350"><span style="color:#b2b9d4"><b style="color:#8b92b0">${m.slot}:</b> ${m.recipe.name}</span><span class="shrink-0 ml-2" style="color:#34d399">${m.recipe.kcal}</span></div>`
+      : `<div class="text-xs py-1" style="color:#8b92b0;border-top:1px solid #2c3350"><b>${m.slot}:</b> -</div>`
+    ).join('');
+    return `<div class="rounded-2xl p-3" style="background:#222842;border:1px solid #2c3350">
+      <div class="flex justify-between items-center mb-1">
+        <h4 class="font-bold text-sm" style="color:#eceefb">${d.day}</h4>
+        <span class="text-xs font-bold" style="color:#eceefb">${d.totals.kcal} kcal</span>
+      </div>
+      <div class="text-[10px] mb-1">${diffTxt} <span style="color:#8b92b0">P ${d.totals.protein} / C ${d.totals.carbs} / G ${d.totals.fat}</span></div>
+      ${rows}
+    </div>`;
+  }).join('');
+  box.innerHTML = `
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-bold flex items-center gap-2" style="color:#eceefb"><i class="fa-solid fa-calendar-week" style="color:#34d399"></i> Tu plan semanal <span class="text-xs font-normal" style="color:#8b92b0">(${plan.meals} comida(s)/día)</span></h3>
+      <button onclick="regenerateWeeklyPlan()" class="text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#7c5cff;color:#fff"><i class="fa-solid fa-rotate mr-1"></i>Regenerar</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${dayCards}</div>`;
+}
+function regenerateWeeklyPlan(){ _fmPlanSeed++; renderWeeklyPlan(_fmPlanProfile); }
+window.regenerateWeeklyPlan = regenerateWeeklyPlan;
+
 function renderNutritionProfile(profile, isOwn){
   const box = document.getElementById('nutrition-profile-block');
   if(!box) return;
@@ -1081,6 +1123,8 @@ function renderNutritionProfile(profile, isOwn){
   renderNutritionTargets(profile);
   // Sugerencias de recetas (Fase C/D)
   renderRecipeSuggestions(profile);
+  // Plan semanal de comidas (Opcion A)
+  renderWeeklyPlan(profile);
   const hasData = profile.diet_pattern || profile.diet_style || profile.budget_tier || profile.country;
   const editBtn = isOwn ? `<button onclick="toggleNutritionEdit(true)" class="text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#34d399;color:#06281e"><i class="fa-solid fa-pen mr-1"></i>${hasData?'Editar':'Completar'}</button>` : '';
 
