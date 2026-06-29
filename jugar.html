@@ -111,12 +111,12 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=23"></script>
-<script src="fm-routines.js?v=23"></script>
-<script src="fm-specialized-routines.js?v=23"></script>
-<script src="fm-badges.js?v=23"></script>
-<script src="fm-achievements.js?v=23"></script>
-<script src="fm-profile.js?v=23"></script>
+<script src="fm-supabase.js?v=24"></script>
+<script src="fm-routines.js?v=24"></script>
+<script src="fm-specialized-routines.js?v=24"></script>
+<script src="fm-badges.js?v=24"></script>
+<script src="fm-achievements.js?v=24"></script>
+<script src="fm-profile.js?v=24"></script>
 </head>
 <body class="min-h-screen antialiased">
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
@@ -233,6 +233,10 @@
         <span id="play-user-rank" class="bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Recluta</span>
         <i class="fa-solid fa-user text-purple-600 ml-1"></i>
       </button>
+      <!-- Contador de FitCoins -->
+      <span id="play-coins-chip" class="hidden items-center gap-1.5 bg-yellow-400 border-2 border-gray-900 px-3 py-1.5 rounded-full text-xs font-extrabold text-gray-900" title="Tus FitCoins">
+        <i class="fa-solid fa-coins"></i><span id="play-coins">0</span>
+      </span>
       <!-- Botón Mi Perfil (siempre visible para acceso fácil) -->
       <button id="play-btn-profile" onclick="openProfileModal()" title="Mi Perfil" class="hidden flex items-center gap-1 text-gray-700 hover:text-purple-600 font-bold text-sm transition">
         <i class="fa-solid fa-user"></i><span class="hidden md:inline">Mi Perfil</span>
@@ -625,6 +629,11 @@
     <div class="rounded-2xl py-4 mb-3" style="background:#222842">
       <div class="text-gray-400 text-xs uppercase font-bold tracking-wide">Puntos ganados</div>
       <div class="font-extrabold" style="font-size:46px;color:#fbbf24">+<span id="mc-points">0</span></div>
+    </div>
+
+    <div id="mc-coins" class="rounded-2xl py-3 px-4 mb-3 flex items-center justify-center gap-2" style="background:#3a2f08;border:1px solid #a16207">
+      <i class="fa-solid fa-coins" style="color:#fbbf24;font-size:22px"></i>
+      <span class="text-yellow-300 font-extrabold text-sm" id="mc-coins-text">+0 FitCoins</span>
     </div>
 
     <div id="mc-streak" class="rounded-2xl py-3 px-4 mb-3 flex items-center justify-center gap-2" style="background:linear-gradient(150deg,#7c2d12,#b45309)">
@@ -1152,6 +1161,51 @@ function flash(msg){
 /* ============ PANTALLA: MISION CUMPLIDA (retencion) ============ */
 let lastMissionData = null;
 
+/* ====== ECONOMIA: FITCOINS ====== */
+let cloudCoins = 0;
+const FM_COINS = {
+  porEntreno: 10,
+  retoDelDia: 25,
+  rachaHitos: { 3:30, 7:100, 14:200, 30:500 }
+};
+
+function updateCoinsHeader(){
+  const el = document.getElementById('play-coins');
+  if(el) el.textContent = cloudCoins;
+  const chip = document.getElementById('play-coins-chip');
+  if(chip) chip.classList.toggle('hidden', !cloudUser);
+}
+
+// Suma (o resta, con monto negativo) FitCoins y persiste en la nube
+async function addFitCoins(amount){
+  if(!cloudUser || !amount) return 0;
+  try{
+    const supabase = window.FMAuth.getClient();
+    if(!supabase) return 0;
+    const nuevo = Math.max(0, (cloudCoins||0) + amount);
+    const { error } = await supabase.from('profiles').update({ coins: nuevo }).eq('id', cloudUser.id);
+    if(error) throw error;
+    cloudCoins = nuevo;
+    if(cloudProfile) cloudProfile.coins = nuevo;
+    updateCoinsHeader();
+    return amount;
+  }catch(e){ console.error('addFitCoins', e); return 0; }
+}
+
+// Hitos de racha sin doble-pago: guarda los hitos ya cobrados en localStorage
+function mcStreakBonus(streak){
+  if(!cloudUser) return 0;
+  const hito = FM_COINS.rachaHitos[streak];
+  if(!hito) return 0;
+  const key = `fm_hitos_${cloudUser.id}`;
+  let cobrados = [];
+  try{ cobrados = JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){}
+  if(cobrados.includes(streak)) return 0;
+  cobrados.push(streak);
+  try{ localStorage.setItem(key, JSON.stringify(cobrados)); }catch(e){}
+  return hito;
+}
+
 function mcFireConfetti(){
   const cont = document.getElementById('mc-confetti');
   if(!cont) return;
@@ -1203,7 +1257,7 @@ async function mcGetStreak(){
   }catch(e){ return 0; }
 }
 
-async function showMissionComplete({ points, routineName, timeSec }){
+async function showMissionComplete({ points, routineName, timeSec, coins, streak }){
   const ov = document.getElementById('mission-complete-overlay');
   if(!ov) return;
   const mins = Math.floor((timeSec||0)/60);
@@ -1213,18 +1267,24 @@ async function showMissionComplete({ points, routineName, timeSec }){
   document.getElementById('mc-time').textContent = `${mins}:${String(secs).padStart(2,'0')}`;
   document.getElementById('mc-total').textContent = (typeof cloudTotalPoints!=='undefined' && cloudTotalPoints!=null) ? cloudTotalPoints : (G.players[0]?.pts || 0);
 
-  lastMissionData = { points: points||0, routineName: routineName||'Entrenamiento', streak: 0 };
+  // FitCoins ganadas en este entreno
+  const coinsTxt = document.getElementById('mc-coins-text');
+  const coinsBox = document.getElementById('mc-coins');
+  if(coinsTxt){ coinsTxt.textContent = `+${coins||0} FitCoins`; }
+  if(coinsBox){ coinsBox.style.display = cloudUser ? 'flex' : 'none'; }
+
+  lastMissionData = { points: points||0, routineName: routineName||'Entrenamiento', streak: streak||0, coins: coins||0 };
 
   ov.classList.remove('hidden');
   mcFireConfetti();
 
-  // Racha (asincrono, actualiza el banner al llegar)
-  const streak = await mcGetStreak();
-  lastMissionData.streak = streak;
+  // Racha: usa la ya calculada si vino, si no la consulta
+  const st = (typeof streak === 'number') ? streak : await mcGetStreak();
+  lastMissionData.streak = st;
   const txt = document.getElementById('mc-streak-text');
   if(txt){
-    if(streak >= 2) txt.textContent = `¡Racha de ${streak} días! No la rompas mañana `;
-    else txt.textContent = `¡Racha iniciada! Vuelve mañana para encenderla `;
+    if(st >= 2) txt.textContent = `¡Racha de ${st} días! No la rompas mañana`;
+    else txt.textContent = `¡Racha iniciada! Vuelve mañana para encenderla`;
   }
   // Refrescar puntos totales si la nube ya actualizo
   if(typeof cloudTotalPoints!=='undefined' && cloudTotalPoints!=null){
@@ -1246,8 +1306,9 @@ document.addEventListener('keydown', e=>{
 
 function shareMissionComplete(){
   const d = lastMissionData || {};
-  const rachaTxt = d.streak >= 2 ? ` Llevo una racha de ${d.streak} días ` : '';
-  const texto = `¡Acabo de completar "${d.routineName}" en Fit Match y gané ${d.points} puntos!${rachaTxt} \nÚnete: https://fit-match-game.netlify.app`;
+  const rachaTxt = d.streak >= 2 ? ` Llevo una racha de ${d.streak} días.` : '';
+  const coinsTxt = d.coins ? ` (+${d.coins} FitCoins)` : '';
+  const texto = `¡Acabo de completar "${d.routineName}" en Fit Match y gané ${d.points} puntos${coinsTxt}!${rachaTxt} \nÚnete: https://fit-match-game.netlify.app`;
   if(navigator.share){
     navigator.share({ title:'Fit Match', text:texto, url:'https://fit-match-game.netlify.app' }).catch(()=>{});
   } else if(navigator.clipboard){
@@ -2047,6 +2108,9 @@ async function initCloudProfile() {
     const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (profile) {
       cloudProfile = profile;
+      // Cargar monedero FitCoins
+      cloudCoins = profile.coins || 0;
+      if (typeof updateCoinsHeader === 'function') updateCoinsHeader();
       
       // Obtener todos los entrenamientos de este usuario para sumar puntos y calcular estadísticas
       const { data: workouts, error } = await supabase.from('workouts').select('*').eq('user_id', user.id);
@@ -2633,8 +2697,23 @@ async function finishRoutineWorkout() {
     await syncWorkoutToCloud(true, r.points, r.level, r.name);
   }
 
+  // === ECONOMIA: calcular y otorgar FitCoins ===
+  let coinsEarned = 0;
+  let streak = 0;
+  if (cloudUser) {
+    streak = await mcGetStreak();
+    coinsEarned += FM_COINS.porEntreno;
+    // Bonus si era el Reto del Dia
+    if (dailyChallengeRoutine && r.id === dailyChallengeRoutine.id) {
+      coinsEarned += FM_COINS.retoDelDia;
+    }
+    // Bonus por hito de racha (sin doble pago)
+    coinsEarned += mcStreakBonus(streak);
+    await addFitCoins(coinsEarned);
+  }
+
   // Pantalla de Mision Cumplida (retencion + dopamina)
-  showMissionComplete({ points: r.points, routineName: r.name, timeSec: routineSecondsElapsed });
+  showMissionComplete({ points: r.points, routineName: r.name, timeSec: routineSecondsElapsed, coins: coinsEarned, streak });
 }
 
 /* ============ BASE DE DATOS DE EXPLICACIÓN DE EJERCICIOS ============ */
