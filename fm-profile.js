@@ -261,6 +261,7 @@ function createProfileModal() {
 
           <!-- Tab: Nutricion -->
           <div id="tab-nutrition" class="profile-tab-content hidden">
+            <div id="nutrition-targets" class="mb-4"></div>
             <div id="nutrition-profile-block" class="rounded-2xl p-4" style="background:#222842;border:1px solid #2c3350"></div>
             <p class="text-[11px] mt-3" style="color:#8b92b0"><i class="fa-solid fa-circle-info mr-1"></i> Esta información nos sirve para sugerirte recetas a tu medida. No sustituye la asesoría de un médico o nutriólogo.</p>
           </div>
@@ -984,11 +985,54 @@ function nutChip(icon, label, value){
     <div class="font-bold text-sm" style="color:#eceefb">${value}</div>
   </div>`;
 }
+// Tarjeta 'Tus numeros': calorias y macros calculados por el motor (Fase B)
+function renderNutritionTargets(profile){
+  const box = document.getElementById('nutrition-targets');
+  if(!box) return;
+  if(!window.FMNutrition){ box.innerHTML=''; return; }
+  const r = window.FMNutrition.macros(profile || {});
+  if(!r){
+    box.innerHTML = `<div class="rounded-2xl p-4" style="background:#2a1d10;border:1px solid #a16207">
+      <p class="text-sm font-bold" style="color:#fbbf24"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Faltan datos para calcular tus números</p>
+      <p class="text-xs mt-1" style="color:#d6ba7a">Completa tu <b>edad, sexo, peso y altura</b> en la pestaña Estadísticas para ver tus calorías y macros.</p>
+    </div>`;
+    return;
+  }
+  const warns = window.FMNutrition.validate(profile||{}, r);
+  const bar = (label, grams, kcalPerG, color)=>{
+    const kcal = grams * kcalPerG;
+    const pct = Math.round((kcal / r.calories) * 100);
+    return `<div class="mb-2">
+      <div class="flex justify-between text-xs mb-1"><span style="color:#b2b9d4">${label}</span><span class="font-bold" style="color:#eceefb">${grams} g</span></div>
+      <div class="w-full rounded-full h-2" style="background:#0f1117"><div class="h-2 rounded-full" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  };
+  box.innerHTML = `
+    <div class="rounded-2xl p-4" style="background:linear-gradient(135deg,#0f2e22,#181c2a);border:1px solid #2c5f4a">
+      <h3 class="font-bold mb-3 flex items-center gap-2" style="color:#eceefb"><i class="fa-solid fa-calculator" style="color:#34d399"></i> Tus números diarios</h3>
+      <div class="flex items-end gap-2 mb-4">
+        <div class="text-4xl font-extrabold" style="color:#34d399">${r.calories}</div>
+        <div class="text-sm mb-1" style="color:#8b92b0">kcal / día</div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+        <div class="rounded-xl py-2" style="background:#181c2a;border:1px solid #2c3350"><div class="text-[10px] uppercase" style="color:#8b92b0">TMB</div><div class="font-bold text-sm" style="color:#eceefb">${r.bmr}</div></div>
+        <div class="rounded-xl py-2" style="background:#181c2a;border:1px solid #2c3350"><div class="text-[10px] uppercase" style="color:#8b92b0">Gasto (TDEE)</div><div class="font-bold text-sm" style="color:#eceefb">${r.tdee}</div></div>
+        <div class="rounded-xl py-2" style="background:#181c2a;border:1px solid #2c3350"><div class="text-[10px] uppercase" style="color:#8b92b0">Comidas</div><div class="font-bold text-sm" style="color:#eceefb">${profile.meals_per_day||'-'}</div></div>
+      </div>
+      ${bar('Proteína', r.protein_g, 4, '#60a5fa')}
+      ${bar('Carbohidratos', r.carbs_g, 4, '#fbbf24')}
+      ${bar('Grasas', r.fat_g, 9, '#f472b6')}
+      ${r.net_carbs_per_meal!=null ? `<p class="text-[11px] mt-2" style="color:#8b92b0">~${r.net_carbs_per_meal}g de carbohidratos por comida</p>`:''}
+      ${warns.length ? `<div class="mt-3 rounded-xl p-2 text-[11px]" style="background:#3a1010;border:1px solid #7f1d1d;color:#fca5a5"><i class="fa-solid fa-shield-halved mr-1"></i>${warns.join(' ')}</div>`:''}
+    </div>`;
+}
 function renderNutritionProfile(profile, isOwn){
   const box = document.getElementById('nutrition-profile-block');
   if(!box) return;
   profile = profile || {};
   const L = FM_NUT_LABELS;
+  // Calcular y mostrar calorias/macros (motor Fase B)
+  renderNutritionTargets(profile);
   const hasData = profile.diet_pattern || profile.diet_style || profile.budget_tier || profile.country;
   const editBtn = isOwn ? `<button onclick="toggleNutritionEdit(true)" class="text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#34d399;color:#06281e"><i class="fa-solid fa-pen mr-1"></i>${hasData?'Editar':'Completar'}</button>` : '';
 
