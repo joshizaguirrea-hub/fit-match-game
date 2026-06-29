@@ -231,6 +231,10 @@
       <span class="fun text-2xl font-bold text-gray-900">Fit Match · Jugar</span>
     </div>
     <div class="flex items-center gap-2.5">
+      <!-- CTA para invitados: crear cuenta / iniciar sesion (se oculta al loguear) -->
+      <a id="play-guest-cta" href="index.html" class="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white border-2 border-gray-900 px-4 py-1.5 rounded-full text-xs font-bold transition shadow-[2px_2px_0_#111827]">
+        <i class="fa-solid fa-user-plus"></i> Crear cuenta / Entrar
+      </a>
       <!-- Mini Perfil Nube (clickeable para ver tu perfil) -->
       <button id="play-user-bar" onclick="openProfileModal()" title="Ver mi perfil" class="hidden sm:flex items-center gap-2 bg-gray-100 hover:bg-purple-100 border-2 border-gray-900 px-4 py-1.5 rounded-full text-xs font-bold text-gray-800 transition cursor-pointer relative">
         <span class="w-2.5 h-2.5 rounded-full bg-green-500" id="play-user-dot"></span>
@@ -2186,6 +2190,9 @@ async function initCloudProfile() {
       const lBtn = document.getElementById('play-btn-logout');
       if (pBtn) pBtn.classList.remove('hidden');
       if (lBtn) lBtn.classList.remove('hidden');
+      // Ocultar el CTA de "crear cuenta" porque ya inicio sesion
+      const gCta = document.getElementById('play-guest-cta');
+      if (gCta) gCta.classList.add('hidden');
       
       // Si estamos en entrenamiento, reemplazar el jugador 'Tu' con el apodo de la nube
       if (G.training && G.players && G.players[0] && (G.players[0].name === 'Tu' || G.players[0].name === 'Invitado')) {
@@ -2202,6 +2209,23 @@ async function initCloudProfile() {
         window.FMNotify.requestPermission();
         window.FMNotify.initAppointmentNotifications(supabase, user);
       }
+    }
+  } else {
+    // INVITADO (sin sesion): invitarlo a registrarse para guardar su progreso
+    const key = 'fm_guest_cta_' + new Date().toISOString().slice(0, 10);
+    let yaMostrado = false;
+    try { yaMostrado = !!localStorage.getItem(key); } catch (e) {}
+    if (window.FMNotify && !yaMostrado) {
+      setTimeout(() => {
+        window.FMNotify.toast({
+          title: 'Estás jugando como invitado',
+          message: 'Tu progreso NO se guarda. Crea tu cuenta gratis (botón morado arriba) para guardar puntos, subir de rango y competir. ',
+          icon: 'fa-user-plus',
+          color: '#a855f7',
+          duration: 12000
+        });
+        try { localStorage.setItem(key, '1'); } catch (e) {}
+      }, 1500);
     }
   }
 }
