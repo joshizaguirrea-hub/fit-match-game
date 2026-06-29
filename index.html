@@ -693,12 +693,23 @@
         }
       }
     } else {
-      // Tiene cuenta pero no apodo, abrir modal para crear apodo
+      // No hay perfil aun. Si el apodo viene en los metadatos (registro normal),
+      // lo creamos automaticamente SIN volver a preguntar (elimina el duplicado).
+      const metaApodo = user.user_metadata && user.user_metadata.apodo;
+      if (metaApodo) {
+        try {
+          await supabase.from('profiles').upsert({ id: user.id, apodo: metaApodo }, { onConflict: 'id' });
+          return await checkProfile(user); // re-verificar; ahora si existe el perfil
+        } catch (e) {
+          console.warn('No se pudo autocrear el perfil:', e);
+        }
+      }
+      // Solo si de verdad no hay apodo (ej. magic-link sin nombre): pedirlo una vez.
       currentProfile = null;
       userDot.className = "inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse";
       userText.textContent = "Por favor, crea tu apodo de atleta...";
       btnLogout.classList.remove('hidden');
-      
+
       // Mostrar pantalla de apodo en el modal unificado
       document.getElementById('entrance-step-form').classList.add('hidden');
       document.getElementById('entrance-step-nickname').classList.remove('hidden');
@@ -882,7 +893,8 @@
       // Eliminar timeout para ver error real
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email,
-        password: password
+        password: password,
+        options: { data: { apodo: nickname } }  // guardar apodo en metadatos para auto-crear el perfil
       });
 
       if (signUpError) {
@@ -891,14 +903,12 @@
 
       console.log("Usuario de Auth creado, ID:", data.user.id);
 
-      // 2) Guardar el perfil en public.profiles
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        apodo: nickname
-      });
-
-      if (profileError) {
-        throw profileError;
+      // 2) Guardar el perfil (best-effort). Si la sesion aun no existe (confirmacion
+      //    por correo), el perfil se autocrea luego desde los metadatos en checkProfile.
+      try {
+        await supabase.from('profiles').upsert({ id: data.user.id, apodo: nickname }, { onConflict: 'id' });
+      } catch (e) {
+        console.warn('Perfil se creara al iniciar sesion:', e);
       }
 
       // Mostrar paso de éxito
@@ -949,11 +959,11 @@
       if (!supabase) throw new Error("No se pudo obtener el cliente de Supabase.");
       if (!currentUser) throw new Error("No hay usuario autenticado actualmente.");
 
-      // Insertar en la tabla profiles
-      const { error: profileError } = await supabase.from('profiles').insert({
+      // Crear/actualizar el perfil (upsert evita el error de duplicado)
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: currentUser.id,
         apodo: nickname
-      });
+      }, { onConflict: 'id' });
 
       if (profileError) {
         alert("Error de Supabase al guardar: " + profileError.message);
