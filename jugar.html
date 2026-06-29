@@ -104,15 +104,19 @@
   .social-toggle-btn:hover {
     transform: scale(1.05);
   }
+  /* Confeti de Mision Cumplida */
+  .mc-piece{position:absolute;top:-12px;width:10px;height:14px;opacity:.95;will-change:transform;animation:mcFall linear forwards}
+  @keyframes mcFall{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:.9}}
+  @media (prefers-reduced-motion: reduce){.mc-piece{display:none}}
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=21"></script>
-<script src="fm-routines.js?v=21"></script>
-<script src="fm-specialized-routines.js?v=21"></script>
-<script src="fm-badges.js?v=21"></script>
-<script src="fm-achievements.js?v=21"></script>
-<script src="fm-profile.js?v=21"></script>
+<script src="fm-supabase.js?v=22"></script>
+<script src="fm-routines.js?v=22"></script>
+<script src="fm-specialized-routines.js?v=22"></script>
+<script src="fm-badges.js?v=22"></script>
+<script src="fm-achievements.js?v=22"></script>
+<script src="fm-profile.js?v=22"></script>
 </head>
 <body class="min-h-screen antialiased">
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
@@ -587,6 +591,46 @@
   </section>
 
 </main>
+
+<!-- ===== PANTALLA: MISION CUMPLIDA (retencion / dopamina) ===== -->
+<div id="mission-complete-overlay" class="hidden fixed inset-0 z-[100050] flex items-center justify-center p-4" style="background:rgba(10,12,22,.92)" role="dialog" aria-modal="true" aria-labelledby="mc-title">
+  <div id="mc-confetti" class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true"></div>
+  <div class="relative w-full max-w-sm rounded-3xl p-7 text-center" style="background:#181c2a;border:1px solid #2a3150;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div class="mx-auto mb-3 flex items-center justify-center rounded-full" style="width:84px;height:84px;background:linear-gradient(150deg,#7c3aed,#22d3ee)">
+      <i class="fa-solid fa-medal" style="font-size:42px;color:#fff"></i>
+    </div>
+    <h2 id="mc-title" class="font-extrabold text-white" style="font-size:28px">¡Misión Cumplida!</h2>
+    <p id="mc-routine" class="text-cyan-300 font-semibold mb-4 text-sm">Rutina</p>
+
+    <div class="rounded-2xl py-4 mb-3" style="background:#222842">
+      <div class="text-gray-400 text-xs uppercase font-bold tracking-wide">Puntos ganados</div>
+      <div class="font-extrabold" style="font-size:46px;color:#fbbf24">+<span id="mc-points">0</span></div>
+    </div>
+
+    <div id="mc-streak" class="rounded-2xl py-3 px-4 mb-3 flex items-center justify-center gap-2" style="background:linear-gradient(150deg,#7c2d12,#b45309)">
+      <i class="fa-solid fa-fire" style="color:#fdba74;font-size:22px"></i>
+      <span class="text-white font-bold text-sm" id="mc-streak-text">¡Racha encendida!</span>
+    </div>
+
+    <div class="flex justify-around mb-5 text-center">
+      <div>
+        <div class="text-white font-bold text-lg" id="mc-time">0:00</div>
+        <div class="text-gray-500 text-[10px] uppercase font-bold">Tiempo</div>
+      </div>
+      <div>
+        <div class="text-white font-bold text-lg" id="mc-total">0</div>
+        <div class="text-gray-500 text-[10px] uppercase font-bold">Puntos totales</div>
+      </div>
+    </div>
+
+    <button onclick="shareMissionComplete()" class="w-full mb-2 py-3 rounded-xl font-bold text-white text-sm transition" style="background:#3b3f5c">
+      <i class="fa-solid fa-share-nodes mr-1"></i> Compartir mi logro
+    </button>
+    <button onclick="closeMissionComplete()" class="w-full py-3 rounded-xl font-extrabold text-white text-sm transition" style="background:linear-gradient(150deg,#7c3aed,#22d3ee)">
+      <i class="fa-solid fa-check mr-1"></i> ¡Seguir entrenando!
+    </button>
+  </div>
+</div>
 
 <!-- ===== MODAL DE REGLAS (repaso rapido) ===== -->
 <div id="rules-modal" class="hidden fixed inset-0 z-[100000] flex items-center justify-center p-4" style="background:rgba(17,24,39,.6)" onclick="if(event.target===this)closeRules()" role="dialog" aria-modal="true" aria-labelledby="rules-title">
@@ -1083,6 +1127,113 @@ function flash(msg){
   const el=document.getElementById('card-label');
   const old=el.innerHTML; el.innerHTML=`<span style="color:#dc2626">${msg}</span>`;
   setTimeout(()=>{ el.innerHTML=old; }, 1800);
+}
+
+/* ============ PANTALLA: MISION CUMPLIDA (retencion) ============ */
+let lastMissionData = null;
+
+function mcFireConfetti(){
+  const cont = document.getElementById('mc-confetti');
+  if(!cont) return;
+  cont.innerHTML = '';
+  const colors = ['#fbbf24','#22d3ee','#7c3aed','#34d399','#f472b6','#f87171'];
+  for(let i=0;i<60;i++){
+    const p = document.createElement('div');
+    p.className = 'mc-piece';
+    p.style.left = Math.random()*100 + '%';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration = (2.2 + Math.random()*1.8) + 's';
+    p.style.animationDelay = (Math.random()*0.6) + 's';
+    if(Math.random()>0.5) p.style.borderRadius = '50%';
+    cont.appendChild(p);
+  }
+  setTimeout(()=>{ if(cont) cont.innerHTML=''; }, 4500);
+}
+
+// Calcula la racha de dias consecutivos entrenados a partir de la tabla workouts
+async function mcGetStreak(){
+  try{
+    if(!cloudUser) return 0;
+    const supabase = window.FMAuth.getClient();
+    if(!supabase) return 0;
+    const { data, error } = await supabase
+      .from('workouts')
+      .select('created_at')
+      .eq('user_id', cloudUser.id)
+      .order('created_at', { ascending:false })
+      .limit(200);
+    if(error || !data) return 0;
+    // dias unicos (YYYY-MM-DD)
+    const dias = [...new Set(data.map(w => (w.created_at||'').slice(0,10)))].filter(Boolean).sort().reverse();
+    if(!dias.length) return 0;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const fmt = d => d.toISOString().slice(0,10);
+    // la racha cuenta si el ultimo dia es hoy o ayer
+    let cursor = new Date(hoy);
+    if(dias[0] !== fmt(cursor)){
+      cursor.setDate(cursor.getDate()-1);
+      if(dias[0] !== fmt(cursor)) return 0;
+    }
+    let streak = 0;
+    for(const dia of dias){
+      if(dia === fmt(cursor)){ streak++; cursor.setDate(cursor.getDate()-1); }
+      else break;
+    }
+    return streak;
+  }catch(e){ return 0; }
+}
+
+async function showMissionComplete({ points, routineName, timeSec }){
+  const ov = document.getElementById('mission-complete-overlay');
+  if(!ov) return;
+  const mins = Math.floor((timeSec||0)/60);
+  const secs = (timeSec||0)%60;
+  document.getElementById('mc-routine').textContent = routineName || 'Entrenamiento';
+  document.getElementById('mc-points').textContent = points || 0;
+  document.getElementById('mc-time').textContent = `${mins}:${String(secs).padStart(2,'0')}`;
+  document.getElementById('mc-total').textContent = (typeof cloudTotalPoints!=='undefined' && cloudTotalPoints!=null) ? cloudTotalPoints : (G.players[0]?.pts || 0);
+
+  lastMissionData = { points: points||0, routineName: routineName||'Entrenamiento', streak: 0 };
+
+  ov.classList.remove('hidden');
+  mcFireConfetti();
+
+  // Racha (asincrono, actualiza el banner al llegar)
+  const streak = await mcGetStreak();
+  lastMissionData.streak = streak;
+  const txt = document.getElementById('mc-streak-text');
+  if(txt){
+    if(streak >= 2) txt.textContent = `¡Racha de ${streak} días! No la rompas mañana `;
+    else txt.textContent = `¡Racha iniciada! Vuelve mañana para encenderla `;
+  }
+  // Refrescar puntos totales si la nube ya actualizo
+  if(typeof cloudTotalPoints!=='undefined' && cloudTotalPoints!=null){
+    document.getElementById('mc-total').textContent = cloudTotalPoints;
+  }
+}
+
+function closeMissionComplete(){
+  const ov = document.getElementById('mission-complete-overlay');
+  if(ov) ov.classList.add('hidden');
+  G.training = false;
+  showScreen('intro');
+}
+document.addEventListener('keydown', e=>{
+  const ov = document.getElementById('mission-complete-overlay');
+  if(e.key==='Escape' && ov && !ov.classList.contains('hidden')) closeMissionComplete();
+});
+
+function shareMissionComplete(){
+  const d = lastMissionData || {};
+  const rachaTxt = d.streak >= 2 ? ` Llevo una racha de ${d.streak} días ` : '';
+  const texto = `¡Acabo de completar "${d.routineName}" en Fit Match y gané ${d.points} puntos!${rachaTxt} \nÚnete: https://fit-match-game.netlify.app`;
+  if(navigator.share){
+    navigator.share({ title:'Fit Match', text:texto, url:'https://fit-match-game.netlify.app' }).catch(()=>{});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(texto).then(()=>alert('¡Logro copiado! Pégalo donde quieras compartirlo.')).catch(()=>alert(texto));
+  } else {
+    alert(texto);
+  }
 }
 
 /* ============ MODAL DE REGLAS ============ */
@@ -2413,8 +2564,8 @@ async function finishRoutineWorkout() {
     await syncWorkoutToCloud(true, r.points, r.level, r.name);
   }
 
-  // Mostrar victoria con un hermoso mensaje mitológico
-  win(G.players[0], `¡Fabuloso entrenamiento de los Dioses! Completaste las ${r.rounds} rondas de la rutina ${r.name} en ${Math.floor(routineSecondsElapsed/60)} minutos con ${routineSecondsElapsed%60} segundos.`);
+  // Pantalla de Mision Cumplida (retencion + dopamina)
+  showMissionComplete({ points: r.points, routineName: r.name, timeSec: routineSecondsElapsed });
 }
 
 /* ============ BASE DE DATOS DE EXPLICACIÓN DE EJERCICIOS ============ */
