@@ -1011,7 +1011,10 @@ function renderNutritionTargets(profile){
   };
   box.innerHTML = `
     <div class="rounded-2xl p-4" style="background:linear-gradient(135deg,#0f2e22,#181c2a);border:1px solid #2c5f4a">
-      <h3 class="font-bold mb-3 flex items-center gap-2" style="color:#eceefb"><i class="fa-solid fa-calculator" style="color:#34d399"></i> Tus números diarios</h3>
+      <h3 class="font-bold mb-1 flex items-center gap-2 flex-wrap" style="color:#eceefb"><i class="fa-solid fa-calculator" style="color:#34d399"></i> Tus números diarios
+        ${r.source==='custom' ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#7c5cff33;color:#c4b5fd;border:1px solid #7c5cff66">MI PLAN</span>` : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#34d39922;color:#6ee7b7;border:1px solid #34d39955">CALCULADO</span>`}
+      </h3>
+      ${r.source==='custom' ? `<p class="text-[11px] mb-2" style="color:#a78bfa"><i class="fa-solid fa-user-doctor mr-1"></i>Usando tu plan personalizado.${(r.bmr&&r.tdee)?` (Referencia: TMB ${r.bmr}, gasto ${r.tdee})`:''}</p>` : ''}
       <div class="flex items-end gap-2 mb-4">
         <div class="text-4xl font-extrabold" style="color:#34d399">${r.calories}</div>
         <div class="text-sm mb-1" style="color:#8b92b0">kcal / día</div>
@@ -1147,6 +1150,19 @@ function buildNutritionForm(p){
       <div>${lb('Equipo de cocina')}<input id="nu-equip" type="text" value="${p.kitchen_equipment||''}" placeholder="estufa, horno, licuadora..." style="${inS}"></div>
       <div class="md:col-span-3">${lb('Salud (opcional - guia general, no tratamiento)')}<input id="nu-medical" type="text" value="${p.medical_flags||''}" placeholder="diabetes, hipertension, embarazo..." style="${inS}"></div>
     </div>
+    <div class="mt-4 rounded-xl p-3" style="background:#1c1633;border:1px solid #7c5cff55">
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input id="nu-usecustom" type="checkbox" ${p.use_custom_plan?'checked':''} style="width:16px;height:16px;accent-color:#7c5cff">
+        <span class="text-sm font-bold" style="color:#c4b5fd"><i class="fa-solid fa-user-doctor mr-1"></i>Ya tengo mi propio plan (de mi nutriólogo)</span>
+      </label>
+      <p class="text-[11px] mt-1 mb-2" style="color:#8b92b0">Si lo activas, usamos TUS números y las recetas se filtran con ellos. Lo calculado queda solo de referencia.</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div>${lb('Calorías')}<input id="nu-ccal" type="number" value="${p.custom_calories||''}" placeholder="1800" style="${inS}"></div>
+        <div>${lb('Proteína (g)')}<input id="nu-cprot" type="number" value="${p.custom_protein_g||''}" placeholder="130" style="${inS}"></div>
+        <div>${lb('Carbos (g)')}<input id="nu-ccarb" type="number" value="${p.custom_carbs_g||''}" placeholder="180" style="${inS}"></div>
+        <div>${lb('Grasas (g)')}<input id="nu-cfat" type="number" value="${p.custom_fat_g||''}" placeholder="60" style="${inS}"></div>
+      </div>
+    </div>
     <div class="flex gap-2 mt-3">
       <button onclick="saveNutritionProfile()" class="text-xs font-bold px-4 py-2 rounded-lg" style="background:#34d399;color:#06281e"><i class="fa-solid fa-check mr-1"></i>Guardar</button>
       <button onclick="toggleNutritionEdit(false)" class="text-xs font-bold px-4 py-2 rounded-lg" style="background:#222842;color:#b2b9d4">Cancelar</button>
@@ -1182,6 +1198,11 @@ async function saveNutritionProfile(){
       cuisine: v('nu-cuisine') || null,
       kitchen_equipment: v('nu-equip') || null,
       medical_flags: v('nu-medical') || null,
+      use_custom_plan: !!(document.getElementById('nu-usecustom') && document.getElementById('nu-usecustom').checked),
+      custom_calories: +v('nu-ccal') || null,
+      custom_protein_g: +v('nu-cprot') || null,
+      custom_carbs_g: +v('nu-ccarb') || null,
+      custom_fat_g: +v('nu-cfat') || null,
       nutrition_done: true
     };
     const { error } = await supa.from('profiles').update(payload).eq('id', user.id);

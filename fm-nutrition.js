@@ -68,6 +68,25 @@
 
   // --- 5) Macros en gramos ---
   function macros(p) {
+    const b = bmr(p);
+    const t = tdee(p);
+    // --- Override: el plan del usuario (su nutriologo) manda ---
+    if (p.use_custom_plan && +p.custom_calories) {
+      const cal = +p.custom_calories;
+      const protein_g = +p.custom_protein_g || Math.round((cal * 0.30) / 4);
+      const carbs_g   = +p.custom_carbs_g   || Math.round((cal * 0.40) / 4);
+      const fat_g     = +p.custom_fat_g     || Math.round((cal * 0.30) / 9);
+      return {
+        source: 'custom',
+        bmr: b != null ? Math.round(b) : null,
+        tdee: t,
+        calories: cal,
+        split: null,
+        protein_g, carbs_g, fat_g,
+        net_carbs_per_meal: p.meals_per_day ? Math.round(carbs_g / +p.meals_per_day) : null
+      };
+    }
+    // --- Plan calculado por el motor ---
     const cal = calorieGoal(p);
     if (cal == null) return null;
     const s = macroSplit(p);
@@ -75,8 +94,9 @@
     const carbs_g   = Math.round((cal * s.c) / 4); // 4 kcal/g
     const fat_g     = Math.round((cal * s.f) / 9); // 9 kcal/g
     return {
-      bmr: Math.round(bmr(p)),
-      tdee: tdee(p),
+      source: 'calculado',
+      bmr: Math.round(b),
+      tdee: t,
       calories: cal,
       split: s,
       protein_g, carbs_g, fat_g,

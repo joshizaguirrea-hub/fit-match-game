@@ -47,5 +47,15 @@ const r = N.macros(subir);
 const sumKcal = r.protein_g*4 + r.carbs_g*4 + r.fat_g*9;
 check('Macros suman ~ calorias meta', near(sumKcal, r.calories, r.calories*0.03));
 
+// 9) Plan personalizado (override del usuario) manda sobre el calculo
+const custom = Object.assign({}, hombre, { use_custom_plan:true, custom_calories:1800, custom_protein_g:130, custom_carbs_g:180, custom_fat_g:60 });
+const cR = N.macros(custom);
+check('Custom: usa las calorias del usuario', cR.calories === 1800);
+check('Custom: usa la proteina del usuario', cR.protein_g === 130);
+check('Custom: source = custom', cR.source === 'custom');
+// Sin datos fisicos pero con plan propio -> igual devuelve numeros
+const soloPlan = { use_custom_plan:true, custom_calories:2000 };
+check('Custom sin datos fisicos -> funciona', N.macros(soloPlan) && N.macros(soloPlan).calories === 2000);
+
 console.log(`\n${pass} pasaron, ${fail} fallaron`);
 process.exit(fail ? 1 : 0);
