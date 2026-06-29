@@ -153,6 +153,7 @@ function openProfileModal(userId) {
   loadProfileData(userId);
   document.getElementById('profile-modal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  applySavedCustomization();
 }
 
 // Función para cerrar el modal de perfil
@@ -170,7 +171,7 @@ function createProfileModal() {
     <div id="profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-[200] p-4">
       <div class="rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" style="background:#181c2a;border:1px solid #2c3350;color:#eceefb">
         <!-- Header del Perfil -->
-        <div class="bg-gradient-to-r from-purple-600 to-pink-500 p-6 text-white">
+        <div id="profile-header" class="bg-gradient-to-r from-purple-600 to-pink-500 p-6 text-white">
           <div class="flex justify-between items-start">
             <div class="flex items-center gap-4">
               <div class="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-3xl">
@@ -284,22 +285,22 @@ function createProfileModal() {
               <div>
                 <h3 class="font-bold mb-3" style="color:#eceefb">Tema del Sitio</h3>
                 <div class="flex gap-3">
-                  <button onclick="setTheme('default')" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 border-4 border-gray-900"></button>
-                  <button onclick="setTheme('dark')" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-transparent hover:border-gray-400"></button>
-                  <button onclick="setTheme('ocean')" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 border-4 border-transparent hover:border-gray-400"></button>
-                  <button onclick="setTheme('forest')" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 border-4 border-transparent hover:border-gray-400"></button>
-                  <button onclick="setTheme('sunset')" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-red-500 border-4 border-transparent hover:border-gray-400"></button>
+                  <button onclick="setTheme('default')" data-theme="default" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 border-4 border-transparent hover:border-gray-400"></button>
+                  <button onclick="setTheme('dark')" data-theme="dark" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-transparent hover:border-gray-400"></button>
+                  <button onclick="setTheme('ocean')" data-theme="ocean" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 border-4 border-transparent hover:border-gray-400"></button>
+                  <button onclick="setTheme('forest')" data-theme="forest" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 border-4 border-transparent hover:border-gray-400"></button>
+                  <button onclick="setTheme('sunset')" data-theme="sunset" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-red-500 border-4 border-transparent hover:border-gray-400"></button>
                 </div>
               </div>
 
               <div>
                 <h3 class="font-bold mb-3" style="color:#eceefb">Color Principal</h3>
                 <div class="flex gap-3">
-                  <button onclick="setPrimaryColor('#ec4899')" class="w-10 h-10 rounded-full bg-pink-500 border-2 border-gray-900"></button>
-                  <button onclick="setPrimaryColor('#8b5cf6')" class="w-10 h-10 rounded-full bg-purple-500 border-2 border-transparent hover:border-gray-400"></button>
-                  <button onclick="setPrimaryColor('#3b82f6')" class="w-10 h-10 rounded-full bg-blue-500 border-2 border-transparent hover:border-gray-400"></button>
-                  <button onclick="setPrimaryColor('#10b981')" class="w-10 h-10 rounded-full bg-green-500 border-2 border-transparent hover:border-gray-400"></button>
-                  <button onclick="setPrimaryColor('#f59e0b')" class="w-10 h-10 rounded-full bg-amber-500 border-2 border-transparent hover:border-gray-400"></button>
+                  <button onclick="setPrimaryColor('#ec4899')" data-color="#ec4899" class="color-swatch w-10 h-10 rounded-full" style="background:#ec4899"></button>
+                  <button onclick="setPrimaryColor('#8b5cf6')" data-color="#8b5cf6" class="color-swatch w-10 h-10 rounded-full" style="background:#8b5cf6"></button>
+                  <button onclick="setPrimaryColor('#3b82f6')" data-color="#3b82f6" class="color-swatch w-10 h-10 rounded-full" style="background:#3b82f6"></button>
+                  <button onclick="setPrimaryColor('#10b981')" data-color="#10b981" class="color-swatch w-10 h-10 rounded-full" style="background:#10b981"></button>
+                  <button onclick="setPrimaryColor('#f59e0b')" data-color="#f59e0b" class="color-swatch w-10 h-10 rounded-full" style="background:#f59e0b"></button>
                 </div>
               </div>
             </div>
@@ -643,19 +644,77 @@ function generateActivityChart(workouts) {
   `).join('');
 }
 
+// Temas predefinidos: cada uno es un par de colores para el degradado del encabezado
+const FM_THEMES = {
+  default: ['#9333ea', '#ec4899'],
+  dark:    ['#374151', '#111827'],
+  ocean:   ['#06b6d4', '#2563eb'],
+  forest:  ['#22c55e', '#059669'],
+  sunset:  ['#f97316', '#ef4444']
+};
+
+// Aplica el degradado al encabezado del perfil
+function applyProfileHeader(c1, c2){
+  const h = document.getElementById('profile-header');
+  if(h){
+    h.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+  }
+}
+
+// Marca visualmente cual swatch/tema esta activo
+function markActiveCustomization(){
+  const color = userProfile.customization.primaryColor;
+  const theme = userProfile.customization.theme;
+  document.querySelectorAll('.color-swatch').forEach(b => {
+    const on = b.dataset.color === color;
+    b.style.outline = on ? '3px solid #fff' : '2px solid #2c3350';
+    b.style.outlineOffset = '2px';
+  });
+  document.querySelectorAll('.theme-btn').forEach(b => {
+    b.classList.toggle('border-white', b.dataset.theme === theme);
+    b.classList.toggle('border-transparent', b.dataset.theme !== theme);
+  });
+}
+
+// Aplica lo guardado (al abrir el perfil)
+function applySavedCustomization(){
+  try {
+    const savedColor = localStorage.getItem('fm_profile_color');
+    const savedTheme = localStorage.getItem('fm_profile_theme');
+    if(savedColor) userProfile.customization.primaryColor = savedColor;
+    if(savedTheme) userProfile.customization.theme = savedTheme;
+  } catch(e){}
+  // El color principal manda sobre el encabezado; si no hay color, usa el tema
+  if(localStorage.getItem('fm_profile_color')){
+    const c = userProfile.customization.primaryColor;
+    applyProfileHeader(c, c + '88');
+  } else {
+    const t = FM_THEMES[userProfile.customization.theme] || FM_THEMES.default;
+    applyProfileHeader(t[0], t[1]);
+  }
+  markActiveCustomization();
+}
+
 // Función para establecer tema
 function setTheme(theme) {
   userProfile.customization.theme = theme;
-  // Aplicar tema (implementación futura)
-  document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('border-gray-900'));
-  event.target.classList.add('border-gray-900');
+  try { localStorage.setItem('fm_profile_theme', theme); localStorage.removeItem('fm_profile_color'); } catch(e){}
+  userProfile.customization.primaryColor = '';
+  const t = FM_THEMES[theme] || FM_THEMES.default;
+  applyProfileHeader(t[0], t[1]);
+  markActiveCustomization();
 }
 
 // Función para establecer color principal
 function setPrimaryColor(color) {
   userProfile.customization.primaryColor = color;
-  // Aplicar color (implementación futura)
+  try { localStorage.setItem('fm_profile_color', color); } catch(e){}
+  // Degradado del color elegido hacia una version mas oscura del mismo color
+  applyProfileHeader(color, color + '88');
+  markActiveCustomization();
 }
+window.setTheme = setTheme;
+window.setPrimaryColor = setPrimaryColor;
 
 // Exponer funciones en el ambiente global
 if (typeof window !== "undefined") {
