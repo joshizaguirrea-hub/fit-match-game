@@ -166,7 +166,7 @@ function closeProfileModal() {
 function createProfileModal() {
   const modalHTML = `
     <div id="profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-[200] p-4">
-      <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" style="background:#181c2a;border:1px solid #2c3350;color:#eceefb">
         <!-- Header del Perfil -->
         <div class="bg-gradient-to-r from-purple-600 to-pink-500 p-6 text-white">
           <div class="flex justify-between items-start">
@@ -194,7 +194,7 @@ function createProfileModal() {
         <!-- Contenido del Perfil -->
         <div class="p-6">
           <!-- Tabs de Navegación -->
-          <div class="flex gap-2 mb-6 border-b border-gray-200">
+          <div class="flex gap-2 mb-6 border-b overflow-x-auto" style="border-color:#2c3350">
             <button onclick="switchProfileTab('stats')" class="profile-tab active px-4 py-2 font-bold text-sm border-b-2 border-purple-600 text-purple-600" data-tab="stats">
               <i class="fa-solid fa-chart-line mr-2"></i>Estadísticas
             </button>
@@ -215,31 +215,34 @@ function createProfileModal() {
           <!-- Tab: Estadísticas -->
           <div id="tab-stats" class="profile-tab-content">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-2xl text-center">
-                <i class="fa-solid fa-clock text-2xl text-purple-600 mb-2"></i>
-                <p class="text-3xl font-bold text-gray-900" id="stat-hours">0</p>
-                <p class="text-xs text-gray-600 font-semibold">Horas Totales</p>
+              <div class="p-4 rounded-2xl text-center" style="background:#222842;border:1px solid #2c3350">
+                <i class="fa-solid fa-clock text-2xl mb-2" style="color:#a78bfa"></i>
+                <p class="text-3xl font-bold" style="color:#eceefb" id="stat-hours">0</p>
+                <p class="text-xs font-semibold" style="color:#8b92b0">Horas Totales</p>
               </div>
-              <div class="bg-gradient-to-br from-pink-50 to-pink-100 p-4 rounded-2xl text-center">
-                <i class="fa-solid fa-calendar-check text-2xl text-pink-600 mb-2"></i>
-                <p class="text-3xl font-bold text-gray-900" id="stat-days">0</p>
-                <p class="text-xs text-gray-600 font-semibold">Días Entrenando</p>
+              <div class="p-4 rounded-2xl text-center" style="background:#222842;border:1px solid #2c3350">
+                <i class="fa-solid fa-calendar-check text-2xl mb-2" style="color:#f472b6"></i>
+                <p class="text-3xl font-bold" style="color:#eceefb" id="stat-days">0</p>
+                <p class="text-xs font-semibold" style="color:#8b92b0">Días Entrenando</p>
               </div>
-              <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-2xl text-center">
-                <i class="fa-solid fa-dumbbell text-2xl text-blue-600 mb-2"></i>
-                <p class="text-3xl font-bold text-gray-900" id="stat-routines">0</p>
-                <p class="text-xs text-gray-600 font-semibold">Rutinas Completadas</p>
+              <div class="p-4 rounded-2xl text-center" style="background:#222842;border:1px solid #2c3350">
+                <i class="fa-solid fa-dumbbell text-2xl mb-2" style="color:#60a5fa"></i>
+                <p class="text-3xl font-bold" style="color:#eceefb" id="stat-routines">0</p>
+                <p class="text-xs font-semibold" style="color:#8b92b0">Rutinas Completadas</p>
               </div>
-              <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-2xl text-center">
-                <i class="fa-solid fa-bolt text-2xl text-yellow-600 mb-2"></i>
-                <p class="text-3xl font-bold text-gray-900" id="stat-points">0</p>
-                <p class="text-xs text-gray-600 font-semibold">Puntos Totales</p>
+              <div class="p-4 rounded-2xl text-center" style="background:#222842;border:1px solid #2c3350">
+                <i class="fa-solid fa-bolt text-2xl mb-2" style="color:#fbbf24"></i>
+                <p class="text-3xl font-bold" style="color:#eceefb" id="stat-points">0</p>
+                <p class="text-xs font-semibold" style="color:#8b92b0">Puntos Totales</p>
               </div>
             </div>
 
+            <!-- Datos físicos / perfil fitness (para medir avance) -->
+            <div id="fitness-profile-block" class="rounded-2xl p-4 mb-6" style="background:#222842;border:1px solid #2c3350"></div>
+
             <!-- Gráfico de Actividad Reciente -->
-            <div class="bg-gray-50 rounded-2xl p-4">
-              <h3 class="font-bold text-gray-900 mb-4">Actividad Reciente</h3>
+            <div class="rounded-2xl p-4" style="background:#222842;border:1px solid #2c3350">
+              <h3 class="font-bold mb-4" style="color:#eceefb">Actividad Reciente</h3>
               <div id="activity-chart" class="flex items-end gap-2 h-32">
                 <!-- Se llena dinámicamente -->
               </div>
@@ -277,7 +280,7 @@ function createProfileModal() {
           <div id="tab-customization" class="profile-tab-content hidden">
             <div class="space-y-6">
               <div>
-                <h3 class="font-bold text-gray-900 mb-3">Tema del Sitio</h3>
+                <h3 class="font-bold mb-3" style="color:#eceefb">Tema del Sitio</h3>
                 <div class="flex gap-3">
                   <button onclick="setTheme('default')" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 border-4 border-gray-900"></button>
                   <button onclick="setTheme('dark')" class="theme-btn w-16 h-16 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-transparent hover:border-gray-400"></button>
@@ -288,7 +291,7 @@ function createProfileModal() {
               </div>
 
               <div>
-                <h3 class="font-bold text-gray-900 mb-3">Color Principal</h3>
+                <h3 class="font-bold mb-3" style="color:#eceefb">Color Principal</h3>
                 <div class="flex gap-3">
                   <button onclick="setPrimaryColor('#ec4899')" class="w-10 h-10 rounded-full bg-pink-500 border-2 border-gray-900"></button>
                   <button onclick="setPrimaryColor('#8b5cf6')" class="w-10 h-10 rounded-full bg-purple-500 border-2 border-transparent hover:border-gray-400"></button>
@@ -380,6 +383,9 @@ async function loadProfileData(targetUserId) {
     document.getElementById('stat-routines').textContent = stats.routinesCompleted;
     document.getElementById('stat-points').textContent = stats.totalPoints;
     document.getElementById('profile-streak').textContent = stats.currentStreak;
+
+    // Mostrar datos físicos / perfil fitness
+    renderFitnessProfile(profile, isOwn);
 
     // Cargar logros
     loadAchievements(workouts || [], stats.totalPoints);
@@ -641,7 +647,125 @@ function setPrimaryColor(color) {
 
 // Exponer funciones en el ambiente global
 if (typeof window !== "undefined") {
-  window.openProfileModal = openProfileModal;
+  // ===== PERFIL FITNESS (datos físicos + IMC + edición) =====
+const FM_FIT_LABELS = {
+  sexo: { hombre:'Hombre', mujer:'Mujer', otro:'Sin especificar' },
+  experiencia: { principiante:'Principiante', intermedio:'Intermedio', avanzado:'Avanzado' },
+  objetivo: { bajar_grasa:'Bajar grasa', musculo:'Ganar músculo', salud:'Salud general', movilidad:'Movilidad', resistencia:'Resistencia' },
+  equipo: { casa_sin:'Casa sin equipo', casa_basico:'Casa básico', gimnasio:'Gimnasio' }
+};
+function fmImc(peso, altura){
+  if(!peso || !altura) return null;
+  const m = altura/100;
+  const imc = peso/(m*m);
+  let cat = 'Saludable', color = '#34d399';
+  if(imc < 18.5){ cat='Bajo peso'; color='#60a5fa'; }
+  else if(imc < 25){ cat='Saludable'; color='#34d399'; }
+  else if(imc < 30){ cat='Sobrepeso'; color='#fbbf24'; }
+  else { cat='Obesidad'; color='#ef4444'; }
+  return { value: imc.toFixed(1), cat, color };
+}
+function fmChip(icon, label, value){
+  return `<div class="rounded-xl px-3 py-2" style="background:#181c2a;border:1px solid #2c3350">
+    <div class="text-[10px] uppercase tracking-wide" style="color:#8b92b0"><i class="fa-solid ${icon} mr-1"></i>${label}</div>
+    <div class="font-bold text-sm" style="color:#eceefb">${value}</div>
+  </div>`;
+}
+function renderFitnessProfile(profile, isOwn){
+  const box = document.getElementById('fitness-profile-block');
+  if(!box) return;
+  profile = profile || {};
+  const hasData = profile.peso_kg || profile.altura_cm || profile.objetivo;
+  const imc = fmImc(profile.peso_kg, profile.altura_cm);
+  const editBtn = isOwn ? `<button onclick="toggleFitnessEdit(true)" class="text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#7c5cff;color:#fff"><i class="fa-solid fa-pen mr-1"></i>Editar</button>` : '';
+
+  if(!hasData){
+    box.innerHTML = `<div class="flex items-center justify-between">
+      <div><h3 class="font-bold" style="color:#eceefb"><i class="fa-solid fa-heart-pulse mr-1" style="color:#f472b6"></i> Tu perfil físico</h3>
+      <p class="text-xs mt-1" style="color:#8b92b0">${isOwn ? 'Aún no tienes datos. Compártelos para medir tu avance.' : 'Sin datos públicos.'}</p></div>
+      ${editBtn}
+    </div>
+    <div id="fitness-edit-form" class="hidden mt-4"></div>`;
+    if(isOwn) buildFitnessForm(profile);
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-bold" style="color:#eceefb"><i class="fa-solid fa-heart-pulse mr-1" style="color:#f472b6"></i> Tu perfil físico</h3>
+      ${editBtn}
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+      ${profile.edad ? fmChip('fa-cake-candles','Edad', profile.edad + ' años') : ''}
+      ${profile.sexo ? fmChip('fa-venus-mars','Sexo', FM_FIT_LABELS.sexo[profile.sexo]||profile.sexo) : ''}
+      ${profile.peso_kg ? fmChip('fa-weight-scale','Peso', profile.peso_kg + ' kg') : ''}
+      ${profile.altura_cm ? fmChip('fa-ruler-vertical','Altura', profile.altura_cm + ' cm') : ''}
+      ${imc ? `<div class="rounded-xl px-3 py-2" style="background:#181c2a;border:1px solid #2c3350"><div class="text-[10px] uppercase tracking-wide" style="color:#8b92b0"><i class="fa-solid fa-calculator mr-1"></i>IMC</div><div class="font-bold text-sm" style="color:${imc.color}">${imc.value} · ${imc.cat}</div></div>` : ''}
+      ${profile.objetivo ? fmChip('fa-bullseye','Objetivo', FM_FIT_LABELS.objetivo[profile.objetivo]||profile.objetivo) : ''}
+      ${profile.experiencia ? fmChip('fa-signal','Nivel', FM_FIT_LABELS.experiencia[profile.experiencia]||profile.experiencia) : ''}
+      ${profile.equipo ? fmChip('fa-toolbox','Equipo', FM_FIT_LABELS.equipo[profile.equipo]||profile.equipo) : ''}
+      ${profile.dias_semana ? fmChip('fa-calendar-week','Días/sem', profile.dias_semana + '+') : ''}
+    </div>
+    <div id="fitness-edit-form" class="hidden mt-4"></div>`;
+  if(isOwn) buildFitnessForm(profile);
+}
+function selOpts(map, current){
+  return Object.keys(map).map(k => `<option value="${k}" ${current===k?'selected':''}>${map[k]}</option>`).join('');
+}
+function buildFitnessForm(p){
+  const form = document.getElementById('fitness-edit-form');
+  if(!form) return;
+  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px';
+  form.innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div><label class="text-[10px] uppercase" style="color:#8b92b0">Edad</label><input id="ed-edad" type="number" value="${p.edad||''}" style="${inS}"></div>
+      <div><label class="text-[10px] uppercase" style="color:#8b92b0">Sexo</label><select id="ed-sexo" style="${inS}">${selOpts(FM_FIT_LABELS.sexo, p.sexo)}</select></div>
+      <div><label class="text-[10px] uppercase" style="color:#8b92b0">Peso (kg)</label><input id="ed-peso" type="number" value="${p.peso_kg||''}" style="${inS}"></div>
+      <div><label class="text-[10px] uppercase" style="color:#8b92b0">Altura (cm)</label><input id="ed-altura" type="number" value="${p.altura_cm||''}" style="${inS}"></div>
+      <div><label class="text-[10px] uppercase" style="color:#8b92b0">Nivel</label><select id="ed-exp" style="${inS}">${selOpts(FM_FIT_LABELS.experiencia, p.experiencia)}</select></div>
+      <div><label class="text-[10px] uppercase" style="color:#8b92b0">Objetivo</label><select id="ed-obj" style="${inS}">${selOpts(FM_FIT_LABELS.objetivo, p.objetivo)}</select></div>
+      <div><label class="text-[10px] uppercase" style="color:#8b92b0">Equipo</label><select id="ed-equipo" style="${inS}">${selOpts(FM_FIT_LABELS.equipo, p.equipo)}</select></div>
+      <div><label class="text-[10px] uppercase" style="color:#8b92b0">Días/sem</label><select id="ed-dias" style="${inS}"><option value="2" ${p.dias_semana==2?'selected':''}>2-3</option><option value="4" ${p.dias_semana==4?'selected':''}>4-5</option><option value="6" ${p.dias_semana==6?'selected':''}>6+</option></select></div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button onclick="saveFitnessProfile()" class="text-xs font-bold px-4 py-2 rounded-lg" style="background:#34d399;color:#06281e"><i class="fa-solid fa-check mr-1"></i>Guardar</button>
+      <button onclick="toggleFitnessEdit(false)" class="text-xs font-bold px-4 py-2 rounded-lg" style="background:#222842;color:#b2b9d4">Cancelar</button>
+      <span id="fitness-edit-msg" class="text-xs self-center" style="color:#ef4444"></span>
+    </div>`;
+}
+function toggleFitnessEdit(show){
+  const form = document.getElementById('fitness-edit-form');
+  if(form) form.classList.toggle('hidden', !show);
+}
+async function saveFitnessProfile(){
+  const msg = document.getElementById('fitness-edit-msg');
+  try {
+    const supa = window.FMAuth.getClient();
+    const { data: { user } } = await supa.auth.getUser();
+    if(!user) throw new Error('No hay sesión');
+    const payload = {
+      edad: +document.getElementById('ed-edad').value || null,
+      sexo: document.getElementById('ed-sexo').value,
+      peso_kg: +document.getElementById('ed-peso').value || null,
+      altura_cm: +document.getElementById('ed-altura').value || null,
+      experiencia: document.getElementById('ed-exp').value,
+      objetivo: document.getElementById('ed-obj').value,
+      equipo: document.getElementById('ed-equipo').value,
+      dias_semana: +document.getElementById('ed-dias').value || null,
+      onboarding_done: true
+    };
+    const { error } = await supa.from('profiles').update(payload).eq('id', user.id);
+    if(error) throw error;
+    loadProfileData();
+  } catch(err){
+    console.error(err);
+    if(msg) msg.textContent = 'No se pudo guardar: ' + (err.message||err);
+  }
+}
+window.toggleFitnessEdit = toggleFitnessEdit;
+window.saveFitnessProfile = saveFitnessProfile;
+
+window.openProfileModal = openProfileModal;
   window.closeProfileModal = closeProfileModal;
   window.switchProfileTab = switchProfileTab;
   window.handlePhotoUpload = handlePhotoUpload;
