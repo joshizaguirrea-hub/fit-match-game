@@ -40,8 +40,8 @@ CREATE POLICY "Ver workouts públicos"
 -- 3) (Por si acaso) asegurar que el trigger crea el perfil al registrarse
 --    Si un usuario se registro y NO tiene fila en profiles, esto la crea
 --    para todos los que falten:
-INSERT INTO public.profiles (id, apodo, nickname)
-SELECT u.id, split_part(u.email, '@', 1), split_part(u.email, '@', 1)
+INSERT INTO public.profiles (id, apodo)
+SELECT u.id, split_part(u.email, '@', 1)
 FROM auth.users u
 LEFT JOIN public.profiles p ON p.id = u.id
 WHERE p.id IS NULL;
