@@ -48,6 +48,11 @@
   ::-webkit-scrollbar{width:10px;}::-webkit-scrollbar-track{background:#181c2a;}
   ::-webkit-scrollbar-thumb{background:#3a4063;border-radius:5px;}
   ::-webkit-scrollbar-thumb:hover{background:#4a5180;}
+  /* Carriles horizontales estilo Netflix */
+  .rail{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:#3a4063 transparent;}
+  .rail::-webkit-scrollbar{height:8px;}
+  .rail::-webkit-scrollbar-thumb{background:#2c3350;border-radius:4px;}
+  .rail::-webkit-scrollbar-track{background:transparent;}
   /* seleccion de ejercicio en la carta */
   .exsel{cursor:pointer;transition:transform .12s, box-shadow .12s;}
   .exsel:hover{transform:translateX(2px);}
@@ -97,12 +102,12 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=8"></script>
-<script src="fm-routines.js?v=8"></script>
-<script src="fm-specialized-routines.js?v=8"></script>
-<script src="fm-badges.js?v=8"></script>
-<script src="fm-achievements.js?v=8"></script>
-<script src="fm-profile.js?v=8"></script>
+<script src="fm-supabase.js?v=9"></script>
+<script src="fm-routines.js?v=9"></script>
+<script src="fm-specialized-routines.js?v=9"></script>
+<script src="fm-badges.js?v=9"></script>
+<script src="fm-achievements.js?v=9"></script>
+<script src="fm-profile.js?v=9"></script>
 </head>
 <body class="min-h-screen antialiased">
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
@@ -1936,57 +1941,105 @@ function filterRoutines(culture) {
   renderRoutinePicker();
 }
 
-function renderRoutinePicker() {
-  const grid = document.getElementById('routines-grid');
-  let list = [];
-  
-  // Seleccionar la lista apropiada según la categoría activa
-  if (activeCategory === 'gods') {
-    list = window.FMRoutines || [];
-    if (activeFilter !== 'All') {
-      list = list.filter(r => r.culture === activeFilter);
-    }
-  } else {
-    list = window.FMSpecializedRoutines || [];
-    if (activeSpecialFilter !== 'All') {
-      list = list.filter(r => r.category === activeSpecialFilter);
-    }
-  }
-
-  grid.innerHTML = list.map(r => {
-    const levelColor = r.level === 'espartano' ? '#a855f7' : r.level === 'avanzado' ? '#ef4444' : r.level === 'intermedio' ? '#f59e0b' : '#34d399';
-    const durMin = estimateDuration(r);
-    const eqList = getRoutineEquipment(r);
-    const eqSummary = eqList.slice(0,3).map(e=>e.label).join(' · ') + (eqList.length>3 ? ' +' + (eqList.length-3) : '');
-
-    // Determinar la etiqueta (culture para dioses, category para especializadas)
-    const badgeText = activeCategory === 'gods' ? r.culture : r.category;
-    const badgeIcon = activeCategory === 'gods' ? '' : getCategoryIcon(r.category);
-
-    return `
-      <div onclick="openRoutineDetail('${r.id}', '${activeCategory}')" class="pop p-5 cursor-pointer flex flex-col justify-between" style="border-top:3px solid ${levelColor}">
-        <div>
-          <div class="flex justify-between items-start mb-2 gap-2">
-            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase" style="background:var(--surface2);color:var(--txt-soft)">${badgeIcon}${badgeText}</span>
-            <span class="text-[10px] font-bold uppercase tracking-wide" style="color:${levelColor}">${r.level}</span>
-          </div>
-          <h3 class="fun text-lg font-bold mb-1" style="color:var(--txt)">${r.name}</h3>
-          <p class="text-xs leading-relaxed mb-3" style="color:var(--txt-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${r.description}</p>
-          <div class="flex items-center gap-1.5 text-[11px] mb-3" style="color:var(--txt-mut)">
-            <i class="fa-solid fa-toolbox" style="color:var(--brand2)"></i>
-            <span class="truncate">${eqSummary}</span>
-          </div>
+// Tarjeta reutilizable de rutina (usada en rejilla y en carriles)
+function buildRoutineCard(r){
+  const category = r.culture ? 'gods' : 'specialized';
+  const levelColor = r.level === 'espartano' ? '#a855f7' : r.level === 'avanzado' ? '#ef4444' : r.level === 'intermedio' ? '#f59e0b' : '#34d399';
+  const durMin = estimateDuration(r);
+  const eqList = getRoutineEquipment(r);
+  const eqSummary = eqList.slice(0,3).map(e=>e.label).join(' · ') + (eqList.length>3 ? ' +' + (eqList.length-3) : '');
+  const badgeText = category === 'gods' ? r.culture : r.category;
+  const badgeIcon = category === 'gods' ? '' : getCategoryIcon(r.category);
+  return `
+    <div onclick="openRoutineDetail('${r.id}', '${category}')" class="pop p-5 cursor-pointer flex flex-col justify-between h-full" style="border-top:3px solid ${levelColor}">
+      <div>
+        <div class="flex justify-between items-start mb-2 gap-2">
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase" style="background:var(--surface2);color:var(--txt-soft)">${badgeIcon}${badgeText}</span>
+          <span class="text-[10px] font-bold uppercase tracking-wide" style="color:${levelColor}">${r.level}</span>
         </div>
-        <div class="flex items-center justify-between pt-3" style="border-top:1px solid var(--border)">
-          <span class="text-[11px] font-semibold flex items-center gap-3" style="color:var(--txt-mut)">
-            <span><i class="fa-regular fa-clock mr-1"></i>${durMin}'</span>
-            <span><i class="fa-solid fa-list-check mr-1"></i>${r.exercises.length}</span>
-          </span>
-          <span class="fun font-bold text-sm flex items-center gap-1" style="color:#fbbf24"><i class="fa-solid fa-bolt"></i> +${r.points} PX</span>
+        <h3 class="fun text-lg font-bold mb-1" style="color:var(--txt)">${r.name}</h3>
+        <p class="text-xs leading-relaxed mb-3" style="color:var(--txt-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${r.description}</p>
+        <div class="flex items-center gap-1.5 text-[11px] mb-3" style="color:var(--txt-mut)">
+          <i class="fa-solid fa-toolbox" style="color:var(--brand2)"></i>
+          <span class="truncate">${eqSummary}</span>
         </div>
       </div>
-    `;
-  }).join('');
+      <div class="flex items-center justify-between pt-3" style="border-top:1px solid var(--border)">
+        <span class="text-[11px] font-semibold flex items-center gap-3" style="color:var(--txt-mut)">
+          <span><i class="fa-regular fa-clock mr-1"></i>${durMin}'</span>
+          <span><i class="fa-solid fa-list-check mr-1"></i>${r.exercises.length}</span>
+        </span>
+        <span class="fun font-bold text-sm flex items-center gap-1" style="color:#fbbf24"><i class="fa-solid fa-bolt"></i> +${r.points} PX</span>
+      </div>
+    </div>
+  `;
+}
+
+// Construye un carril horizontal (estilo Netflix)
+function buildRail(title, iconHtml, accent, routines){
+  if(!routines || !routines.length) return '';
+  const cards = routines.map(r => `<div class="snap-start shrink-0 w-72">${buildRoutineCard(r)}</div>`).join('');
+  return `
+    <section class="mb-7">
+      <div class="flex items-center gap-2 mb-3 px-1">
+        <span class="text-lg" style="color:${accent}">${iconHtml}</span>
+        <h2 class="fun text-xl font-bold" style="color:var(--txt)">${title}</h2>
+        <span class="text-xs ml-1 px-2 py-0.5 rounded-full" style="background:var(--surface2);color:var(--txt-mut)">${routines.length}</span>
+      </div>
+      <div class="rail flex gap-4 overflow-x-auto pb-3 snap-x">${cards}</div>
+    </section>
+  `;
+}
+
+function renderRoutinePicker() {
+  const grid = document.getElementById('routines-grid');
+  const isGods = activeCategory === 'gods';
+  const fullList = isGods ? (window.FMRoutines || []) : (window.FMSpecializedRoutines || []);
+  const activeF = isGods ? activeFilter : activeSpecialFilter;
+
+  // Si hay un filtro especifico activo -> rejilla plana de esa coleccion
+  if (activeF && activeF !== 'All') {
+    const filtered = fullList.filter(r => isGods ? r.culture === activeF : r.category === activeF);
+    grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+    grid.innerHTML = filtered.map(r => buildRoutineCard(r)).join('') || `<p class="col-span-full text-center" style="color:var(--txt-mut)">No hay rutinas en esta colección todavía.</p>`;
+    return;
+  }
+
+  // Vista "Netflix": carriles curados
+  grid.className = "space-y-2";
+  let html = '';
+
+  // Recomendado según tu rango
+  const pts = (typeof cloudTotalPoints !== 'undefined') ? cloudTotalPoints : 0;
+  const recoLevel = pts < 50 ? 'básico' : pts < 200 ? 'intermedio' : pts < 500 ? 'avanzado' : 'espartano';
+  html += buildRail('Recomendado para ti', '<i class="fa-solid fa-wand-magic-sparkles"></i>', 'var(--accent)', fullList.filter(r => r.level === recoLevel).slice(0, 10));
+
+  // Empieza aqui (principiantes)
+  html += buildRail('Empieza aquí', '<i class="fa-solid fa-seedling"></i>', '#34d399', fullList.filter(r => r.level === 'básico').slice(0, 12));
+
+  // Rapidos (los mas cortos)
+  const quick = [...fullList].sort((a,b)=>estimateDuration(a)-estimateDuration(b)).slice(0, 12);
+  html += buildRail('Rápidos · los más cortos', '<i class="fa-solid fa-bolt"></i>', '#fbbf24', quick);
+
+  // Sin equipo (en casa)
+  const noEq = fullList.filter(r => { const e = getRoutineEquipment(r); return e.length === 1 && e[0].label === 'Peso corporal'; });
+  html += buildRail('Sin equipo · en casa', '<i class="fa-solid fa-house"></i>', '#22d3ee', noEq.slice(0, 12));
+
+  // Modo Espartano (reto maximo)
+  html += buildRail('Modo Espartano', '<i class="fa-solid fa-helmet-safety"></i>', '#a855f7', fullList.filter(r => r.level === 'espartano').slice(0, 12));
+
+  // Colecciones tematicas (culturas o categorias)
+  const groups = isGods
+    ? ['Grecia','Nórdicos','Egipto','China','Japón','Mongoles','Mayas','Aztecas','Incas']
+    : ['gimnasio','yoga','pilates','cardio','calistenia','hipopresivos'];
+  groups.forEach(g => {
+    const items = fullList.filter(r => isGods ? r.culture === g : r.category === g);
+    const label = isGods ? g : g.charAt(0).toUpperCase() + g.slice(1);
+    const icon = isGods ? '<i class="fa-solid fa-landmark"></i>' : (getCategoryIcon(g) || '<i class="fa-solid fa-dumbbell"></i>');
+    html += buildRail(label, icon, 'var(--brand2)', items);
+  });
+
+  grid.innerHTML = html || `<p class="text-center" style="color:var(--txt-mut)">Cargando rutinas...</p>`;
 }
 
 function getCategoryIcon(category) {
