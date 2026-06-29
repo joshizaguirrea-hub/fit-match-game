@@ -34,6 +34,9 @@
     <span id="user-text" class="text-gray-400 font-medium">Cargando conexión con la nube...</span>
   </div>
   <div class="flex items-center gap-3">
+    <button id="btn-open-entrance" onclick="toggleEntranceModal()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1 rounded-full transition">
+      <i class="fa-solid fa-user-plus mr-1"></i> Crear cuenta / Entrar
+    </button>
     <button id="btn-profile" onclick="openProfileModal()" class="hidden text-gray-400 hover:text-purple-400 font-bold transition">
       <i class="fa-solid fa-user mr-1"></i> Mi Perfil
     </button>
@@ -663,6 +666,8 @@
       userText.innerHTML = `Atleta conectado: <strong class="text-white">${profile.apodo}</strong> <span class="bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded-full uppercase ml-1.5 font-bold tracking-wider">${rank}</span> <span class="text-gray-500 font-normal ml-1">(${cloudTotalPoints} pts)</span>`;
       btnLogout.classList.remove('hidden');
       document.getElementById('btn-profile').classList.remove('hidden');
+      const btnEntrance = document.getElementById('btn-open-entrance');
+      if (btnEntrance) btnEntrance.classList.add('hidden');
       
       // Cerrar el modal unificado de entrada
       document.getElementById('unified-entrance-modal').classList.add('hidden');
