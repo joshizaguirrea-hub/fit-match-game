@@ -671,6 +671,22 @@ function fmChip(icon, label, value){
     <div class="font-bold text-sm" style="color:#eceefb">${value}</div>
   </div>`;
 }
+function fmArchetype(p){
+  const expMap = { principiante:'Aprendiz', intermedio:'Guerrero', avanzado:'Élite' };
+  const objMap = {
+    bajar_grasa: { name:'Quemador', icon:'fa-fire-flame-curved', color:'#ef4444' },
+    musculo:     { name:'Constructor', icon:'fa-dumbbell', color:'#60a5fa' },
+    salud:       { name:'Equilibrado', icon:'fa-heart', color:'#f472b6' },
+    movilidad:   { name:'Fluido', icon:'fa-spa', color:'#22d3ee' },
+    resistencia: { name:'Incansable', icon:'fa-heart-pulse', color:'#fb923c' }
+  };
+  const o = objMap[p.objetivo] || { name:'Atleta', icon:'fa-medal', color:'#a855f7' };
+  const exp = expMap[p.experiencia] || '';
+  const name = (exp ? exp + ' ' : '') + o.name;
+  const equipoTxt = FM_FIT_LABELS.equipo[p.equipo] || '';
+  const desc = `Meta: ${FM_FIT_LABELS.objetivo[p.objetivo] || '-'}` + (equipoTxt ? ' · ' + equipoTxt : '') + (p.dias_semana ? ' · ' + p.dias_semana + '+ días/sem' : '');
+  return { name, desc, icon:o.icon, color:o.color };
+}
 function renderFitnessProfile(profile, isOwn){
   const box = document.getElementById('fitness-profile-block');
   if(!box) return;
@@ -695,6 +711,15 @@ function renderFitnessProfile(profile, isOwn){
       <h3 class="font-bold" style="color:#eceefb"><i class="fa-solid fa-heart-pulse mr-1" style="color:#f472b6"></i> Tu perfil físico</h3>
       ${editBtn}
     </div>
+    ${(profile.objetivo || profile.experiencia) ? (() => { const a = fmArchetype(profile); return `
+    <div class="rounded-2xl p-4 mb-3 flex items-center gap-4" style="background:linear-gradient(135deg, ${a.color}22, #181c2a);border:1px solid ${a.color}55">
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shrink-0" style="background:${a.color}"><i class="fa-solid ${a.icon}"></i></div>
+      <div>
+        <div class="text-[10px] uppercase tracking-widest" style="color:#8b92b0">Tu arquetipo de atleta</div>
+        <div class="fun text-xl font-extrabold" style="color:#eceefb">${a.name}</div>
+        <div class="text-xs" style="color:#b2b9d4">${a.desc}</div>
+      </div>
+    </div>` ; })() : ''}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
       ${profile.edad ? fmChip('fa-cake-candles','Edad', profile.edad + ' años') : ''}
       ${profile.sexo ? fmChip('fa-venus-mars','Sexo', FM_FIT_LABELS.sexo[profile.sexo]||profile.sexo) : ''}
