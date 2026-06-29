@@ -12,13 +12,16 @@
   .athletic{font-family:'Oswald',sans-serif;}
   .card-link{transition:transform .2s, box-shadow .2s, border-color .2s;}
   .card-link:hover{transform:translateY(-6px);}
+  .onb-opt{transition:border-color .15s, background .15s, transform .1s;}
+  .onb-opt:hover{border-color:#7c3aed;}
+  .onb-opt.selected{border-color:#a855f7;background:rgba(124,58,237,.18);box-shadow:0 0 0 1px #a855f7 inset;}
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=6"></script>
-<script src="fm-badges.js?v=6"></script>
-<script src="fm-achievements.js?v=6"></script>
-<script src="fm-profile.js?v=6"></script>
+<script src="fm-supabase.js?v=11"></script>
+<script src="fm-badges.js?v=11"></script>
+<script src="fm-achievements.js?v=11"></script>
+<script src="fm-profile.js?v=11"></script>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
@@ -155,6 +158,91 @@
     </div>
   </div>
 </div>
+  </div>
+</div>
+
+<!-- ===== ONBOARDING FITNESS (perfil inteligente) ===== -->
+<div id="onboarding-modal" class="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center hidden z-[60] p-4">
+  <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-md w-full relative shadow-2xl">
+    <div class="flex items-center justify-between mb-1">
+      <h3 class="athletic text-xl font-bold uppercase text-white">Tu perfil fitness</h3>
+      <button onclick="skipOnboarding()" class="text-gray-500 hover:text-gray-300 text-xs font-semibold">Omitir</button>
+    </div>
+    <p class="text-gray-500 text-xs mb-3">Cuéntanos de ti para recomendarte las rutinas ideales. (30 segundos)</p>
+    <div class="w-full h-1.5 rounded-full bg-gray-800 mb-5 overflow-hidden">
+      <div id="onb-progress" class="h-full rounded-full transition-all" style="width:25%;background:linear-gradient(90deg,#7c3aed,#a855f7)"></div>
+    </div>
+
+    <!-- PASO 1: datos fisicos -->
+    <div class="onb-step" data-step="1">
+      <p class="text-white font-bold text-sm mb-3"><i class="fa-solid fa-ruler-combined text-purple-400 mr-1"></i> Tus datos</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Edad</label>
+          <input id="onb-edad" type="number" min="10" max="99" placeholder="25" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Sexo</label>
+          <div class="grid grid-cols-3 gap-1">
+            <button type="button" data-group="sexo" onclick="onbSelect('sexo','hombre',this)" class="onb-opt py-2.5 rounded-xl border border-gray-800 bg-gray-950 text-white text-xs font-semibold" title="Hombre"><i class="fa-solid fa-mars"></i></button>
+            <button type="button" data-group="sexo" onclick="onbSelect('sexo','mujer',this)" class="onb-opt py-2.5 rounded-xl border border-gray-800 bg-gray-950 text-white text-xs font-semibold" title="Mujer"><i class="fa-solid fa-venus"></i></button>
+            <button type="button" data-group="sexo" onclick="onbSelect('sexo','otro',this)" class="onb-opt py-2.5 rounded-xl border border-gray-800 bg-gray-950 text-white text-xs font-semibold" title="Prefiero no decir"><i class="fa-solid fa-genderless"></i></button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Peso (kg)</label>
+          <input id="onb-peso" type="number" min="30" max="300" placeholder="70" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Altura (cm)</label>
+          <input id="onb-altura" type="number" min="100" max="230" placeholder="170" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 2: experiencia -->
+    <div class="onb-step hidden" data-step="2">
+      <p class="text-white font-bold text-sm mb-3"><i class="fa-solid fa-signal text-purple-400 mr-1"></i> ¿Cuál es tu experiencia?</p>
+      <div class="space-y-2">
+        <button type="button" data-group="experiencia" onclick="onbSelect('experiencia','principiante',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-seedling text-green-400 mr-2"></i>Principiante <span class="block text-[11px] text-gray-500 font-normal mt-0.5">Empiezo desde cero o llevo poco</span></button>
+        <button type="button" data-group="experiencia" onclick="onbSelect('experiencia','intermedio',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-fire text-amber-400 mr-2"></i>Intermedio <span class="block text-[11px] text-gray-500 font-normal mt-0.5">Entreno con regularidad</span></button>
+        <button type="button" data-group="experiencia" onclick="onbSelect('experiencia','avanzado',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-bolt text-purple-400 mr-2"></i>Avanzado <span class="block text-[11px] text-gray-500 font-normal mt-0.5">Tengo buena condición física</span></button>
+      </div>
+    </div>
+
+    <!-- PASO 3: objetivo -->
+    <div class="onb-step hidden" data-step="3">
+      <p class="text-white font-bold text-sm mb-3"><i class="fa-solid fa-bullseye text-purple-400 mr-1"></i> ¿Cuál es tu objetivo?</p>
+      <div class="grid grid-cols-1 gap-2">
+        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','bajar_grasa',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-fire-flame-curved text-red-400 mr-2"></i>Bajar grasa</button>
+        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','musculo',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-dumbbell text-blue-400 mr-2"></i>Ganar músculo</button>
+        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','salud',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-heart text-pink-400 mr-2"></i>Salud general</button>
+        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','movilidad',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-spa text-teal-400 mr-2"></i>Movilidad / flexibilidad</button>
+        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','resistencia',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-heart-pulse text-orange-400 mr-2"></i>Resistencia</button>
+      </div>
+    </div>
+
+    <!-- PASO 4: equipo + dias -->
+    <div class="onb-step hidden" data-step="4">
+      <p class="text-white font-bold text-sm mb-3"><i class="fa-solid fa-toolbox text-purple-400 mr-1"></i> ¿Qué equipo tienes?</p>
+      <div class="space-y-2 mb-4">
+        <button type="button" data-group="equipo" onclick="onbSelect('equipo','casa_sin',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-house text-cyan-400 mr-2"></i>En casa, sin equipo</button>
+        <button type="button" data-group="equipo" onclick="onbSelect('equipo','casa_basico',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-house-chimney text-green-400 mr-2"></i>En casa, equipo básico (mancuernas/bandas)</button>
+        <button type="button" data-group="equipo" onclick="onbSelect('equipo','gimnasio',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-dumbbell text-purple-400 mr-2"></i>Gimnasio completo</button>
+      </div>
+      <p class="text-white font-bold text-sm mb-2"><i class="fa-solid fa-calendar-week text-purple-400 mr-1"></i> ¿Cuántos días a la semana?</p>
+      <div class="grid grid-cols-3 gap-2">
+        <button type="button" data-group="dias_semana" onclick="onbSelect('dias_semana','2',this)" class="onb-opt py-2.5 rounded-xl border border-gray-800 bg-gray-950 text-white text-xs font-semibold">2-3 días</button>
+        <button type="button" data-group="dias_semana" onclick="onbSelect('dias_semana','4',this)" class="onb-opt py-2.5 rounded-xl border border-gray-800 bg-gray-950 text-white text-xs font-semibold">4-5 días</button>
+        <button type="button" data-group="dias_semana" onclick="onbSelect('dias_semana','6',this)" class="onb-opt py-2.5 rounded-xl border border-gray-800 bg-gray-950 text-white text-xs font-semibold">6+ días</button>
+      </div>
+    </div>
+
+    <p id="onb-error" class="text-red-500 text-xs font-semibold text-center mt-3 hidden"></p>
+    <div class="flex gap-2 mt-5">
+      <button id="onb-back" onclick="onbPrev()" class="hidden flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-xl text-sm transition"><i class="fa-solid fa-arrow-left mr-1"></i> Atrás</button>
+      <button id="onb-next" onclick="onbNext()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-xl text-sm transition">Siguiente <i class="fa-solid fa-arrow-right ml-1"></i></button>
+    </div>
   </div>
 </div>
 
@@ -469,6 +557,79 @@
     }
   }
 
+  // ===== ONBOARDING FITNESS =====
+  let onbStep = 1;
+  const onbData = {};
+  function openOnboarding(){
+    onbStep = 1; 
+    Object.keys(onbData).forEach(k => delete onbData[k]);
+    document.querySelectorAll('.onb-opt.selected').forEach(b => b.classList.remove('selected'));
+    ['onb-edad','onb-peso','onb-altura'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+    onbRender();
+    document.getElementById('onboarding-modal').classList.remove('hidden');
+  }
+  function onbRender(){
+    document.querySelectorAll('.onb-step').forEach(s => s.classList.toggle('hidden', s.dataset.step != onbStep));
+    document.getElementById('onb-progress').style.width = (onbStep*25) + '%';
+    document.getElementById('onb-back').classList.toggle('hidden', onbStep === 1);
+    document.getElementById('onb-next').innerHTML = onbStep === 4 ? 'Finalizar <i class="fa-solid fa-check ml-1"></i>' : 'Siguiente <i class="fa-solid fa-arrow-right ml-1"></i>';
+    document.getElementById('onb-error').classList.add('hidden');
+  }
+  function onbSelect(group, value, btn){
+    onbData[group] = value;
+    document.querySelectorAll(`.onb-opt[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+  function onbError(msg){ const e = document.getElementById('onb-error'); e.textContent = msg; e.classList.remove('hidden'); }
+  function onbValidate(){
+    if(onbStep === 1){
+      const edad = +document.getElementById('onb-edad').value;
+      const peso = +document.getElementById('onb-peso').value;
+      const altura = +document.getElementById('onb-altura').value;
+      if(!edad || !peso || !altura || !onbData.sexo){ onbError('Completa edad, sexo, peso y altura.'); return false; }
+      onbData.edad = edad; onbData.peso_kg = peso; onbData.altura_cm = altura;
+    }
+    if(onbStep === 2 && !onbData.experiencia){ onbError('Elige tu nivel de experiencia.'); return false; }
+    if(onbStep === 3 && !onbData.objetivo){ onbError('Elige tu objetivo.'); return false; }
+    if(onbStep === 4 && (!onbData.equipo || !onbData.dias_semana)){ onbError('Elige equipo y días por semana.'); return false; }
+    return true;
+  }
+  function onbPrev(){ if(onbStep > 1){ onbStep--; onbRender(); } }
+  function onbNext(){
+    if(!onbValidate()) return;
+    if(onbStep < 4){ onbStep++; onbRender(); return; }
+    finishOnboarding();
+  }
+  async function skipOnboarding(){
+    document.getElementById('onboarding-modal').classList.add('hidden');
+    try {
+      const supabase = window.FMAuth.getClient();
+      if(supabase && currentUser) await supabase.from('profiles').update({ onboarding_done: true }).eq('id', currentUser.id);
+    } catch(e){ console.warn('skip onboarding', e); }
+    if(currentUser) await checkProfile(currentUser);
+  }
+  async function finishOnboarding(){
+    const btn = document.getElementById('onb-next');
+    btn.disabled = true; const old = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Guardando...';
+    try {
+      const supabase = window.FMAuth.getClient();
+      const payload = {
+        edad: onbData.edad, sexo: onbData.sexo, peso_kg: onbData.peso_kg, altura_cm: onbData.altura_cm,
+        experiencia: onbData.experiencia, objetivo: onbData.objetivo,
+        equipo: onbData.equipo, dias_semana: +onbData.dias_semana, onboarding_done: true
+      };
+      const { error } = await supabase.from('profiles').update(payload).eq('id', currentUser.id);
+      if(error) throw error;
+      document.getElementById('onboarding-modal').classList.add('hidden');
+      await checkProfile(currentUser);
+    } catch(err){
+      console.error(err);
+      onbError('No se pudo guardar: ' + (err.message || err) + '. ¿Corriste el SQL en Supabase?');
+      btn.disabled = false; btn.innerHTML = old;
+    }
+  }
+
   async function checkProfile(user) {
     const supabase = window.FMAuth.getClient();
     const userDot = document.getElementById('user-dot');
@@ -503,6 +664,9 @@
       
       // Cerrar el modal unificado de entrada
       document.getElementById('unified-entrance-modal').classList.add('hidden');
+
+      // Si aún no ha completado su perfil fitness, mostrarlo
+      if (!profile.onboarding_done) { openOnboarding(); }
 
       // Actualizar botones de inicio para ir directo al juego
       const mainBtn = document.getElementById('main-play-btn');

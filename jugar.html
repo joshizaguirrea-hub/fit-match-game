@@ -107,12 +107,12 @@
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fm-supabase.js?v=10"></script>
-<script src="fm-routines.js?v=10"></script>
-<script src="fm-specialized-routines.js?v=10"></script>
-<script src="fm-badges.js?v=10"></script>
-<script src="fm-achievements.js?v=10"></script>
-<script src="fm-profile.js?v=10"></script>
+<script src="fm-supabase.js?v=11"></script>
+<script src="fm-routines.js?v=11"></script>
+<script src="fm-specialized-routines.js?v=11"></script>
+<script src="fm-badges.js?v=11"></script>
+<script src="fm-achievements.js?v=11"></script>
+<script src="fm-profile.js?v=11"></script>
 </head>
 <body class="min-h-screen antialiased">
 <a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
@@ -1946,6 +1946,41 @@ function filterRoutines(culture) {
   renderRoutinePicker();
 }
 
+// ===== CEREBRO DE RECOMENDACION (usa el perfil fitness del usuario) =====
+function profileLevel(){
+  const exp = (typeof cloudProfile !== 'undefined' && cloudProfile) ? cloudProfile.experiencia : null;
+  if(exp === 'principiante') return 'básico';
+  if(exp === 'intermedio') return 'intermedio';
+  if(exp === 'avanzado') return 'avanzado';
+  const pts = (typeof cloudTotalPoints !== 'undefined') ? cloudTotalPoints : 0;
+  return pts < 50 ? 'básico' : pts < 200 ? 'intermedio' : pts < 500 ? 'avanzado' : 'espartano';
+}
+function goalCategories(){
+  const o = (typeof cloudProfile !== 'undefined' && cloudProfile) ? cloudProfile.objetivo : null;
+  const map = { bajar_grasa:['cardio','gimnasio','calistenia'], musculo:['gimnasio','calistenia'], salud:[], movilidad:['yoga','pilates'], resistencia:['cardio','calistenia'] };
+  return map[o] || [];
+}
+function objetivoLabel(){
+  const o = (typeof cloudProfile !== 'undefined' && cloudProfile) ? cloudProfile.objetivo : null;
+  return ({ bajar_grasa:'Bajar grasa', musculo:'Ganar músculo', salud:'Salud general', movilidad:'Movilidad', resistencia:'Resistencia' })[o] || null;
+}
+function smartRecommend(fullList, isGods){
+  const lvl = profileLevel();
+  const goals = goalCategories();
+  const equipo = (typeof cloudProfile !== 'undefined' && cloudProfile) ? cloudProfile.equipo : null;
+  const order = ['básico','intermedio','avanzado','espartano'];
+  return [...fullList].map(r => {
+    let score = 0;
+    if(r.level === lvl) score += 5;
+    score -= Math.abs(order.indexOf(r.level) - order.indexOf(lvl));
+    if(!isGods && goals.length && goals.includes(r.category)) score += 4;
+    const eq = getRoutineEquipment(r); const isBody = eq.length === 1 && eq[0].label === 'Peso corporal';
+    if(equipo === 'casa_sin'){ score += isBody ? 3 : -4; }
+    else if(equipo === 'gimnasio' && !isBody){ score += 1; }
+    return { r, score };
+  }).sort((a,b) => b.score - a.score).map(x => x.r).slice(0, 10);
+}
+
 // Tarjeta reutilizable de rutina (usada en rejilla y en carriles)
 function buildRoutineCard(r){
   const category = r.culture ? 'gods' : 'specialized';
@@ -2027,10 +2062,14 @@ function renderRoutinePicker() {
   grid.className = "space-y-2";
   let html = '';
 
-  // Recomendado según tu rango
-  const pts = (typeof cloudTotalPoints !== 'undefined') ? cloudTotalPoints : 0;
-  const recoLevel = pts < 50 ? 'básico' : pts < 200 ? 'intermedio' : pts < 500 ? 'avanzado' : 'espartano';
-  html += buildRail('Recomendado para ti', '<i class="fa-solid fa-wand-magic-sparkles"></i>', 'var(--accent)', fullList.filter(r => r.level === recoLevel).slice(0, 10));
+  // Banner personalizado (si tiene perfil fitness)
+  const goalTxt = objetivoLabel();
+  if (goalTxt) {
+    html += `<div class="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl text-xs" style="background:var(--surface2);color:var(--txt-soft)"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent)"></i> Personalizado para tu meta: <b style="color:var(--txt)">${goalTxt}</b> · Nivel <b style="color:var(--txt)">${profileLevel()}</b></div>`;
+  }
+
+  // Recomendado (inteligente, segun perfil)
+  html += buildRail('Recomendado para ti', '<i class="fa-solid fa-wand-magic-sparkles"></i>', 'var(--accent)', smartRecommend(fullList, isGods));
 
   // Empieza aqui (principiantes)
   html += buildRail('Empieza aquí', '<i class="fa-solid fa-seedling"></i>', '#34d399', fullList.filter(r => r.level === 'básico').slice(0, 12));
