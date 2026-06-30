@@ -91,13 +91,47 @@
   }
 
   /* ---------- Motor de respuestas por reglas ---------- */
+  function mealSuggestion(mealType) {
+    const p = insights && insights.profile;
+    if (!window.FMRecipes || !p) return null;
+    let list = window.FMRecipes.match(p) || [];
+    list = list.filter(r => r.meal === mealType);
+    if (!list.length) return null;
+    const idx = Math.floor(Date.now() / 86400000) % list.length; // rota por dia
+    return list[idx];
+  }
+  function recipeMsg(r, label) {
+    return 'Para <b>' + label + '</b> hoy te sugiero: <b>' + esc(r.name) + '</b><br>' +
+      '<span style="opacity:.85">' + r.kcal + ' kcal &middot; Prot ' + r.protein_g + 'g &middot; Carb ' + r.carbs_g + 'g &middot; Gra ' + r.fat_g + 'g</span><br>' +
+      'Ingredientes: ' + r.ingredients.slice(0, 4).map(esc).join(', ') + '.<br>' +
+      '<span style="opacity:.7;font-size:11px">Ajustada a tu dieta y tu meta de ' + (insights ? insights.goalsText : 'salud') + '.</span>';
+  }
+  function noRecipeMsg() {
+    return 'Aun no tengo recetas que encajen con tu perfil nutricional. Completa tu <b>Perfil Nutricional</b> (dieta, alergias, comidas al dia) y te dare sugerencias a la medida.';
+  }
+
   function answer(text) {
     const t = (text || '').toLowerCase();
     const i = insights || {};
     const has = (...ks) => ks.some(k => t.includes(k));
 
     if (has('hola','buenas','hey','que tal')) {
-      return '¡Hola ' + i.apodo + '! Soy tu entrenador. Llevas <b>' + i.totalWorkouts + '</b> entrenos y nivel <b>' + i.level + '</b>. ¿En que te ayudo? Puedes preguntarme que entrenar hoy, como vas, o pedirme que te motive.';
+      return '¡Hola ' + i.apodo + '! Soy tu entrenador. Llevas <b>' + i.totalWorkouts + '</b> entrenos y nivel <b>' + i.level + '</b>. ¿En que te ayudo? Puedes preguntarme que entrenar hoy, que desayunar segun tu dieta, como vas, o pedirme que te motive.';
+    }
+    // --- NUTRICION POR COMIDA (antes que entrenamiento, por la palabra 'hoy') ---
+    if (has('desayun')) { const r = mealSuggestion('desayuno'); return r ? recipeMsg(r, 'desayunar') : noRecipeMsg(); }
+    if (has('cena','cenar')) { const r = mealSuggestion('cena'); return r ? recipeMsg(r, 'cenar') : noRecipeMsg(); }
+    if (has('snack','colacion','merien','botana','antojo')) { const r = mealSuggestion('snack'); return r ? recipeMsg(r, 'un snack') : noRecipeMsg(); }
+    if (has('almuerz','almorzar')) { const r = mealSuggestion('comida'); return r ? recipeMsg(r, 'almorzar') : noRecipeMsg(); }
+    if (has('que como hoy','que puedo comer','menu de hoy','que cocino','que preparo','plan de comida','dieta de hoy','menu del dia')) {
+      const d = mealSuggestion('desayuno'), c = mealSuggestion('comida'), ce = mealSuggestion('cena');
+      if (!d && !c && !ce) return noRecipeMsg();
+      let m = 'Tu menu de hoy, ' + i.apodo + ':<br>';
+      if (d) m += '• <b>Desayuno:</b> ' + esc(d.name) + ' (' + d.kcal + ' kcal)<br>';
+      if (c) m += '• <b>Comida:</b> ' + esc(c.name) + ' (' + c.kcal + ' kcal)<br>';
+      if (ce) m += '• <b>Cena:</b> ' + esc(ce.name) + ' (' + ce.kcal + ' kcal)<br>';
+      m += '<span style="opacity:.7;font-size:11px">Todo filtrado a tu dieta. Mira mas en tu plan semanal de comidas.</span>';
+      return m;
     }
     if (has('hoy','entreno','entrenar','que hago','rutina','recomi')) {
       const r = recommendRoutine();
@@ -178,10 +212,10 @@
 
     const quick = [
       { t: '¿Que entreno hoy?', q: 'que entreno hoy' },
+      { t: '¿Que como hoy?', q: 'que puedo comer hoy' },
       { t: '¿Como voy?', q: 'como voy' },
       { t: 'Motivame', q: 'motivame' },
-      { t: 'Subir de nivel', q: 'subir de nivel' },
-      { t: 'Nutricion', q: 'nutricion' }
+      { t: 'Subir de nivel', q: 'subir de nivel' }
     ];
     document.getElementById('fm-trainer-quick').innerHTML = quick.map(b =>
       '<button onclick="FMTrainer.ask(\'' + b.q + '\')" style="background:#181c2a;border:1px solid #2c3350;color:#a9b0cf;border-radius:999px;padding:5px 10px;font-size:11px;cursor:pointer">' + b.t + '</button>'
