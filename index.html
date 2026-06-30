@@ -27,7 +27,7 @@
 <script src="fm-achievements.js?v=18"></script>
 <script src="fm-nutrition.js?v=31"></script>
 <script src="fm-recipes.js?v=31"></script>
-<script src="fm-profile.js?v=19"></script>
+<script src="fm-profile.js?v=20"></script>
 <script src="fm-safety.js?v=1"></script>
 <script src="fm-presence.js?v=3"></script>
 <script src="fm-dm.js?v=1"></script>
@@ -48,7 +48,7 @@
     <button id="btn-profile" onclick="openProfileModal()" class="hidden text-gray-400 hover:text-purple-400 font-bold transition">
       <i class="fa-solid fa-user mr-1"></i> Mi Perfil
     </button>
-    <button id="btn-health" onclick="openHealthEdit()" class="hidden text-gray-400 hover:text-red-400 font-bold transition">
+    <button id="btn-health" onclick="openProfileModal(); setTimeout(function(){ if(typeof switchProfileTab==='function') switchProfileTab('stats'); if(typeof toggleHealthEdit==='function') toggleHealthEdit(true); }, 450)" class="hidden text-gray-400 hover:text-red-400 font-bold transition">
       <i class="fa-solid fa-heart-circle-check mr-1"></i> Salud
     </button>
     <button id="btn-logout" onclick="handleLogout()" class="hidden text-gray-400 hover:text-red-400 font-bold transition">
@@ -741,6 +741,16 @@
       healthEditMode = false;
       document.getElementById('onboarding-modal').classList.add('hidden');
       await checkProfile(currentUser);
+      // Nuevo usuario: fisico y salud ya quedaron. Ahora invitamos a completar Nutricion.
+      setTimeout(() => {
+        if (typeof openProfileModal === 'function') {
+          openProfileModal();
+          setTimeout(() => {
+            if (typeof switchProfileTab === 'function') switchProfileTab('nutrition');
+            if (typeof toggleNutritionEdit === 'function') toggleNutritionEdit(true);
+          }, 350);
+        }
+      }, 400);
     }catch(err){ onbError('No se pudo guardar: ' + (err.message||err) + '. ¿Corriste el SQL en Supabase?'); btn.disabled=false; btn.innerHTML=old; }
   }
   async function skipOnboarding(){

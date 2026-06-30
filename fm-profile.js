@@ -871,7 +871,7 @@ function fmArchetype(p){
 // Resumen del Perfil de Salud (PAR-Q) para mostrar en el perfil
 function fmHealthSummary(profile, isOwn){
   const p = profile || {};
-  const editBtn = isOwn ? `<button onclick="(typeof openHealthEdit==='function')?openHealthEdit():alert('Edita tu Perfil de Salud desde la pagina principal (boton Salud).')" class="text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#ef4444;color:#fff"><i class="fa-solid fa-pen mr-1"></i>${p.med_done?'Editar':'Completar'}</button>` : '';
+  const editBtn = isOwn ? `<button onclick="toggleHealthEdit(true)" class="text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#ef4444;color:#fff"><i class="fa-solid fa-pen mr-1"></i>${p.med_done?'Editar':'Completar'}</button>` : '';
   if(!p.med_done){
     return `<div class="rounded-2xl p-4 mt-3" style="background:#181c2a;border:1px solid #2c3350">
       <div class="flex items-center justify-between">
@@ -879,6 +879,7 @@ function fmHealthSummary(profile, isOwn){
         ${editBtn}
       </div>
       <p class="text-xs mt-1" style="color:#8b92b0">${isOwn?'Aun no lo completas. Nos ayuda a darte rutinas seguras.':'Sin datos.'}</p>
+      <div id="health-edit-form" class="hidden mt-4"></div>
     </div>`;
   }
   const lesiones = (p.med_lesiones||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -917,8 +918,66 @@ function fmHealthSummary(profile, isOwn){
     <div class="flex flex-wrap gap-1.5">${badges.join('')}</div>
     ${notas?`<p class="text-[11px] mt-2" style="color:#b2b9d4"><b>Notas:</b> ${notas}</p>`:''}
     ${adapt}
+    <div id="health-edit-form" class="hidden mt-4"></div>
   </div>`;
 }
+function buildHealthForm(p){
+  const form = document.getElementById('health-edit-form');
+  if(!form) return;
+  p = p || {};
+  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px';
+  const lb = (t)=>`<label class="text-[10px] uppercase" style="color:#8b92b0">${t}</label>`;
+  const yn = (id, val)=>`<select id="${id}" style="${inS}"><option value="no" ${!val?'selected':''}>No</option><option value="si" ${val?'selected':''}>S\u00ed</option></select>`;
+  const lesiones = (p.med_lesiones||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const chk = (val, label)=>`<label class="flex items-center gap-1.5 cursor-pointer text-xs" style="color:#eceefb"><input type="checkbox" class="hl-lesion" value="${val}" ${lesiones.includes(val)?'checked':''} style="width:15px;height:15px;accent-color:#ef4444">${label}</label>`;
+  form.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>${lb('Condici\u00f3n card\u00edaca / presi\u00f3n / supervisi\u00f3n m\u00e9dica')}${yn('hl-corazon', p.med_corazon)}</div>
+      <div>${lb('Dolor de pecho / mareos al esforzarte')}${yn('hl-dolor', p.med_dolor_pecho)}</div>
+      <div>${lb('Medicamentos coraz\u00f3n/presi\u00f3n')}${yn('hl-medic', p.med_medicamentos)}</div>
+    </div>
+    <div class="mt-3">${lb('Lesiones / molestias')}
+      <div class="flex flex-wrap gap-3 mt-1">
+        ${chk('rodilla','Rodilla')}${chk('hombro','Hombro')}${chk('espalda','Espalda')}${chk('cuello','Cuello')}${chk('cadera','Cadera')}${chk('muneca','Mu\u00f1eca')}
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+      <div>${lb('Embarazo / posparto (<6 meses)')}<select id="hl-estado" style="${inS}"><option value="no" ${(!p.med_estado||p.med_estado==='no')?'selected':''}>No</option><option value="embarazada" ${p.med_estado==='embarazada'?'selected':''}>Embarazada</option><option value="posparto" ${p.med_estado==='posparto'?'selected':''}>Posparto</option></select></div>
+      <div>${lb('Otra condici\u00f3n (opcional)')}<input id="hl-notas" type="text" value="${(p.med_notas||'').replace(/"/g,'&quot;')}" placeholder="asma, diabetes, hernia..." style="${inS}"></div>
+    </div>
+    <p class="text-[10px] mt-2" style="color:#8b92b0"><i class="fa-solid fa-circle-info mr-1"></i>Orientaci\u00f3n general, no reemplaza el consejo m\u00e9dico.</p>
+    <div class="flex gap-2 mt-3">
+      <button onclick="saveHealthProfile()" class="text-xs font-bold px-4 py-2 rounded-lg" style="background:#34d399;color:#06281e"><i class="fa-solid fa-check mr-1"></i>Guardar</button>
+      <button onclick="toggleHealthEdit(false)" class="text-xs font-bold px-4 py-2 rounded-lg" style="background:#222842;color:#b2b9d4">Cancelar</button>
+      <span id="health-edit-msg" class="text-xs self-center" style="color:#ef4444"></span>
+    </div>`;
+}
+function toggleHealthEdit(show){ const form=document.getElementById('health-edit-form'); if(form) form.classList.toggle('hidden', !show); }
+async function saveHealthProfile(){
+  const msg=document.getElementById('health-edit-msg');
+  try{
+    const supa=window.FMAuth.getClient();
+    const { data:{user} }=await supa.auth.getUser();
+    if(!user) throw new Error('No hay sesi\u00f3n');
+    const lesiones=Array.from(document.querySelectorAll('.hl-lesion:checked')).map(c=>c.value);
+    const payload={
+      med_done:true,
+      med_corazon: document.getElementById('hl-corazon').value==='si',
+      med_dolor_pecho: document.getElementById('hl-dolor').value==='si',
+      med_medicamentos: document.getElementById('hl-medic').value==='si',
+      med_lesiones: lesiones.join(','),
+      med_estado: document.getElementById('hl-estado').value,
+      med_notas: (document.getElementById('hl-notas').value||'').trim()
+    };
+    const { error }=await supa.from('profiles').update(payload).eq('id', user.id);
+    if(error) throw error;
+    if(window.cloudProfile) Object.assign(window.cloudProfile, payload);
+    loadProfileData();
+  }catch(err){ console.error(err); if(msg) msg.textContent='No se pudo guardar: '+(err.message||err)+'. \u00bfCorriste el SQL?'; }
+}
+window.toggleHealthEdit=toggleHealthEdit;
+window.saveHealthProfile=saveHealthProfile;
+
 function renderFitnessProfile(profile, isOwn){
   const box = document.getElementById('fitness-profile-block');
   if(!box) return;
@@ -935,7 +994,7 @@ function renderFitnessProfile(profile, isOwn){
     </div>
     ${fmHealthSummary(profile, isOwn)}
     <div id="fitness-edit-form" class="hidden mt-4"></div>`;
-    if(isOwn) buildFitnessForm(profile);
+    if(isOwn){ buildFitnessForm(profile); buildHealthForm(profile); }
     return;
   }
 
@@ -966,7 +1025,7 @@ function renderFitnessProfile(profile, isOwn){
     </div>
     ${fmHealthSummary(profile, isOwn)}
     <div id="fitness-edit-form" class="hidden mt-4"></div>`;
-  if(isOwn) buildFitnessForm(profile);
+  if(isOwn){ buildFitnessForm(profile); buildHealthForm(profile); }
 }
 function selOpts(map, current){
   return Object.keys(map).map(k => `<option value="${k}" ${current===k?'selected':''}>${map[k]}</option>`).join('');
