@@ -127,6 +127,7 @@
 <script src="fm-presence.js?v=3"></script>
 <script src="fm-dm.js?v=1"></script>
 <script src="fm-call.js?v=2"></script>
+<script src="fm-trainer.js?v=1"></script>
 <script src="fm-profile.js?v=32"></script>
 </head>
 <body class="min-h-screen antialiased">
@@ -2333,6 +2334,7 @@ async function initCloudProfile() {
     const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (profile) {
       cloudProfile = profile;
+      window.cloudProfile = profile; // accesible para el Entrenador IA
       // Cargar monedero FitCoins
       cloudCoins = profile.coins || 0;
       if (typeof updateCoinsHeader === 'function') updateCoinsHeader();
@@ -2394,6 +2396,8 @@ async function initCloudProfile() {
       if (window.FMDM) window.FMDM.init();
       // Videollamadas: escuchar llamadas entrantes
       if (window.FMCall) window.FMCall.init(supabase, user.id, profile.apodo);
+      // Entrenador Personal IA (adaptativo)
+      if (window.FMTrainer) window.FMTrainer.init(supabase, user.id);
     }
   } else {
     // INVITADO (sin sesion): invitarlo a registrarse para guardar su progreso
@@ -2948,6 +2952,13 @@ function renderSwapOptions() {
 }
 function applyExerciseSwap(newName) {
   if (_swapIdx < 0 || !selectedRoutine || !selectedRoutine.exercises[_swapIdx]) { closeExerciseSwap(); return; }
+  const oldName = selectedRoutine.exercises[_swapIdx].name;
+  // Registrar que el usuario suele cambiar este ejercicio (para que el Entrenador IA aprenda)
+  try {
+    const swaps = JSON.parse(localStorage.getItem('fm_swaps') || '{}');
+    swaps[oldName] = (swaps[oldName] || 0) + 1;
+    localStorage.setItem('fm_swaps', JSON.stringify(swaps));
+  } catch (e) {}
   selectedRoutine.exercises[_swapIdx].name = newName; // mantiene las reps
   closeExerciseSwap();
   generateActiveChecklist(); // re-dibujar la lista con el cambio
