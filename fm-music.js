@@ -28,7 +28,10 @@
         '<button id="fm-music-close" title="Cerrar" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;width:26px;height:26px;cursor:pointer"><i class="fa-solid fa-xmark"></i></button>' +
       '</div>' +
       '<div id="fm-music-frame" style="background:#000"></div>' +
-      '<div style="padding:7px 12px;background:#0f1117;color:#8b92b0;font-size:10px;text-align:center;border-top:1px solid #2c3350">Inicia sesi\u00f3n en Spotify para escuchar las canciones completas.</div>';
+      '<div style="padding:9px 12px;background:#0f1117;border-top:1px solid #2c3350;text-align:center">' +
+        '<a href="https://open.spotify.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:7px;background:#1db954;color:#fff;text-decoration:none;font-weight:700;font-size:12px;padding:8px 14px;border-radius:999px"><i class="fa-brands fa-spotify"></i> Iniciar sesión en Spotify</a>' +
+        '<p style="color:#8b92b0;font-size:10px;margin-top:7px">Inicia sesión (Premium) y vuelve aquí para oír las canciones completas. Sin sesión: previews de 30s.</p>' +
+      '</div>';
     document.body.appendChild(win);
 
     document.getElementById('fm-music-close').onclick = () => toggle(false);
