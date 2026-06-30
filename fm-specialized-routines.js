@@ -11,6 +11,146 @@
 
 const FM_SPECIALIZED_ROUTINES = [
   // ============================================================
+  // === CROSSFIT (WODs intensos estilo box) ===
+  // ============================================================
+  {
+    id:"cf_tormenta", name:"Tormenta Inicial", category:"crossfit", level:"básico", points:20, rounds:5,
+    description:"Tu primer WOD estilo CrossFit. 5 rondas a tu ritmo (AMRAP suave). Pura adrenalina sin equipo.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Sentadillas al aire (Air Squats)", reps:10 },
+      { name:"Flexiones", reps:8 },
+      { name:"Abdominales (Sit-ups)", reps:10 },
+      { name:"Saltos de tijera (Jumping Jacks)", reps:20 },
+      { name:"Plancha (segundos)", reps:30 }
+    ]
+  },
+  {
+    id:"cf_huracan", name:"Huracán", category:"crossfit", level:"intermedio", points:30, rounds:4,
+    description:"WOD 'For Time': completa las 4 rondas lo más rápido posible con buena técnica. ¡Que ruja la tormenta!",
+    equipment:["Peso corporal","Mochila"],
+    exercises:[
+      { name:"Burpees", reps:12 },
+      { name:"Sentadillas con salto", reps:15 },
+      { name:"Swing con mochila (kettlebell)", reps:15 },
+      { name:"Escaladores (Mountain Climbers)", reps:30 },
+      { name:"Zancadas con salto alternas", reps:16 },
+      { name:"Abdominales V (V-ups)", reps:12 }
+    ]
+  },
+  {
+    id:"cf_infierno", name:"Infierno", category:"crossfit", level:"avanzado", points:40, rounds:5,
+    description:"AMRAP demoledor de 5 rondas. Cardio y fuerza al limite. Solo para los que no le temen al fuego.",
+    equipment:["Peso corporal","Barra de dominadas"],
+    exercises:[
+      { name:"Burpees con salto", reps:15 },
+      { name:"Dominadas (o jalón)", reps:10 },
+      { name:"Sentadillas pistol asistidas", reps:10 },
+      { name:"Flexiones explosivas", reps:12 },
+      { name:"Saltos al cajón (step-up explosivo)", reps:16 },
+      { name:"Abdominales toes-to-bar (o rodillas)", reps:12 }
+    ]
+  },
+  {
+    id:"cf_titan", name:"El Títan (estilo Murph)", category:"crossfit", level:"espartano", points:55, rounds:1,
+    description:"Homenaje al legendario Murph. Un solo asalto monumental de alto volumen. Domina tu mente y tu cuerpo.",
+    equipment:["Peso corporal","Barra de dominadas"],
+    exercises:[
+      { name:"Trote/correr en sitio (segundos)", reps:120 },
+      { name:"Dominadas totales", reps:50 },
+      { name:"Flexiones totales", reps:100 },
+      { name:"Sentadillas al aire totales", reps:150 },
+      { name:"Trote/correr en sitio (segundos)", reps:120 }
+    ]
+  },
+  {
+    id:"cf_relampago", name:"Relámpago (AMRAP 12)", category:"crossfit", level:"intermedio", points:30, rounds:4,
+    description:"AMRAP rápido y explosivo. Tantas rondas como puedas con energia de rayo. Corto pero intenso.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Burpees", reps:10 },
+      { name:"Sentadillas al aire", reps:15 },
+      { name:"Flexiones", reps:10 },
+      { name:"Abdominales bicicleta", reps:20 }
+    ]
+  },
+  {
+    id:"cf_coloso", name:"Coloso", category:"crossfit", level:"avanzado", points:40, rounds:5,
+    description:"WOD de fuerza-resistencia con mochila cargada. Forja un cuerpo de coloso. ¡Sin rendirse!",
+    equipment:["Mochila","Peso corporal"],
+    exercises:[
+      { name:"Thrusters con mochila (sentadilla+press)", reps:15 },
+      { name:"Swing con mochila", reps:20 },
+      { name:"Burpees sobre mochila", reps:12 },
+      { name:"Zancadas caminando con mochila", reps:20 },
+      { name:"Remo con mochila", reps:15 },
+      { name:"Plancha con toque de hombro", reps:20 }
+    ]
+  },
+  // ============================================================
+  // === TERCERA EDAD (adultos mayores: bajo impacto y seguro) ===
+  // ============================================================
+  {
+    id:"senior_vitalidad", name:"Vitalidad Dorada", category:"senior", level:"básico", points:12, rounds:2,
+    description:"Rutina suave para activar todo el cuerpo desde una silla. Ideal para empezar el dia con energia.",
+    equipment:["Silla"],
+    exercises:[
+      { name:"Marcha sentado (rodillas arriba)", reps:20 },
+      { name:"Extensión de rodilla sentado", reps:12 },
+      { name:"Elevación de brazos al frente", reps:12 },
+      { name:"Giros suaves de tronco sentado", reps:12 },
+      { name:"Círculos de tobillo (por pie)", reps:10 }
+    ]
+  },
+  {
+    id:"senior_equilibrio", name:"Equilibrio Firme", category:"senior", level:"básico", points:12, rounds:2,
+    description:"Mejora el equilibrio y previene caidas. Hazla cerca de una pared o silla para apoyarte.",
+    equipment:["Silla","Pared"],
+    exercises:[
+      { name:"Pararse en un pie con apoyo (segundos)", reps:15 },
+      { name:"Caminar punta-talón (pasos)", reps:12 },
+      { name:"Elevación de talones con apoyo", reps:12 },
+      { name:"Elevación lateral de pierna con apoyo", reps:10 },
+      { name:"Sentarse y levantarse de la silla", reps:10 }
+    ]
+  },
+  {
+    id:"senior_movilidad", name:"Movilidad Suave", category:"senior", level:"básico", points:12, rounds:2,
+    description:"Estira y lubrica las articulaciones. Reduce rigidez y mejora el rango de movimiento.",
+    equipment:["Silla"],
+    exercises:[
+      { name:"Rotación de cuello suave", reps:8 },
+      { name:"Círculos de hombros", reps:12 },
+      { name:"Estiramiento de brazos arriba", reps:10 },
+      { name:"Inclinación lateral de tronco sentado", reps:10 },
+      { name:"Estiramiento suave de pantorrilla", reps:10 }
+    ]
+  },
+  {
+    id:"senior_fuerza", name:"Fuerza Suave", category:"senior", level:"básico", points:14, rounds:2,
+    description:"Mantiene la masa muscular con movimientos seguros y botellas de agua ligeras como peso.",
+    equipment:["Silla","Botellas de agua"],
+    exercises:[
+      { name:"Sentarse y levantarse de la silla", reps:10 },
+      { name:"Curl de bíceps con botellas", reps:12 },
+      { name:"Press de hombros suave con botellas", reps:10 },
+      { name:"Extensión de rodilla sentado", reps:12 },
+      { name:"Puente de glúteo suave en cama/suelo", reps:10 }
+    ]
+  },
+  {
+    id:"senior_circulacion", name:"Circulación Activa", category:"senior", level:"básico", points:12, rounds:2,
+    description:"Cardio muy suave para activar la circulacion y el corazon, sin impacto en las articulaciones.",
+    equipment:["Silla"],
+    exercises:[
+      { name:"Marcha sentado o de pie con apoyo (segundos)", reps:40 },
+      { name:"Toques de talón al frente", reps:20 },
+      { name:"Aperturas de brazos suaves", reps:15 },
+      { name:"Marcha con balanceo de brazos (segundos)", reps:30 },
+      { name:"Respiración profunda con brazos arriba", reps:8 }
+    ]
+  },
+  // ============================================================
   // === GIMNASIO PRO (divisiones modernas por grupo muscular) ===
   // ============================================================
   {

@@ -117,7 +117,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="fm-supabase.js?v=32"></script>
 <script src="fm-routines.js?v=32"></script>
-<script src="fm-specialized-routines.js?v=33"></script>
+<script src="fm-specialized-routines.js?v=34"></script>
 <script src="fm-badges.js?v=32"></script>
 <script src="fm-videos.js?v=2"></script>
 <script src="fm-achievements.js?v=32"></script>
@@ -2646,6 +2646,7 @@ function renderRoutinePicker() {
     const g = expandedGroup;
     let items = [];
     if (g.type === 'culture') items = gods.filter(r => r.culture === g.key);
+    else if (g.type === 'gods') items = gods;
     else if (g.type === 'category') items = spec.filter(r => r.category === g.key);
     else if (g.type === 'level') items = all.filter(r => r.level === g.key);
     else if (g.type === 'noeq') items = all.filter(isBodyweight);
@@ -2691,8 +2692,8 @@ function renderRoutinePicker() {
   html += buildRail('Modo Espartano', '<i class="fa-solid fa-helmet-safety"></i>', '#a855f7', all.filter(r => r.level === 'espartano').slice(0, 12), "expandRoutineGroup('level','espartano','Modo Espartano')", all.filter(r => r.level === 'espartano').length);
 
   // Carriles por ESPECIALIDAD (lo que antes era el filtro Moderno)
-  const cats = ['gimnasio','casa','calistenia','cardio','yoga','pilates','hipopresivos'];
-  const CAT_LABELS = { gimnasio:'Gimnasio', casa:'En Casa', calistenia:'Calistenia', cardio:'Cardio', yoga:'Yoga', pilates:'Pilates', hipopresivos:'Hipopresivos' };
+  const cats = ['gimnasio','casa','crossfit','calistenia','cardio','senior','yoga','pilates','hipopresivos'];
+  const CAT_LABELS = { gimnasio:'Gimnasio', casa:'En Casa', crossfit:'CrossFit', calistenia:'Calistenia', cardio:'Cardio', senior:'Tercera Edad', yoga:'Yoga', pilates:'Pilates', hipopresivos:'Hipopresivos' };
   cats.forEach(c => {
     const items = spec.filter(r => r.category === c);
     if (!items.length) return;
@@ -2701,13 +2702,13 @@ function renderRoutinePicker() {
     html += buildRail(label, icon, 'var(--brand2)', items.slice(0, 12), "expandRoutineGroup('category','" + c + "','" + label + "')", items.length);
   });
 
-  // Carriles por CULTURA (lo que antes era el filtro Dioses)
-  const cultures = ['Grecia','Nórdicos','Egipto','China','Japón','Mongoles','Mayas','Aztecas','Incas'];
-  cultures.forEach(cu => {
-    const items = gods.filter(r => r.culture === cu);
-    if (!items.length) return;
-    html += buildRail(cu, '<i class="fa-solid fa-landmark"></i>', '#f59e0b', items.slice(0, 12), "expandRoutineGroup('culture','" + cu + "','" + cu + "')", items.length);
-  });
+  // UN solo carril para TODAS las culturas (antes era el filtro Dioses)
+  if (gods.length) {
+    const cultures = ['Grecia','Nórdicos','Egipto','China','Japón','Mongoles','Mayas','Aztecas','Incas'];
+    const sample = [];
+    cultures.forEach(cu => { gods.filter(r => r.culture === cu).slice(0, 2).forEach(r => sample.push(r)); });
+    html += buildRail('Dioses y Culturas Legendarias', '<i class="fa-solid fa-landmark"></i>', '#f59e0b', sample.slice(0, 14), "expandRoutineGroup('gods',null,'Dioses y Culturas Legendarias')", gods.length);
+  }
 
   grid.innerHTML = html || `<p class="text-center" style="color:var(--txt-mut)">Cargando rutinas...</p>`;
 }
@@ -2716,6 +2717,8 @@ function getCategoryIcon(category) {
   const icons = {
     'gimnasio': '<i class="fa-solid fa-dumbbell mr-1"></i>',
     'casa': '<i class="fa-solid fa-house mr-1"></i>',
+    'crossfit': '<i class="fa-solid fa-fire-flame-curved mr-1"></i>',
+    'senior': '<i class="fa-solid fa-person-cane mr-1"></i>',
     'yoga': '<i class="fa-solid fa-spa mr-1"></i>',
     'pilates': '<i class="fa-solid fa-person-running mr-1"></i>',
     'cardio': '<i class="fa-solid fa-heart-pulse mr-1"></i>',
