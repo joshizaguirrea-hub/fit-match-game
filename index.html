@@ -28,7 +28,8 @@
 <script src="fm-nutrition.js?v=31"></script>
 <script src="fm-recipes.js?v=31"></script>
 <script src="fm-profile.js?v=18"></script>
-<script src="fm-presence.js?v=1"></script>
+<script src="fm-presence.js?v=2"></script>
+<script src="fm-dm.js?v=1"></script>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
@@ -675,6 +676,8 @@
       window.currentProfile = profile;
       // Presencia: marcar que estoy en linea (heartbeat)
       if (window.FMPresence) window.FMPresence.startHeartbeat(supabase, user.id);
+      // Chat privado: iniciar suscripcion para recibir avisos de mensajes
+      if (window.FMDM) window.FMDM.init();
       
       // Obtener puntos acumulados en la nube
       const { data: workouts } = await supabase.from('workouts').select('puntos').eq('user_id', user.id);
