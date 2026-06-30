@@ -143,6 +143,10 @@
       else msg += 'Abre la seccion de rutinas y elige una de "Tu plan de esta semana".';
       return msg;
     }
+    if (has('plan del mes','mi plan','plan mensual','seguimiento','como voy el mes','ver plan','reto del mes')) {
+      if (window.FMMonthly) { window.FMMonthly.open(); return 'Te abri tu <b>Plan del Mes</b> con tu calendario, nutricion y avance. ¡Revisalo, ' + i.apodo + '!'; }
+      return 'Tu plan del mes esta en el boton "Ver mi plan del mes" arriba de las rutinas.';
+    }
     if (has('como voy','progreso','estadis','avance','resumen','mis datos')) {
       let msg = 'Tu reporte, ' + i.apodo + ':<br>• Entrenos: <b>' + i.totalWorkouts + '</b><br>• Puntos: <b>' + i.totalPoints + ' PX</b><br>• Nivel: <b>' + i.level + '</b><br>• Racha: <b>' + i.streak + ' dia(s)</b>';
       if (i.favRoutine) msg += '<br>• Tu favorita: <b>' + esc(i.favRoutine.name) + '</b>';
