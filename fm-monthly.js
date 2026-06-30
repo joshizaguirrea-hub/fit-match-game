@@ -11,6 +11,7 @@
   'use strict';
 
   let supabase = null, userId = null;
+  let curProfile = null, mealOffset = 0, curCalGoal = null;
   const MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   // Patron de dias de entreno por semana (Lunes=1 ... Domingo=0)
   const PATTERNS = { 1:[1], 2:[1,4], 3:[1,3,5], 4:[1,2,4,5], 5:[1,2,3,4,5], 6:[1,2,3,4,5,6], 7:[0,1,2,3,4,5,6] };
@@ -117,6 +118,7 @@
     // Nutricion
     let nut = null;
     if (window.FMNutrition && p) { try { nut = window.FMNutrition.macros(p); } catch (e) {} }
+    curProfile = p; mealOffset = 0; curCalGoal = nut ? nut.calories : null;
 
     // Resumen / evaluacion
     let veredicto, vcolor;
@@ -131,8 +133,7 @@
     inner.innerHTML =
       header(apodo, MES[mo], y, level, goalTxt) +
       progressCards(doneCount, plannedSoFar, plannedTotal, adherence, pointsMonth, streak, daysLeft) +
-      (nut ? nutritionCard(nut) : '') +
-      calendar(cells) +
+      (nut ? nutritionCard(nut) : '') +      calendar(cells) +
       summaryCard(veredicto, vcolor, doneCount, plannedTotal, pointsMonth, streak);
   }
 
@@ -159,13 +160,66 @@
   function nutritionCard(n) {
     return '<div style="background:#11131c;border:1px solid #2c3350;border-radius:14px;padding:14px;margin-bottom:14px">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
-      '<div style="color:#fff;font-weight:700;font-size:14px"><i class="fa-solid fa-apple-whole" style="color:#34d399"></i> Tu meta diaria de nutricion</div>' +
-      '<button onclick="if(window.FMTrainer){FMTrainer.toggle(true);FMTrainer.ask(\'que puedo comer hoy\')}" style="background:#222842;border:none;color:#a9b0cf;border-radius:999px;padding:5px 12px;font-size:11px;cursor:pointer">Menu de hoy</button></div>' +
+      '<div style="color:#fff;font-weight:700;font-size:14px"><i class="fa-solid fa-apple-whole" style="color:#34d399"></i> Tu meta diaria de nutricion</div></div>' +
       '<div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;color:#cbd2ee;font-size:13px">' +
       '<span><b style="color:#fff;font-size:16px">' + n.calories + '</b> kcal</span>' +
       '<span>Prot <b style="color:#fff">' + n.protein_g + 'g</b></span>' +
       '<span>Carb <b style="color:#fff">' + n.carbs_g + 'g</b></span>' +
-      '<span>Grasa <b style="color:#fff">' + n.fat_g + 'g</b></span></div></div>';
+      '<span>Grasa <b style="color:#fff">' + n.fat_g + 'g</b></span></div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:14px;margin-bottom:8px">' +
+        '<div style="color:#fff;font-weight:700;font-size:13px"><i class="fa-solid fa-utensils" style="color:#fbbf24"></i> Tu menu de hoy</div>' +
+        '<button onclick="FMMonthly.reroll()" style="background:#222842;border:none;color:#a9b0cf;border-radius:999px;padding:6px 12px;font-size:11px;cursor:pointer"><i class="fa-solid fa-shuffle"></i> Generar otras recetas</button>' +
+      '</div>' +
+      '<div id="fm-month-menu">' + buildMenu(curProfile, 0) + '</div></div>';
+  }
+
+  const MEAL_DEFS = [
+    { key:'desayuno', label:'Desayuno', icon:'fa-mug-hot', color:'#fbbf24' },
+    { key:'comida',   label:'Comida',   icon:'fa-bowl-food', color:'#34d399' },
+    { key:'cena',     label:'Cena',     icon:'fa-drumstick-bite', color:'#22d3ee' },
+    { key:'snack',    label:'Snack',    icon:'fa-cookie-bite', color:'#a855f7' }
+  ];
+  function pickMeal(p, mealKey, offset) {
+    if (!window.FMRecipes || !p) return null;
+    const list = (window.FMRecipes.match(p) || []).filter(r => r.meal === mealKey);
+    if (!list.length) return null;
+    return list[offset % list.length];
+  }
+  function recipeRow(def, r) {
+    if (!r) return '';
+    const ing = (r.ingredients || []).slice(0, 6).map(esc).join(', ');
+    const steps = (r.steps || []).map((s, i) => (i+1) + '. ' + esc(s)).join('<br>');
+    return '<details style="background:#181c2a;border:1px solid #2c3350;border-radius:10px;padding:9px 11px;margin-bottom:7px">' +
+      '<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:9px">' +
+        '<span style="width:26px;height:26px;border-radius:50%;background:' + def.color + '22;color:' + def.color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid ' + def.icon + '"></i></span>' +
+        '<span style="flex:1;min-width:0"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#8b92b0;display:block">' + def.label + '</span>' +
+        '<span style="color:#fff;font-weight:600;font-size:13px">' + esc(r.name) + '</span></span>' +
+        '<span style="color:#cbd2ee;font-size:12px;white-space:nowrap">' + r.kcal + ' kcal</span>' +
+      '</summary>' +
+      '<div style="margin-top:8px;color:#aab2d0;font-size:12px;line-height:1.5">' +
+        '<b style="color:#cbd2ee">Ingredientes:</b> ' + ing + '.' +
+        (steps ? '<br><b style="color:#cbd2ee">Preparacion:</b><br>' + steps : '') +
+        '<div style="margin-top:4px;opacity:.8">Prot ' + r.protein_g + 'g &middot; Carb ' + r.carbs_g + 'g &middot; Gra ' + r.fat_g + 'g</div>' +
+      '</div></details>';
+  }
+  function buildMenu(p, offset) {
+    if (!window.FMRecipes || !p) {
+      return '<p style="color:#8b92b0;font-size:12px">Completa tu <b>Perfil Nutricional</b> (dieta, alergias, comidas al dia) para generar recetas a tu medida.</p>';
+    }
+    let total = 0, rows = '';
+    MEAL_DEFS.forEach(def => {
+      const r = pickMeal(p, def.key, offset);
+      if (r) { total += r.kcal; rows += recipeRow(def, r); }
+    });
+    if (!rows) return '<p style="color:#8b92b0;font-size:12px">Aun no tengo recetas que encajen con tu perfil. Ajusta tu Perfil Nutricional y vuelve a intentar.</p>';
+    const goalNote = curCalGoal ? ' de tu meta de ~' + curCalGoal + ' kcal' : '';
+    rows += '<p style="color:#8b92b0;font-size:11px;margin:4px 0 0">Este menu suma ~<b style="color:#cbd2ee">' + total + ' kcal</b>' + goalNote + '. Toca cada comida para ver ingredientes y preparacion.</p>';
+    return rows;
+  }
+  function reroll() {
+    mealOffset++;
+    const box = document.getElementById('fm-month-menu');
+    if (box) box.innerHTML = buildMenu(curProfile, mealOffset);
   }
   function calendar(cells) {
     const dows = ['L','M','M','J','V','S','D'];
@@ -207,5 +261,5 @@
     userId = uid;
   }
 
-  window.FMMonthly = { init, open, close, preview };
+  window.FMMonthly = { init, open, close, preview, reroll };
 })();
