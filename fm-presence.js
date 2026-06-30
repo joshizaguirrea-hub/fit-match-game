@@ -75,10 +75,13 @@
       const chatBtn = (!yo && window.FMDM)
         ? '<button onclick="FMDM.open(\'' + u.id + '\',\'' + escapeHtml(u.apodo || 'Atleta').replace(/'/g, "\\'") + '\')" title="Enviar mensaje" style="background:none;border:none;color:#a78bfa;cursor:pointer;margin-left:2px"><i class="fa-solid fa-comment-dots"></i></button>'
         : '';
+      const callBtn = (!yo && window.FMCall)
+        ? '<button onclick="FMCall.start(\'' + u.id + '\',\'' + escapeHtml(u.apodo || 'Atleta').replace(/'/g, "\\'") + '\')" title="Videollamada" style="background:none;border:none;color:#34d399;cursor:pointer"><i class="fa-solid fa-video"></i></button>'
+        : '';
       return '<span class="inline-flex items-center gap-1.5 bg-gray-900 border border-gray-800 rounded-full px-3 py-1 text-xs ' +
         (yo ? 'text-purple-300 border-purple-700' : 'text-gray-200') + '">' +
         '<span class="w-2 h-2 rounded-full bg-green-500"></span>' + escapeHtml(u.apodo || 'Atleta') +
-        (yo ? ' <span class="text-[9px] uppercase text-purple-400">tu</span>' : '') + chatBtn + '</span>';
+        (yo ? ' <span class="text-[9px] uppercase text-purple-400">tu</span>' : '') + chatBtn + callBtn + '</span>';
     }).join('');
   }
 
