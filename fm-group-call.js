@@ -39,7 +39,7 @@
     const fab = document.createElement('button');
     fab.id = 'fm-gcall-fab';
     fab.title = 'Videollamada grupal';
-    fab.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:100085;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;border:none;border-radius:999px;padding:11px 16px;font-family:\'Space Grotesk\',sans-serif;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.45);display:none;align-items:center;gap:8px';
+    fab.style.cssText = 'position:fixed;right:14px;bottom:66px;z-index:100085;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;border:none;border-radius:999px;padding:11px 16px;font-family:\'Space Grotesk\',sans-serif;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.45);display:none;align-items:center;gap:8px';
     fab.innerHTML = '<i class="fa-solid fa-video"></i> Videollamada grupal';
     fab.onclick = function () { open(currentCode); };
     document.body.appendChild(fab);
