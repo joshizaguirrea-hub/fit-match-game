@@ -224,13 +224,14 @@
 
     <!-- PASO 3: objetivo -->
     <div class="onb-step hidden" data-step="3">
-      <p class="text-white font-bold text-sm mb-3"><i class="fa-solid fa-bullseye text-purple-400 mr-1"></i> ¿Cuál es tu objetivo?</p>
+      <p class="text-white font-bold text-sm mb-1"><i class="fa-solid fa-bullseye text-purple-400 mr-1"></i> ¿Cuáles son tus objetivos?</p>
+      <p class="text-gray-400 text-xs mb-3">Puedes elegir varios — tu entrenador IA los combinará.</p>
       <div class="grid grid-cols-1 gap-2">
-        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','bajar_grasa',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-fire-flame-curved text-red-400 mr-2"></i>Bajar grasa</button>
-        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','musculo',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-dumbbell text-blue-400 mr-2"></i>Ganar músculo</button>
-        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','salud',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-heart text-pink-400 mr-2"></i>Salud general</button>
-        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','movilidad',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-spa text-teal-400 mr-2"></i>Movilidad / flexibilidad</button>
-        <button type="button" data-group="objetivo" onclick="onbSelect('objetivo','resistencia',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-heart-pulse text-orange-400 mr-2"></i>Resistencia</button>
+        <button type="button" data-group="objetivo" onclick="onbToggleMulti('objetivos','bajar_grasa',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-fire-flame-curved text-red-400 mr-2"></i>Bajar grasa</button>
+        <button type="button" data-group="objetivo" onclick="onbToggleMulti('objetivos','musculo',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-dumbbell text-blue-400 mr-2"></i>Ganar músculo</button>
+        <button type="button" data-group="objetivo" onclick="onbToggleMulti('objetivos','salud',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-heart text-pink-400 mr-2"></i>Salud general</button>
+        <button type="button" data-group="objetivo" onclick="onbToggleMulti('objetivos','movilidad',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-spa text-teal-400 mr-2"></i>Movilidad / flexibilidad</button>
+        <button type="button" data-group="objetivo" onclick="onbToggleMulti('objetivos','resistencia',this)" class="onb-opt w-full text-left px-4 py-3 rounded-xl border border-gray-800 bg-gray-950 text-white text-sm font-semibold"><i class="fa-solid fa-heart-pulse text-orange-400 mr-2"></i>Resistencia</button>
       </div>
     </div>
 
@@ -606,6 +607,13 @@
     document.querySelectorAll(`.onb-opt[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
   }
+  // Seleccion MULTIPLE (varios objetivos a la vez)
+  function onbToggleMulti(group, value, btn){
+    if(!Array.isArray(onbData[group])) onbData[group] = [];
+    const i = onbData[group].indexOf(value);
+    if(i >= 0){ onbData[group].splice(i, 1); btn.classList.remove('selected'); }
+    else { onbData[group].push(value); btn.classList.add('selected'); }
+  }
   function onbError(msg){ const e = document.getElementById('onb-error'); e.textContent = msg; e.classList.remove('hidden'); }
   function onbValidate(){
     if(onbStep === 1){
@@ -616,7 +624,7 @@
       onbData.edad = edad; onbData.peso_kg = peso; onbData.altura_cm = altura;
     }
     if(onbStep === 2 && !onbData.experiencia){ onbError('Elige tu nivel de experiencia.'); return false; }
-    if(onbStep === 3 && !onbData.objetivo){ onbError('Elige tu objetivo.'); return false; }
+    if(onbStep === 3 && (!Array.isArray(onbData.objetivos) || !onbData.objetivos.length)){ onbError('Elige al menos un objetivo (puedes marcar varios).'); return false; }
     if(onbStep === 4 && (!onbData.equipo || !onbData.dias_semana)){ onbError('Elige equipo y días por semana.'); return false; }
     return true;
   }
@@ -642,7 +650,7 @@
       const supabase = window.FMAuth.getClient();
       const payload = {
         edad: onbData.edad, sexo: onbData.sexo, peso_kg: onbData.peso_kg, altura_cm: onbData.altura_cm,
-        experiencia: onbData.experiencia, objetivo: onbData.objetivo,
+        experiencia: onbData.experiencia, objetivo: (onbData.objetivos && onbData.objetivos[0]) || onbData.objetivo, objetivos: (onbData.objetivos || []).join(','),
         equipo: onbData.equipo, dias_semana: +onbData.dias_semana, onboarding_done: true
       };
       const { error } = await supabase.from('profiles').update(payload).eq('id', currentUser.id);

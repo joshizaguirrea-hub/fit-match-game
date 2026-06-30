@@ -504,6 +504,20 @@
     </div>
   </div>
 
+  <!-- ===== ELEGIR RUTINA PARA INVITAR A UN AMIGO ===== -->
+  <div id="invite-routine-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center hidden z-[110] p-4 overflow-y-auto" onclick="if(event.target===this)closeInviteRoutine()">
+    <div class="bg-white border-4 border-gray-900 rounded-3xl p-5 max-w-md w-full relative shadow-[8px_8px_0_#111827] text-gray-900 my-8">
+      <div class="text-center mb-3">
+        <div class="w-12 h-12 rounded-2xl bg-purple-100 border-2 border-gray-900 text-purple-600 flex items-center justify-center mx-auto mb-2 text-xl"><i class="fa-solid fa-handshake"></i></div>
+        <h3 class="fun text-2xl font-bold">¿Qué entrenamos?</h3>
+        <p class="text-gray-500 text-xs mt-1">Elige la rutina que harán juntos con <b id="invite-target-name">tu amigo</b>.</p>
+      </div>
+      <input type="text" id="invite-routine-search" oninput="renderInviteRoutineOptions()" placeholder="Buscar rutina..." class="w-full bg-gray-100 border-2 border-gray-900 rounded-xl px-4 py-2 text-sm mb-3 focus:outline-none">
+      <div id="invite-routine-options" class="space-y-1.5 max-h-72 overflow-y-auto pr-1"></div>
+      <button onclick="closeInviteRoutine()" class="w-full mt-3 fun font-bold text-gray-700 py-2.5 rounded-full border-2 border-gray-900 bg-white hover:bg-gray-100 transition">Cancelar</button>
+    </div>
+  </div>
+
   <!-- ===== SETUP ===== -->
   <section id="screen-setup" class="hidden">
     <div class="text-center mb-8">
@@ -2147,29 +2161,65 @@ toggleExerciseCheck = function(el) {
 
 async function sendTrainingInvite(targetApodo, targetId) {
   if (!cloudProfile) return;
-  const supabase = window.FMAuth.getClient();
-  
-  const selectedRoutineName = selectedRoutine ? selectedRoutine.name : "Zeus (Rey del Olimpo)";
-  const selectedRoutineId = selectedRoutine ? selectedRoutine.id : "zeus";
+  // Ya NO mandamos Zeus por defecto: dejamos que el usuario elija la rutina.
+  _inviteTarget = { apodo: targetApodo, id: targetId };
+  const nameEl = document.getElementById('invite-target-name');
+  if (nameEl) nameEl.textContent = targetApodo;
+  const search = document.getElementById('invite-routine-search');
+  if (search) search.value = '';
+  renderInviteRoutineOptions();
+  document.getElementById('invite-routine-modal').classList.remove('hidden');
+}
 
+let _inviteTarget = null;
+function closeInviteRoutine() {
+  document.getElementById('invite-routine-modal').classList.add('hidden');
+  _inviteTarget = null;
+}
+function findRoutineById(id) {
+  return (window.FMRoutines || []).find(r => r.id === id)
+      || (window.FMSpecializedRoutines || []).find(r => r.id === id) || null;
+}
+function renderInviteRoutineOptions() {
+  const cont = document.getElementById('invite-routine-options');
+  if (!cont) return;
+  const q = (document.getElementById('invite-routine-search').value || '').toLowerCase().trim();
+  const gods = window.FMRoutines || [];
+  const spec = window.FMSpecializedRoutines || [];
+  // Recomendadas primero (segun perfil), luego el resto
+  let base = q
+    ? [...gods, ...spec].filter(r => r.name.toLowerCase().includes(q))
+    : smartRecommend(gods, true).slice(0, 12);
+  if (!base.length) { cont.innerHTML = '<p class="text-gray-500 text-center py-4 text-xs">Sin coincidencias.</p>'; return; }
+  cont.innerHTML = base.map(r => {
+    const lvlColor = r.level === 'espartano' ? '#a855f7' : r.level === 'avanzado' ? '#ef4444' : r.level === 'intermedio' ? '#f59e0b' : '#34d399';
+    return '<button onclick="confirmInviteRoutine(\'' + r.id + '\')" class="w-full text-left bg-gray-100 hover:bg-purple-100 border-2 border-gray-900 rounded-xl px-4 py-2.5 transition flex items-center justify-between gap-2">' +
+      '<span class="min-w-0"><span class="font-bold text-sm block truncate">' + r.name + '</span>' +
+      '<span class="text-[10px] uppercase font-bold" style="color:' + lvlColor + '">' + r.level + ' · ' + r.exercises.length + ' ejercicios · +' + r.points + ' PX</span></span>' +
+      '<i class="fa-solid fa-paper-plane text-purple-500 shrink-0"></i></button>';
+  }).join('');
+}
+async function confirmInviteRoutine(routineId) {
+  const r = findRoutineById(routineId);
+  if (!r || !_inviteTarget) { closeInviteRoutine(); return; }
+  const target = _inviteTarget;
+  selectedRoutine = r;
+  closeInviteRoutine();
+  const supabase = window.FMAuth.getClient();
   try {
     await supabase.channel('invites').send({
       type: 'broadcast',
       event: 'workout-invite',
       payload: {
         sender: cloudProfile.apodo,
-        target: targetApodo,
-        routine: selectedRoutineName,
-        routineId: selectedRoutineId
+        target: target.apodo,
+        routine: r.name,
+        routineId: r.id
       }
     });
-    alert(`¡Invitación instantánea enviada con éxito a ${targetApodo}! Esperando respuesta...`);
-    
-    // Iniciar sala de escucha de cooperativo localmente de forma proactiva
-    launchCoopSession(selectedRoutineId, targetApodo);
-  } catch(e) {
-    console.error(e);
-  }
+    if (window.FMNotify) window.FMNotify.toast({ title: 'Invitacion enviada', message: 'Invitaste a ' + target.apodo + ' a: ' + r.name, icon: 'fa-handshake', color: '#7c5cff', duration: 5000 });
+    launchCoopSession(r.id, target.apodo);
+  } catch (e) { console.error(e); }
 }
 
 function showIncomingInvite(payload) {
@@ -2468,14 +2518,24 @@ function profileLevel(){
   const pts = (typeof cloudTotalPoints !== 'undefined') ? cloudTotalPoints : 0;
   return pts < 50 ? 'básico' : pts < 200 ? 'intermedio' : pts < 500 ? 'avanzado' : 'espartano';
 }
+// Devuelve la lista de codigos de objetivo del usuario (soporta varios)
+function userGoals(){
+  if (typeof cloudProfile === 'undefined' || !cloudProfile) return [];
+  if (cloudProfile.objetivos) return cloudProfile.objetivos.split(',').map(s => s.trim()).filter(Boolean);
+  return cloudProfile.objetivo ? [cloudProfile.objetivo] : [];
+}
 function goalCategories(){
-  const o = (typeof cloudProfile !== 'undefined' && cloudProfile) ? cloudProfile.objetivo : null;
   const map = { bajar_grasa:['cardio','gimnasio','calistenia'], musculo:['gimnasio','calistenia'], salud:[], movilidad:['yoga','pilates'], resistencia:['cardio','calistenia'] };
-  return map[o] || [];
+  const set = new Set();
+  userGoals().forEach(o => (map[o] || []).forEach(c => set.add(c)));
+  return Array.from(set);
 }
 function objetivoLabel(){
-  const o = (typeof cloudProfile !== 'undefined' && cloudProfile) ? cloudProfile.objetivo : null;
-  return ({ bajar_grasa:'Bajar grasa', musculo:'Ganar músculo', salud:'Salud general', movilidad:'Movilidad', resistencia:'Resistencia' })[o] || null;
+  const labels = { bajar_grasa:'Bajar grasa', musculo:'Ganar músculo', salud:'Salud general', movilidad:'Movilidad', resistencia:'Resistencia' };
+  const arr = userGoals().map(o => labels[o] || o);
+  if (!arr.length) return null;
+  if (arr.length === 1) return arr[0];
+  return arr.slice(0, -1).join(', ') + ' y ' + arr[arr.length - 1];
 }
 function smartRecommend(fullList, isGods){
   const lvl = profileLevel();
@@ -2575,14 +2635,25 @@ function renderRoutinePicker() {
   grid.className = "space-y-2";
   let html = '';
 
-  // Banner personalizado (si tiene perfil fitness)
+  // Banner del ENTRENADOR PERSONAL IA (si tiene perfil fitness)
   const goalTxt = objetivoLabel();
   if (goalTxt) {
-    html += `<div class="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl text-xs" style="background:var(--surface2);color:var(--txt-soft)"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent)"></i> Personalizado para tu meta: <b style="color:var(--txt)">${goalTxt}</b> · Nivel <b style="color:var(--txt)">${profileLevel()}</b></div>`;
+    const apodo = (typeof cloudProfile !== 'undefined' && cloudProfile && cloudProfile.apodo) ? cloudProfile.apodo : 'Atleta';
+    const lvl = profileLevel();
+    html += `
+      <div class="mb-5 p-4 rounded-2xl" style="background:linear-gradient(135deg,rgba(124,92,255,.18),rgba(52,211,153,.12));border:1px solid var(--border)">
+        <div class="flex items-start gap-3">
+          <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background:var(--accent);color:#fff"><i class="fa-solid fa-dumbbell"></i></div>
+          <div class="min-w-0">
+            <p class="fun font-bold text-sm" style="color:var(--txt)">Hola ${apodo}, soy tu entrenador IA </p>
+            <p class="text-xs leading-relaxed mt-0.5" style="color:var(--txt-soft)">Estas son las rutinas que preparé para tu perfil <b>esta semana</b>, para trabajar tus objetivos: <b style="color:var(--txt)">${goalTxt}</b>. Ajustadas a tu nivel <b style="color:var(--txt)">${lvl}</b>. ¡A darle!</p>
+          </div>
+        </div>
+      </div>`;
   }
 
-  // Recomendado (inteligente, segun perfil)
-  html += buildRail('Recomendado para ti', '<i class="fa-solid fa-wand-magic-sparkles"></i>', 'var(--accent)', smartRecommend(fullList, isGods));
+  // Plan de la semana (recomendacion inteligente segun perfil)
+  html += buildRail('Tu plan de esta semana', '<i class="fa-solid fa-calendar-week"></i>', 'var(--accent)', smartRecommend(fullList, isGods));
 
   // Empieza aqui (principiantes)
   html += buildRail('Empieza aquí', '<i class="fa-solid fa-seedling"></i>', '#34d399', fullList.filter(r => r.level === 'básico').slice(0, 12));
