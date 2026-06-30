@@ -39,7 +39,7 @@
     const fab = document.createElement('button');
     fab.id = 'fm-gcall-fab';
     fab.title = 'Videollamada grupal';
-    fab.style.cssText = 'position:fixed;right:14px;bottom:66px;z-index:100085;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;border:none;border-radius:999px;padding:11px 16px;font-family:\'Space Grotesk\',sans-serif;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.45);display:none;align-items:center;gap:8px';
+    fab.style.cssText = 'position:fixed;right:14px;bottom:72px;z-index:100085;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;border:none;border-radius:999px;padding:11px 16px;font-family:\'Space Grotesk\',sans-serif;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.45);display:none;align-items:center;gap:8px';
     fab.innerHTML = '<i class="fa-solid fa-video"></i> Videollamada grupal';
     fab.onclick = function () { open(currentCode); };
     document.body.appendChild(fab);
@@ -47,7 +47,7 @@
     // Ventana con el iframe de Jitsi
     const win = document.createElement('div');
     win.id = 'fm-gcall-window';
-    win.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:100086;width:380px;max-width:calc(100% - 28px);height:520px;max-height:calc(100% - 90px);background:#0f1117;border:1px solid #2c3350;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.55);display:none;flex-direction:column;overflow:hidden;font-family:\'Space Grotesk\',sans-serif';
+    win.style.cssText = 'position:fixed;right:14px;bottom:72px;z-index:100086;width:380px;max-width:calc(100% - 28px);height:520px;max-height:calc(100% - 150px);background:#0f1117;border:1px solid #2c3350;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.55);display:none;flex-direction:column;overflow:hidden;font-family:\'Space Grotesk\',sans-serif';
     win.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff">' +
         '<div style="font-weight:700;font-size:13px"><i class="fa-solid fa-video"></i> Videollamada grupal <span id="fm-gcall-code" style="opacity:.85;font-weight:600"></span></div>' +

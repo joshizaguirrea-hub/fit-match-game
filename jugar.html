@@ -79,7 +79,7 @@
     background: #111827;
     border-left: 4px solid #111827;
     box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-    z-index: 9999;
+    z-index: 100088;
     transition: right 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .social-sidebar.open {
@@ -128,7 +128,7 @@
 <script src="fm-presence.js?v=3"></script>
 <script src="fm-dm.js?v=1"></script>
 <script src="fm-call.js?v=2"></script>
-<script src="fm-group-call.js?v=2"></script>
+<script src="fm-group-call.js?v=3"></script>
 <script src="fm-trainer.js?v=3"></script>
 <script src="fm-monthly.js?v=3"></script>
 <script src="fm-guide.js?v=3"></script>
@@ -140,9 +140,32 @@
   /* Calmar flotantes mientras se hace una rutina (deja solo lo util: videollamada) */
   body.workout-active .social-toggle-btn,
   body.workout-active #fm-trainer-fab,
+  body.workout-active #fm-footer-nav,
   body.workout-active #fm-trainer-window { display: none !important; }
+
+  /* Barra de navegacion fija en el pie */
+  #fm-footer-nav { box-shadow: 0 -6px 18px rgba(0,0,0,.12); }
+  .fm-foot-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:8px 2px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:10px; color:#374151; background:none; border:none; cursor:pointer; transition:color .15s, transform .1s; }
+  .fm-foot-btn i { font-size:18px; }
+  .fm-foot-btn:hover { color:#7c5cff; }
+  .fm-foot-btn:active { transform:scale(.92); }
+  /* Los flotantes viejos ahora viven en el pie: se ocultan */
+  #fm-trainer-fab, .social-toggle-btn { display:none !important; }
+  /* Espacio para que el pie no tape el contenido */
+  body { padding-bottom: 64px; }
 </style>
 <div id="fm-toasts" style="position:fixed;top:14px;right:14px;z-index:100090;display:flex;flex-direction:column;gap:10px;max-width:340px;width:calc(100% - 28px)"></div>
+
+<!-- BARRA DE NAVEGACION FIJA (PIE) -->
+<nav id="fm-footer-nav" class="fixed bottom-0 left-0 right-0 z-[100080] bg-white border-t-2 border-gray-900">
+  <div class="max-w-6xl mx-auto grid grid-cols-5">
+    <button class="fm-foot-btn" onclick="window.location.href='index.html'" title="Volver al inicio"><i class="fa-solid fa-house"></i>Inicio</button>
+    <button class="fm-foot-btn" onclick="if(window.FMTrainer)FMTrainer.toggle()" title="Entrenador IA"><i class="fa-solid fa-dumbbell" style="color:#7c5cff"></i>Coach IA</button>
+    <button class="fm-foot-btn" onclick="toggleSocialSidebar()" title="Chat &amp; Fit Bros"><i class="fa-solid fa-comments" style="color:#8b5cf6"></i>Chat</button>
+    <button class="fm-foot-btn" onclick="if(window.FMMonthly)FMMonthly.open()" title="Plan del mes"><i class="fa-solid fa-calendar-check" style="color:#0ea5a4"></i>Plan</button>
+    <button class="fm-foot-btn" onclick="openTiendaSoon()" title="Tienda"><i class="fa-solid fa-store" style="color:#f59e0b"></i>Tienda</button>
+  </div>
+</nav>
 
 <!-- Botón Flotante para abrir Chat/Social -->
 <button onclick="toggleSocialSidebar()" class="social-toggle-btn">
@@ -2326,8 +2349,18 @@ function getMilitaryRank(points) {
 }
 
 // Cerrar sesión limpio desde la pantalla de juego (re-ingreso sin fantasmas)
-async function handlePlayLogout() {
-  const supabase = window.FMAuth && window.FMAuth.getClient ? window.FMAuth.getClient() : null;
+function openTiendaSoon(){
+  // La Tienda aun no existe; mostramos un aviso honesto de "proximamente".
+  const msg = 'Aqui podras gastar tus FitCoins en power-ups, temas y mas. ¡Sigue entrenando para juntar monedas!';
+  if (window.FMNotify && window.FMNotify.toast) {
+    window.FMNotify.toast({ title: 'Tienda (proximamente)', message: msg, icon: 'fa-store', color: '#f59e0b' });
+  } else {
+    alert('Tienda (proximamente)\n\n' + msg);
+  }
+}
+window.openTiendaSoon = openTiendaSoon;
+
+async function handlePlayLogout() {  const supabase = window.FMAuth && window.FMAuth.getClient ? window.FMAuth.getClient() : null;
   if (!supabase) { window.location.href = 'index.html'; return; }
   if (confirm('¿Seguro que quieres cerrar sesión?')) {
     try { await supabase.auth.signOut(); } catch(e) { console.error(e); }
