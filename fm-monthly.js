@@ -29,7 +29,7 @@
   }
 
   // Pool de rutinas para el plan, segun equipo
-  function planPool(p) {
+  function planPoolRaw(p) {
     const spec = window.FMSpecializedRoutines || [];
     const grab = ids => ids.map(byId).filter(Boolean);
     if (p && p.equipo === 'gimnasio') {
@@ -45,6 +45,11 @@
       if (s && s.length) return s.slice(0, 6);
     }
     return allRoutines().slice(0, 5);
+  }
+  // Aplica filtro de seguridad por perfil de salud (PAR-Q)
+  function planPool(p) {
+    const pool = planPoolRaw(p);
+    return (window.FMSafety) ? window.FMSafety.filterSafe(pool, p) : pool;
   }
 
   async function getWorkouts() {
@@ -134,7 +139,8 @@
       header(apodo, MES[mo], y, level, goalTxt) +
       progressCards(doneCount, plannedSoFar, plannedTotal, adherence, pointsMonth, streak, daysLeft) +
       (nut ? nutritionCard(nut) : '') +      calendar(cells) +
-      summaryCard(veredicto, vcolor, doneCount, plannedTotal, pointsMonth, streak);
+      summaryCard(veredicto, vcolor, doneCount, plannedTotal, pointsMonth, streak) +
+      safetyNote(p);
   }
 
   function header(apodo, mes, y, level, goal) {
@@ -255,6 +261,17 @@
   }
 
   function preview(id, cat) { close(); if (typeof window.openRoutineDetail === 'function') window.openRoutineDetail(id, cat); }
+
+  function safetyNote(p) {
+    if (!window.FMSafety || !window.FMSafety.hasMedical(p)) return '';
+    const m = window.FMSafety.profileMed(p);
+    let extra = '';
+    if (m.cardio) extra += ' Por tus respuestas cardiovasculares, te recomendamos consultar a tu medico antes de subir la intensidad.';
+    if (m.estado === 'embarazada' || m.estado === 'posparto') extra += ' En embarazo/posparto, busca el alta de tu medico y prioriza el bajo impacto.';
+    return '<div style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);border-radius:14px;padding:14px;margin-top:14px">' +
+      '<div style="color:#fca5a5;font-weight:700;font-size:13px"><i class="fa-solid fa-shield-heart"></i> Seguridad primero</div>' +
+      '<p style="color:#cbd2ee;font-size:12px;line-height:1.5;margin:6px 0 0">Este plan ya filtra rutinas poco recomendadas para tu perfil de salud.' + extra + ' ' + window.FMSafety.disclaimer() + '</p></div>';
+  }
 
   function init(sb, uid) {
     supabase = sb || (window.FMAuth && window.FMAuth.getClient ? window.FMAuth.getClient() : null);
