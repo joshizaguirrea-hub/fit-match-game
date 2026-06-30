@@ -320,8 +320,8 @@
       <p class="text-gray-600 font-semibold max-w-xl mx-auto">Elige entre las rutinas legendarias de los Dioses o las rutinas especializadas modernas.</p>
     </div>
     
-    <!-- Selector de Categoría Principal -->
-    <div class="flex items-center justify-center gap-3 mb-8">
+    <!-- Selector de Categoría Principal (oculto: ahora todo es Netflix por carriles) -->
+    <div class="hidden items-center justify-center gap-3 mb-8">
       <button onclick="switchCategory('gods')" id="cat-gods-btn" class="fun font-bold text-sm px-6 py-3 rounded-full border-2 border-gray-900 bg-purple-600 text-white shadow-md transition-all">
         <i class="fa-solid fa-landmark mr-2"></i>Dioses Legendarios
       </button>
@@ -331,7 +331,7 @@
     </div>
 
     <!-- Filtros por Cultura (Dioses) -->
-    <div id="culture-filters-container" class="mb-8">
+    <div id="culture-filters-container" class="mb-8 hidden">
       <div class="flex items-center justify-center gap-2 flex-wrap" id="culture-filters">
         <button onclick="filterRoutines('All')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-yellow-400 text-gray-900 shadow-md transition-all">Todos</button>
         <button onclick="filterRoutines('Grecia')" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition-all">Grecia</button>
@@ -2498,7 +2498,7 @@ function filterSpecialized(category) {
 
 function filterRoutines(culture) {
   activeFilter = culture;
-  
+  if (culture === 'All') expandedGroup = null; // al entrar, vista Netflix completa
   // Actualizar estilo de los botones de filtro
   const buttons = document.querySelectorAll('#culture-filters button');
   buttons.forEach(btn => {
@@ -2593,15 +2593,20 @@ function buildRoutineCard(r){
 }
 
 // Construye un carril horizontal (estilo Netflix) con flechas elegantes
-function buildRail(title, iconHtml, accent, routines){
+function buildRail(title, iconHtml, accent, routines, moreAction, totalCount){
   if(!routines || !routines.length) return '';
   const cards = routines.map(r => `<div class="snap-start shrink-0 w-72">${buildRoutineCard(r)}</div>`).join('');
+  const count = (typeof totalCount === 'number') ? totalCount : routines.length;
+  const moreBtn = moreAction
+    ? `<button onclick="${moreAction}" class="ml-auto text-xs font-bold px-3 py-1 rounded-full transition" style="color:var(--accent);background:var(--surface2)">Ver más <i class="fa-solid fa-chevron-right ml-0.5"></i></button>`
+    : '';
   return `
     <section class="mb-7">
       <div class="flex items-center gap-2 mb-3 px-1">
         <span class="text-lg" style="color:${accent}">${iconHtml}</span>
         <h2 class="fun text-xl font-bold" style="color:var(--txt)">${title}</h2>
-        <span class="text-xs ml-1 px-2 py-0.5 rounded-full" style="background:var(--surface2);color:var(--txt-mut)">${routines.length}</span>
+        <span class="text-xs ml-1 px-2 py-0.5 rounded-full" style="background:var(--surface2);color:var(--txt-mut)">${count}</span>
+        ${moreBtn}
       </div>
       <div class="rail-wrap relative">
         <button onclick="scrollRail(this,-1)" class="rail-arrow rail-arrow-left" aria-label="Anterior"><i class="fa-solid fa-chevron-left"></i></button>
@@ -2621,25 +2626,39 @@ function scrollRail(btn, dir){
   rail.scrollBy({ left: dir * Math.max(304, rail.clientWidth * 0.8), behavior: 'smooth' });
 }
 
+let expandedGroup = null; // {type:'culture'|'category'|'level'|'quick'|'noeq', key, label}
+function isBodyweight(r){ const e = getRoutineEquipment(r); return e.length === 1 && e[0].label === 'Peso corporal'; }
+function expandRoutineGroup(type, key, label){ expandedGroup = { type, key, label }; renderRoutinePicker(); const el = document.getElementById('screen-routine'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+function collapseRoutineGroup(){ expandedGroup = null; renderRoutinePicker(); const el = document.getElementById('screen-routine'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+
 function renderRoutinePicker() {
   const grid = document.getElementById('routines-grid');
-  const isGods = activeCategory === 'gods';
-  const fullList = isGods ? (window.FMRoutines || []) : (window.FMSpecializedRoutines || []);
-  const activeF = isGods ? activeFilter : activeSpecialFilter;
+  const gods = window.FMRoutines || [];
+  const spec = window.FMSpecializedRoutines || [];
+  const all = [...gods, ...spec];
 
-  // Si hay un filtro especifico activo -> rejilla plana de esa coleccion
-  if (activeF && activeF !== 'All') {
-    const filtered = fullList.filter(r => isGods ? r.culture === activeF : r.category === activeF);
-    grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
-    grid.innerHTML = filtered.map(r => buildRoutineCard(r)).join('') || `<p class="col-span-full text-center" style="color:var(--txt-mut)">No hay rutinas en esta colección todavía.</p>`;
+  // --- Vista EXPANDIDA ("Ver mas"): rejilla de un solo grupo ---
+  if (expandedGroup) {
+    const g = expandedGroup;
+    let items = [];
+    if (g.type === 'culture') items = gods.filter(r => r.culture === g.key);
+    else if (g.type === 'category') items = spec.filter(r => r.category === g.key);
+    else if (g.type === 'level') items = all.filter(r => r.level === g.key);
+    else if (g.type === 'noeq') items = all.filter(isBodyweight);
+    else if (g.type === 'quick') items = [...all].sort((a,b)=>estimateDuration(a)-estimateDuration(b));
+    grid.className = "space-y-4";
+    grid.innerHTML =
+      `<button onclick="collapseRoutineGroup()" class="fun font-bold text-sm px-4 py-2 rounded-full border-2 border-gray-900 bg-white text-gray-700 hover:bg-gray-100 transition mb-1"><i class="fa-solid fa-arrow-left mr-1"></i>Volver</button>` +
+      `<h2 class="fun text-2xl font-bold mb-3" style="color:var(--txt)">${g.label} <span style="color:var(--txt-mut);font-size:14px">(${items.length})</span></h2>` +
+      `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">${items.map(buildRoutineCard).join('') || `<p class="col-span-full text-center" style="color:var(--txt-mut)">No hay rutinas en esta sección todavía.</p>`}</div>`;
     return;
   }
 
-  // Vista "Netflix": carriles curados
+  // --- Vista NETFLIX completa (sin filtros de arriba) ---
   grid.className = "space-y-2";
   let html = '';
 
-  // Banner del ENTRENADOR PERSONAL IA (si tiene perfil fitness)
+  // Banner del ENTRENADOR PERSONAL IA
   const goalTxt = objetivoLabel();
   if (goalTxt) {
     const apodo = (typeof cloudProfile !== 'undefined' && cloudProfile && cloudProfile.apodo) ? cloudProfile.apodo : 'Atleta';
@@ -2649,39 +2668,40 @@ function renderRoutinePicker() {
         <div class="flex items-start gap-3">
           <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background:var(--accent);color:#fff"><i class="fa-solid fa-dumbbell"></i></div>
           <div class="min-w-0">
-            <p class="fun font-bold text-sm" style="color:var(--txt)">Hola ${apodo}, soy tu entrenador IA </p>
+            <p class="fun font-bold text-sm" style="color:var(--txt)">Hola ${apodo}, soy tu entrenador IA</p>
             <p class="text-xs leading-relaxed mt-0.5" style="color:var(--txt-soft)">Estas son las rutinas que preparé para tu perfil <b>esta semana</b>, para trabajar tus objetivos: <b style="color:var(--txt)">${goalTxt}</b>. Ajustadas a tu nivel <b style="color:var(--txt)">${lvl}</b>. ¡A darle!</p>
           </div>
         </div>
       </div>`;
   }
 
-  // Plan de la semana (recomendacion inteligente segun perfil)
-  html += buildRail('Tu plan de esta semana', '<i class="fa-solid fa-calendar-week"></i>', 'var(--accent)', smartRecommend(fullList, isGods));
+  // Plan de la semana (recomendacion inteligente)
+  html += buildRail('Tu plan de esta semana', '<i class="fa-solid fa-calendar-week"></i>', 'var(--accent)', smartRecommend(all, false));
 
-  // Empieza aqui (principiantes)
-  html += buildRail('Empieza aquí', '<i class="fa-solid fa-seedling"></i>', '#34d399', fullList.filter(r => r.level === 'básico').slice(0, 12));
+  // Carriles curados (con Ver mas)
+  html += buildRail('Empieza aquí', '<i class="fa-solid fa-seedling"></i>', '#34d399', all.filter(r => r.level === 'básico').slice(0, 12), "expandRoutineGroup('level','básico','Empieza aquí · Básico')", all.filter(r => r.level === 'básico').length);
+  const quick = [...all].sort((a,b)=>estimateDuration(a)-estimateDuration(b));
+  html += buildRail('Rápidos · los más cortos', '<i class="fa-solid fa-bolt"></i>', '#fbbf24', quick.slice(0, 12), "expandRoutineGroup('quick',null,'Rápidos · los más cortos')", quick.length);
+  const noEq = all.filter(isBodyweight);
+  html += buildRail('Sin equipo · en casa', '<i class="fa-solid fa-house"></i>', '#22d3ee', noEq.slice(0, 12), "expandRoutineGroup('noeq',null,'Sin equipo · en casa')", noEq.length);
+  html += buildRail('Modo Espartano', '<i class="fa-solid fa-helmet-safety"></i>', '#a855f7', all.filter(r => r.level === 'espartano').slice(0, 12), "expandRoutineGroup('level','espartano','Modo Espartano')", all.filter(r => r.level === 'espartano').length);
 
-  // Rapidos (los mas cortos)
-  const quick = [...fullList].sort((a,b)=>estimateDuration(a)-estimateDuration(b)).slice(0, 12);
-  html += buildRail('Rápidos · los más cortos', '<i class="fa-solid fa-bolt"></i>', '#fbbf24', quick);
+  // Carriles por ESPECIALIDAD (lo que antes era el filtro Moderno)
+  const cats = ['gimnasio','yoga','pilates','cardio','calistenia','hipopresivos'];
+  cats.forEach(c => {
+    const items = spec.filter(r => r.category === c);
+    if (!items.length) return;
+    const label = c.charAt(0).toUpperCase() + c.slice(1);
+    const icon = getCategoryIcon(c) || '<i class="fa-solid fa-dumbbell"></i>';
+    html += buildRail(label, icon, 'var(--brand2)', items.slice(0, 12), "expandRoutineGroup('category','" + c + "','" + label + "')", items.length);
+  });
 
-  // Sin equipo (en casa)
-  const noEq = fullList.filter(r => { const e = getRoutineEquipment(r); return e.length === 1 && e[0].label === 'Peso corporal'; });
-  html += buildRail('Sin equipo · en casa', '<i class="fa-solid fa-house"></i>', '#22d3ee', noEq.slice(0, 12));
-
-  // Modo Espartano (reto maximo)
-  html += buildRail('Modo Espartano', '<i class="fa-solid fa-helmet-safety"></i>', '#a855f7', fullList.filter(r => r.level === 'espartano').slice(0, 12));
-
-  // Colecciones tematicas (culturas o categorias)
-  const groups = isGods
-    ? ['Grecia','Nórdicos','Egipto','China','Japón','Mongoles','Mayas','Aztecas','Incas']
-    : ['gimnasio','yoga','pilates','cardio','calistenia','hipopresivos'];
-  groups.forEach(g => {
-    const items = fullList.filter(r => isGods ? r.culture === g : r.category === g);
-    const label = isGods ? g : g.charAt(0).toUpperCase() + g.slice(1);
-    const icon = isGods ? '<i class="fa-solid fa-landmark"></i>' : (getCategoryIcon(g) || '<i class="fa-solid fa-dumbbell"></i>');
-    html += buildRail(label, icon, 'var(--brand2)', items);
+  // Carriles por CULTURA (lo que antes era el filtro Dioses)
+  const cultures = ['Grecia','Nórdicos','Egipto','China','Japón','Mongoles','Mayas','Aztecas','Incas'];
+  cultures.forEach(cu => {
+    const items = gods.filter(r => r.culture === cu);
+    if (!items.length) return;
+    html += buildRail(cu, '<i class="fa-solid fa-landmark"></i>', '#f59e0b', items.slice(0, 12), "expandRoutineGroup('culture','" + cu + "','" + cu + "')", items.length);
   });
 
   grid.innerHTML = html || `<p class="text-center" style="color:var(--txt-mut)">Cargando rutinas...</p>`;
