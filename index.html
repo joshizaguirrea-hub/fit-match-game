@@ -28,6 +28,7 @@
 <script src="fm-nutrition.js?v=31"></script>
 <script src="fm-recipes.js?v=31"></script>
 <script src="fm-profile.js?v=18"></script>
+<script src="fm-presence.js?v=1"></script>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
@@ -371,6 +372,17 @@
         </div>
       </div>
       
+      <!-- EN LINEA AHORA -->
+      <div class="bg-gray-950 border border-gray-800 rounded-3xl p-4 shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-white text-sm flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> En línea ahora <span id="online-count" class="text-gray-500 font-normal">(0)</span></h3>
+          <button onclick="if(window.FMPresence)FMPresence.refreshOnline()" class="text-[10px] font-bold text-gray-500 hover:text-purple-400 transition"><i class="fa-solid fa-rotate mr-1"></i>Actualizar</button>
+        </div>
+        <div id="online-list" class="flex flex-wrap gap-2">
+          <span class="text-gray-500 text-xs">Cargando...</span>
+        </div>
+      </div>
+
       <!-- SUB-SECCIÓN: CHAT GLOBAL -->
       <div id="social-tab-chat" class="bg-gray-950 border border-gray-800 rounded-3xl p-5 flex flex-col justify-between shadow-xl" style="height: 380px;">
         <!-- Lista de Mensajes -->
@@ -536,6 +548,9 @@
       loadGuilds();
     });
 
+    // Panel "En linea ahora": refrescar para todos (invitados y conectados)
+    if (window.FMPresence) window.FMPresence.startPanelAutoRefresh(supabase);
+
     // BLINDAJE: si Supabase no responde en 4s, no dejamos la UI colgada en "Cargando..."
     setTimeout(() => {
       if (userText && userText.textContent.includes('Cargando')) {
@@ -657,6 +672,9 @@
 
     if (profile) {
       currentProfile = profile;
+      window.currentProfile = profile;
+      // Presencia: marcar que estoy en linea (heartbeat)
+      if (window.FMPresence) window.FMPresence.startHeartbeat(supabase, user.id);
       
       // Obtener puntos acumulados en la nube
       const { data: workouts } = await supabase.from('workouts').select('puntos').eq('user_id', user.id);

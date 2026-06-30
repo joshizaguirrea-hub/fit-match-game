@@ -124,6 +124,7 @@
 <script src="fm-nutrition.js?v=32"></script>
 <script src="fm-recipes.js?v=32"></script>
 <script src="fm-notify.js?v=32"></script>
+<script src="fm-presence.js?v=1"></script>
 <script src="fm-profile.js?v=32"></script>
 </head>
 <body class="min-h-screen antialiased">
@@ -2315,6 +2316,8 @@ async function initCloudProfile() {
         window.FMNotify.requestPermission();
         window.FMNotify.initAppointmentNotifications(supabase, user);
       }
+      // Presencia: marcar que estoy en linea mientras juego
+      if (window.FMPresence) window.FMPresence.startHeartbeat(supabase, user.id);
     }
   } else {
     // INVITADO (sin sesion): invitarlo a registrarse para guardar su progreso
