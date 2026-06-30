@@ -351,8 +351,234 @@ const FM_SPECIALIZED_ROUTINES = [
       { name:"Mountain climbers", reps:30 }
     ]
   },
-  // ============================================================
-  // === GIMNASIO [10 RUTINAS] ===
+  // --- EN CASA: banco ampliado (basico / intermedio / avanzado) ---
+  {
+    id:"casa_cardio_express", name:"Cardio Express en Casa", category:"casa", level:"básico", points:14, rounds:3,
+    description:"Quema calorias en casa sin equipo. Cardio suave para activar el cuerpo y el corazon.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Jumping jacks", reps:30 },
+      { name:"Marcha con rodillas altas (segundos)", reps:40 },
+      { name:"Talones al gluteo (segundos)", reps:30 },
+      { name:"Toques laterales rapidos", reps:24 },
+      { name:"Sentadillas a ritmo", reps:15 }
+    ]
+  },
+  {
+    id:"casa_movilidad_total", name:"Movilidad Total en Casa", category:"casa", level:"básico", points:12, rounds:2,
+    description:"Estira y libera tension de pies a cabeza. Ideal para empezar o cerrar el dia y prevenir lesiones.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Circulos de cuello y hombros", reps:12 },
+      { name:"Gato-camello (movilidad espalda)", reps:12 },
+      { name:"Estiramiento de isquiotibiales", reps:10 },
+      { name:"Rotacion de cadera", reps:12 },
+      { name:"Estiramiento de cuadriceps (por lado)", reps:10 }
+    ]
+  },
+  {
+    id:"casa_gluteos_firmes", name:"Gluteos Firmes en Casa", category:"casa", level:"básico", points:15, rounds:3,
+    description:"Activa y tonifica el gluteo en casa, sin equipo. Perfecta para principiantes.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Puente de gluteo", reps:18 },
+      { name:"Patada de gluteo (por pierna)", reps:15 },
+      { name:"Sentadilla sumo", reps:15 },
+      { name:"Abduccion lateral acostado (por lado)", reps:15 },
+      { name:"Puente con pausa (segundos)", reps:30 }
+    ]
+  },
+  {
+    id:"casa_brazos_tono", name:"Brazos Tonificados en Casa", category:"casa", level:"básico", points:14, rounds:3,
+    description:"Define brazos en casa con botellas de agua o una mochila ligera. Biceps, triceps y hombro.",
+    equipment:["Botellas de agua"],
+    exercises:[
+      { name:"Curl de biceps con botellas", reps:14 },
+      { name:"Press de hombro con botellas", reps:12 },
+      { name:"Patada de triceps con botellas", reps:14 },
+      { name:"Curl martillo con botellas", reps:14 },
+      { name:"Elevaciones laterales con botellas", reps:12 }
+    ]
+  },
+  {
+    id:"casa_hiit_quema", name:"HIIT Quemagrasa en Casa", category:"casa", level:"intermedio", points:25, rounds:4,
+    description:"Intervalos de alta intensidad para quemar grasa rapido en casa. Suda a tope sin equipo.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Burpees", reps:12 },
+      { name:"Sentadillas con salto", reps:15 },
+      { name:"Escaladores (Mountain Climbers)", reps:30 },
+      { name:"Skipping rapido (segundos)", reps:40 },
+      { name:"Plancha con salto de pies", reps:20 }
+    ]
+  },
+  {
+    id:"casa_abdomen_definido", name:"Abdomen Definido en Casa", category:"casa", level:"intermedio", points:22, rounds:3,
+    description:"Esculpe el abdomen con un circuito completo de core en casa. Recto, oblicuos y transverso.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Crunch abdominal", reps:22 },
+      { name:"Elevacion de piernas", reps:16 },
+      { name:"Russian twist", reps:24 },
+      { name:"Plancha (segundos)", reps:50 },
+      { name:"Crunch bicicleta", reps:24 },
+      { name:"Hollow hold (segundos)", reps:25 }
+    ]
+  },
+  {
+    id:"casa_funcional_total", name:"Funcional Total en Casa", category:"casa", level:"intermedio", points:25, rounds:3,
+    description:"Entrenamiento funcional de cuerpo completo. Fuerza, coordinacion y resistencia con tu peso.",
+    equipment:["Peso corporal","Mochila"],
+    exercises:[
+      { name:"Sentadilla con salto", reps:15 },
+      { name:"Flexiones", reps:15 },
+      { name:"Zancada con rodillazo (por pierna)", reps:12 },
+      { name:"Remo con mochila", reps:14 },
+      { name:"Plancha con toque de hombro", reps:20 },
+      { name:"Burpees", reps:10 }
+    ]
+  },
+  {
+    id:"casa_pierna_potente", name:"Pierna Potente en Casa", category:"casa", level:"intermedio", points:25, rounds:4,
+    description:"Piernas y gluteo a fuego en casa, sin equipo. Volumen y resistencia para tren inferior.",
+    equipment:["Peso corporal","Silla"],
+    exercises:[
+      { name:"Sentadillas", reps:20 },
+      { name:"Zancadas alternas", reps:18 },
+      { name:"Sentadilla bulgara con silla (por pierna)", reps:12 },
+      { name:"Puente a una pierna (por lado)", reps:12 },
+      { name:"Sentadilla con salto", reps:15 },
+      { name:"Sentadilla isometrica en pared (segundos)", reps:50 }
+    ]
+  },
+  {
+    id:"casa_full_pro", name:"Full Body Pro en Casa", category:"casa", level:"avanzado", points:35, rounds:4,
+    description:"Cuerpo completo de nivel avanzado en casa. Alta intensidad y volumen para atletas en forma.",
+    equipment:["Peso corporal","Mochila"],
+    exercises:[
+      { name:"Burpees con salto", reps:15 },
+      { name:"Flexiones explosivas", reps:14 },
+      { name:"Sentadilla pistol asistida (por pierna)", reps:10 },
+      { name:"Remo con mochila pesada", reps:15 },
+      { name:"Zancada con salto alternas", reps:16 },
+      { name:"Plancha con elevacion (segundos)", reps:45 }
+    ]
+  },
+  {
+    id:"casa_pecho_avanzado", name:"Pecho Avanzado en Casa", category:"casa", level:"avanzado", points:35, rounds:4,
+    description:"Lleva tus flexiones al siguiente nivel. Variantes avanzadas para un pecho fuerte sin gimnasio.",
+    equipment:["Peso corporal","Silla"],
+    exercises:[
+      { name:"Flexiones declinadas (pies en silla)", reps:14 },
+      { name:"Flexiones diamante", reps:12 },
+      { name:"Flexiones archer (por lado)", reps:8 },
+      { name:"Flexiones explosivas con palmada", reps:10 },
+      { name:"Flexiones pseudo-planche", reps:10 },
+      { name:"Plancha a flexion (segundos)", reps:40 }
+    ]
+  },
+  {
+    id:"casa_core_extremo", name:"Core Extremo en Casa", category:"casa", level:"avanzado", points:32, rounds:4,
+    description:"Core de acero nivel avanzado. Estabilidad y fuerza abdominal extrema con tu propio peso.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Hollow hold (segundos)", reps:35 },
+      { name:"V-ups", reps:18 },
+      { name:"Plancha con desplazamiento", reps:24 },
+      { name:"Elevacion de piernas colgado o acostado", reps:18 },
+      { name:"Dragon flag negativo", reps:8 },
+      { name:"Plancha lateral con rotacion (por lado)", reps:12 }
+    ]
+  },
+  {
+    id:"casa_tren_inferior_pro", name:"Tren Inferior Pro en Casa", category:"casa", level:"avanzado", points:35, rounds:4,
+    description:"Piernas de acero sin gimnasio. Trabajo avanzado de fuerza y explosividad para tren inferior.",
+    equipment:["Peso corporal","Silla","Mochila"],
+    exercises:[
+      { name:"Sentadilla pistol (por pierna)", reps:8 },
+      { name:"Sentadilla con salto profundo", reps:18 },
+      { name:"Zancada bulgara con mochila (por pierna)", reps:12 },
+      { name:"Peso muerto a una pierna (por lado)", reps:12 },
+      { name:"Saltos de patinador", reps:24 },
+      { name:"Sentadilla isometrica con mochila (segundos)", reps:50 }
+    ]
+  },
+  // --- GIMNASIO: banco ampliado ---
+  {
+    id:"gym_basico_upper", name:"Tren Superior Basico", category:"gimnasio", level:"básico", points:15, rounds:3,
+    description:"Introduccion al tren superior con maquinas y mancuernas. Pecho, espalda, hombro y brazos.",
+    equipment:["Mancuernas","Maquina","Polea"],
+    exercises:[
+      { name:"Press de pecho en maquina", reps:12 },
+      { name:"Jalon al pecho en polea", reps:12 },
+      { name:"Press de hombros con mancuernas", reps:12 },
+      { name:"Curl de biceps con mancuernas", reps:12 },
+      { name:"Extension de triceps en polea", reps:12 }
+    ]
+  },
+  {
+    id:"gym_basico_lower", name:"Tren Inferior Basico", category:"gimnasio", level:"básico", points:15, rounds:3,
+    description:"Primer dia de pierna en el gym con maquinas seguras. Cuadriceps, femoral y gluteo.",
+    equipment:["Maquina","Prensa"],
+    exercises:[
+      { name:"Prensa de piernas", reps:12 },
+      { name:"Extensiones de cuadriceps", reps:15 },
+      { name:"Curl femoral en maquina", reps:15 },
+      { name:"Abductor en maquina", reps:15 },
+      { name:"Elevacion de talones (gemelos)", reps:20 }
+    ]
+  },
+  {
+    id:"gym_intermedio_gluteo", name:"Gluteo e Isquios Intermedio", category:"gimnasio", level:"intermedio", points:25, rounds:3,
+    description:"Enfoque en gluteo y femoral para fuerza y forma. Bisagra de cadera bien ejecutada.",
+    equipment:["Barra","Mancuernas","Maquina"],
+    exercises:[
+      { name:"Hip thrust con barra", reps:12 },
+      { name:"Peso muerto rumano", reps:12 },
+      { name:"Zancadas con mancuernas", reps:12 },
+      { name:"Patada de gluteo en polea (por pierna)", reps:14 },
+      { name:"Curl femoral en maquina", reps:15 }
+    ]
+  },
+  {
+    id:"gym_intermedio_funcional", name:"Funcional con Pesas", category:"gimnasio", level:"intermedio", points:28, rounds:4,
+    description:"Circuito funcional con pesas para fuerza, cardio y coordinacion. Acondicionamiento completo.",
+    equipment:["Mancuernas","Kettlebell"],
+    exercises:[
+      { name:"Thruster con mancuernas", reps:12 },
+      { name:"Swing con kettlebell", reps:18 },
+      { name:"Remo renegado", reps:12 },
+      { name:"Zancada caminando con mancuernas", reps:16 },
+      { name:"Press push con mancuernas", reps:12 },
+      { name:"Burpees", reps:10 }
+    ]
+  },
+  {
+    id:"gym_avanzado_brazos", name:"Brazos Avanzado", category:"gimnasio", level:"avanzado", points:35, rounds:4,
+    description:"Bombeo avanzado de biceps y triceps con superseries y alto volumen. Brazos al maximo.",
+    equipment:["Barra Z","Mancuernas","Polea"],
+    exercises:[
+      { name:"Curl con barra Z", reps:10 },
+      { name:"Press cerrado en banca", reps:10 },
+      { name:"Curl inclinado con mancuernas", reps:12 },
+      { name:"Extension de triceps sobre cabeza", reps:12 },
+      { name:"Curl martillo", reps:12 },
+      { name:"Fondos en paralelas", reps:12 }
+    ]
+  },
+  {
+    id:"gym_avanzado_espalda", name:"Espalda Avanzada", category:"gimnasio", level:"avanzado", points:35, rounds:4,
+    description:"Espalda ancha y densa con tirones pesados y alto volumen. Para una V dominante.",
+    equipment:["Barra","Polea","Mancuernas"],
+    exercises:[
+      { name:"Dominadas lastradas", reps:8 },
+      { name:"Remo con barra pesado", reps:8 },
+      { name:"Jalon al pecho agarre cerrado", reps:12 },
+      { name:"Remo en polea baja", reps:12 },
+      { name:"Pullover con mancuerna", reps:14 },
+      { name:"Face pull en polea", reps:15 }
+    ]
+  },
   // ============================================================
   {
     id: "gym_basico_fullbody", name: "Full Body Básico", category: "gimnasio", level: "básico", points: 15, rounds: 3,

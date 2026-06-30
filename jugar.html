@@ -117,7 +117,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="fm-supabase.js?v=32"></script>
 <script src="fm-routines.js?v=32"></script>
-<script src="fm-specialized-routines.js?v=34"></script>
+<script src="fm-specialized-routines.js?v=35"></script>
 <script src="fm-badges.js?v=32"></script>
 <script src="fm-videos.js?v=2"></script>
 <script src="fm-achievements.js?v=32"></script>
@@ -2688,12 +2688,12 @@ function renderRoutinePicker() {
   html += buildRail('Tu plan de esta semana', '<i class="fa-solid fa-calendar-week"></i>', 'var(--accent)', smartRecommend(all, false));
 
   // Carriles curados (con Ver mas)
-  html += buildRail('Empieza aquí', '<i class="fa-solid fa-seedling"></i>', '#34d399', all.filter(r => r.level === 'básico').slice(0, 12), "expandRoutineGroup('level','básico','Empieza aquí · Básico')", all.filter(r => r.level === 'básico').length);
+  html += buildRail('Empieza aquí', '<i class="fa-solid fa-seedling"></i>', '#34d399', all.filter(r => r.level === 'básico').slice(0, 15), "expandRoutineGroup('level','básico','Empieza aquí · Básico')", all.filter(r => r.level === 'básico').length);
   const quick = [...all].sort((a,b)=>estimateDuration(a)-estimateDuration(b));
-  html += buildRail('Rápidos · los más cortos', '<i class="fa-solid fa-bolt"></i>', '#fbbf24', quick.slice(0, 12), "expandRoutineGroup('quick',null,'Rápidos · los más cortos')", quick.length);
+  html += buildRail('Rápidos · los más cortos', '<i class="fa-solid fa-bolt"></i>', '#fbbf24', quick.slice(0, 15), "expandRoutineGroup('quick',null,'Rápidos · los más cortos')", quick.length);
   const noEq = all.filter(isBodyweight);
-  html += buildRail('Sin equipo · en casa', '<i class="fa-solid fa-house"></i>', '#22d3ee', noEq.slice(0, 12), "expandRoutineGroup('noeq',null,'Sin equipo · en casa')", noEq.length);
-  html += buildRail('Modo Espartano', '<i class="fa-solid fa-helmet-safety"></i>', '#a855f7', all.filter(r => r.level === 'espartano').slice(0, 12), "expandRoutineGroup('level','espartano','Modo Espartano')", all.filter(r => r.level === 'espartano').length);
+  html += buildRail('Sin equipo · en casa', '<i class="fa-solid fa-house"></i>', '#22d3ee', noEq.slice(0, 15), "expandRoutineGroup('noeq',null,'Sin equipo · en casa')", noEq.length);
+  html += buildRail('Modo Espartano', '<i class="fa-solid fa-helmet-safety"></i>', '#a855f7', all.filter(r => r.level === 'espartano').slice(0, 15), "expandRoutineGroup('level','espartano','Modo Espartano')", all.filter(r => r.level === 'espartano').length);
 
   // Carriles por ESPECIALIDAD (lo que antes era el filtro Moderno)
   const cats = ['gimnasio','casa','crossfit','calistenia','cardio','senior','yoga','pilates','hipopresivos'];
@@ -2703,7 +2703,7 @@ function renderRoutinePicker() {
     if (!items.length) return;
     const label = CAT_LABELS[c] || (c.charAt(0).toUpperCase() + c.slice(1));
     const icon = getCategoryIcon(c) || '<i class="fa-solid fa-dumbbell"></i>';
-    html += buildRail(label, icon, 'var(--brand2)', items.slice(0, 12), "expandRoutineGroup('category','" + c + "','" + label + "')", items.length);
+    html += buildRail(label, icon, 'var(--brand2)', items.slice(0, 15), "expandRoutineGroup('category','" + c + "','" + label + "')", items.length);
   });
 
   // UN solo carril para TODAS las culturas (antes era el filtro Dioses)
@@ -2711,7 +2711,7 @@ function renderRoutinePicker() {
     const cultures = ['Grecia','Nórdicos','Egipto','China','Japón','Mongoles','Mayas','Aztecas','Incas'];
     const sample = [];
     cultures.forEach(cu => { gods.filter(r => r.culture === cu).slice(0, 2).forEach(r => sample.push(r)); });
-    html += buildRail('Dioses y Culturas Legendarias', '<i class="fa-solid fa-landmark"></i>', '#f59e0b', sample.slice(0, 14), "expandRoutineGroup('gods',null,'Dioses y Culturas Legendarias')", gods.length);
+    html += buildRail('Dioses y Culturas Legendarias', '<i class="fa-solid fa-landmark"></i>', '#f59e0b', sample.slice(0, 15), "expandRoutineGroup('gods',null,'Dioses y Culturas Legendarias')", gods.length);
   }
 
   grid.innerHTML = html || `<p class="text-center" style="color:var(--txt-mut)">Cargando rutinas...</p>`;
