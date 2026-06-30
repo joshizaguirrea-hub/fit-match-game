@@ -868,6 +868,57 @@ function fmArchetype(p){
   const desc = `Meta: ${FM_FIT_LABELS.objetivo[p.objetivo] || '-'}` + (equipoTxt ? ' · ' + equipoTxt : '') + (p.dias_semana ? ' · ' + p.dias_semana + '+ días/sem' : '');
   return { name, desc, icon:o.icon, color:o.color };
 }
+// Resumen del Perfil de Salud (PAR-Q) para mostrar en el perfil
+function fmHealthSummary(profile, isOwn){
+  const p = profile || {};
+  const editBtn = isOwn ? `<button onclick="(typeof openHealthEdit==='function')?openHealthEdit():alert('Edita tu Perfil de Salud desde la pagina principal (boton Salud).')" class="text-xs font-bold px-3 py-1.5 rounded-lg" style="background:#ef4444;color:#fff"><i class="fa-solid fa-pen mr-1"></i>${p.med_done?'Editar':'Completar'}</button>` : '';
+  if(!p.med_done){
+    return `<div class="rounded-2xl p-4 mt-3" style="background:#181c2a;border:1px solid #2c3350">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold" style="color:#eceefb"><i class="fa-solid fa-heart-circle-check mr-1" style="color:#f87171"></i> Perfil de Salud</h3>
+        ${editBtn}
+      </div>
+      <p class="text-xs mt-1" style="color:#8b92b0">${isOwn?'Aun no lo completas. Nos ayuda a darte rutinas seguras.':'Sin datos.'}</p>
+    </div>`;
+  }
+  const lesiones = (p.med_lesiones||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const cardio = p.med_corazon || p.med_dolor_pecho || p.med_medicamentos;
+  const LBL = {rodilla:'Rodilla',hombro:'Hombro',espalda:'Espalda',cuello:'Cuello',cadera:'Cadera',muneca:'Mu\u00f1eca'};
+  const chip = (txt,color)=>`<span class="text-[11px] font-bold px-2 py-1 rounded-lg" style="background:${color}22;color:${color};border:1px solid ${color}55">${txt}</span>`;
+  const badges = [];
+  if(cardio) badges.push(chip('<i class="fa-solid fa-heart-pulse"></i> Cardiovascular','#ef4444'));
+  lesiones.forEach(l=> badges.push(chip('<i class="fa-solid fa-bandage"></i> '+(LBL[l]||l),'#fbbf24')));
+  if(p.med_estado==='embarazada') badges.push(chip('<i class="fa-solid fa-baby"></i> Embarazo','#f472b6'));
+  if(p.med_estado==='posparto') badges.push(chip('<i class="fa-solid fa-baby"></i> Posparto','#f472b6'));
+  if(!badges.length) badges.push(chip('<i class="fa-solid fa-check"></i> Sin condiciones reportadas','#34d399'));
+  let adapt = '';
+  if(window.FMSafety && window.FMSafety.hasMedical(p)){
+    const m = window.FMSafety.profileMed(p);
+    const tips = [];
+    if(m.lesiones.includes('rodilla')) tips.push('sin saltos ni sentadillas profundas');
+    if(m.lesiones.includes('hombro')) tips.push('sin press militar ni dominadas');
+    if(m.lesiones.includes('espalda')) tips.push('sin peso muerto ni sit-ups');
+    if(m.lesiones.includes('cuello')) tips.push('sin cargas sobre la cabeza');
+    if(m.lesiones.includes('cadera')) tips.push('sin impacto en cadera');
+    if(m.lesiones.includes('muneca')) tips.push('cuidando las mu\u00f1ecas');
+    if(m.cardio) tips.push('sin alto impacto, intensidad controlada');
+    if(m.estado==='embarazada' || m.estado==='posparto') tips.push('bajo impacto y core suave');
+    adapt = `<div class="mt-3 rounded-xl p-3" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35)">
+      <div class="text-[11px] font-bold" style="color:#fca5a5"><i class="fa-solid fa-shield-heart mr-1"></i>As\u00ed ajustamos tus rutinas</div>
+      <p class="text-[11px] mt-1" style="color:#cbd2ee">${tips.length?('Evitamos: '+tips.join('; ')+'.'):'Tus rutinas se filtran por seguridad.'} ${window.FMSafety.disclaimer()}</p>
+    </div>`;
+  }
+  const notas = (p.med_notas||'').trim();
+  return `<div class="rounded-2xl p-4 mt-3" style="background:#181c2a;border:1px solid #2c3350">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-bold" style="color:#eceefb"><i class="fa-solid fa-heart-circle-check mr-1" style="color:#f87171"></i> Perfil de Salud</h3>
+      ${editBtn}
+    </div>
+    <div class="flex flex-wrap gap-1.5">${badges.join('')}</div>
+    ${notas?`<p class="text-[11px] mt-2" style="color:#b2b9d4"><b>Notas:</b> ${notas}</p>`:''}
+    ${adapt}
+  </div>`;
+}
 function renderFitnessProfile(profile, isOwn){
   const box = document.getElementById('fitness-profile-block');
   if(!box) return;
@@ -882,6 +933,7 @@ function renderFitnessProfile(profile, isOwn){
       <p class="text-xs mt-1" style="color:#8b92b0">${isOwn ? 'Aún no tienes datos. Compártelos para medir tu avance.' : 'Sin datos públicos.'}</p></div>
       ${editBtn}
     </div>
+    ${fmHealthSummary(profile, isOwn)}
     <div id="fitness-edit-form" class="hidden mt-4"></div>`;
     if(isOwn) buildFitnessForm(profile);
     return;
@@ -912,6 +964,7 @@ function renderFitnessProfile(profile, isOwn){
       ${profile.equipo ? fmChip('fa-toolbox','Equipo', FM_FIT_LABELS.equipo[profile.equipo]||profile.equipo) : ''}
       ${profile.dias_semana ? fmChip('fa-calendar-week','Días/sem', profile.dias_semana + '+') : ''}
     </div>
+    ${fmHealthSummary(profile, isOwn)}
     <div id="fitness-edit-form" class="hidden mt-4"></div>`;
   if(isOwn) buildFitnessForm(profile);
 }
