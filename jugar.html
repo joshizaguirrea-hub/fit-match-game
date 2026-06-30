@@ -138,13 +138,11 @@
 <!-- Contenedor de notificaciones (toasts) -->
 <style>
   /* Calmar flotantes mientras se hace una rutina (deja solo lo util: videollamada) */
-  body.workout-active .fm-home,
   body.workout-active .social-toggle-btn,
   body.workout-active #fm-trainer-fab,
   body.workout-active #fm-trainer-window { display: none !important; }
 </style>
 <div id="fm-toasts" style="position:fixed;top:14px;right:14px;z-index:100090;display:flex;flex-direction:column;gap:10px;max-width:340px;width:calc(100% - 28px)"></div>
-<a href="index.html" class="fm-home" style="position:fixed;left:14px;bottom:14px;z-index:99999;background:#181c2a;color:#eceefb;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;text-decoration:none;padding:10px 16px;border:1px solid #2c3350;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.4);display:inline-flex;align-items:center;gap:8px;">&#8592; Inicio</a>
 
 <!-- Botón Flotante para abrir Chat/Social -->
 <button onclick="toggleSocialSidebar()" class="social-toggle-btn">
