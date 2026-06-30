@@ -47,6 +47,9 @@
     <button id="btn-profile" onclick="openProfileModal()" class="hidden text-gray-400 hover:text-purple-400 font-bold transition">
       <i class="fa-solid fa-user mr-1"></i> Mi Perfil
     </button>
+    <button id="btn-health" onclick="openHealthEdit()" class="hidden text-gray-400 hover:text-red-400 font-bold transition">
+      <i class="fa-solid fa-heart-circle-check mr-1"></i> Salud
+    </button>
     <button id="btn-logout" onclick="handleLogout()" class="hidden text-gray-400 hover:text-red-400 font-bold transition">
       Cerrar Sesión <i class="fa-solid fa-sign-out-alt ml-1"></i>
     </button>
@@ -639,7 +642,9 @@
   // ===== ONBOARDING FITNESS =====
   let onbStep = 1;
   const onbData = {};
+  let healthEditMode = false;
   function openOnboarding(){
+    healthEditMode = false;
     onbStep = 1; 
     Object.keys(onbData).forEach(k => delete onbData[k]);
     document.querySelectorAll('.onb-opt.selected').forEach(b => b.classList.remove('selected'));
@@ -653,6 +658,13 @@
     document.getElementById('onb-back').classList.toggle('hidden', onbStep === 1);
     document.getElementById('onb-next').innerHTML = onbStep === 5 ? 'Finalizar <i class="fa-solid fa-check ml-1"></i>' : 'Siguiente <i class="fa-solid fa-arrow-right ml-1"></i>';
     document.getElementById('onb-error').classList.add('hidden');
+    const back = document.getElementById('onb-back');
+    if (healthEditMode) {
+      document.getElementById('onb-next').innerHTML = 'Guardar <i class="fa-solid fa-check ml-1"></i>';
+      back.classList.remove('hidden'); back.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> Cancelar';
+    } else {
+      back.innerHTML = '<i class="fa-solid fa-arrow-left mr-1"></i> Atrás';
+    }
   }
   function onbSelect(group, value, btn){
     onbData[group] = value;
@@ -680,11 +692,55 @@
     if(onbStep === 4 && (!onbData.equipo || !onbData.dias_semana)){ onbError('Elige equipo y días por semana.'); return false; }
     return true;
   }
-  function onbPrev(){ if(onbStep > 1){ onbStep--; onbRender(); } }
+  function onbPrev(){ if(healthEditMode){ healthEditMode=false; document.getElementById('onboarding-modal').classList.add('hidden'); return; } if(onbStep > 1){ onbStep--; onbRender(); } }
   function onbNext(){
+    if(healthEditMode){ saveHealthOnly(); return; }
     if(!onbValidate()) return;
     if(onbStep < 5){ onbStep++; onbRender(); return; }
     finishOnboarding();
+  }
+
+  // ===== EDITAR SOLO EL PERFIL DE SALUD (post-onboarding) =====
+  function openHealthEdit(){
+    healthEditMode = true;
+    Object.keys(onbData).forEach(k => delete onbData[k]);
+    document.querySelectorAll('.onb-opt.selected').forEach(b => b.classList.remove('selected'));
+    onbStep = 5;
+    onbRender();
+    prefillHealth();
+    document.getElementById('onboarding-modal').classList.remove('hidden');
+  }
+  function prefillHealth(){
+    const p = currentProfile || window.currentProfile; if(!p) return;
+    const pick = (group, val) => { const b = document.querySelector(`.onb-opt[data-group="${group}"][onclick*="'${val}'"]`); if(b) b.classList.add('selected'); };
+    onbData.med_corazon = p.med_corazon ? 'si' : 'no'; pick('med_corazon', onbData.med_corazon);
+    onbData.med_dolor_pecho = p.med_dolor_pecho ? 'si' : 'no'; pick('med_dolor_pecho', onbData.med_dolor_pecho);
+    onbData.med_medicamentos = p.med_medicamentos ? 'si' : 'no'; pick('med_medicamentos', onbData.med_medicamentos);
+    onbData.med_lesiones = (p.med_lesiones||'').split(',').map(s=>s.trim()).filter(Boolean);
+    onbData.med_lesiones.forEach(l => { const b = document.querySelector(`.onb-opt[data-group="med_lesiones"][onclick*="'${l}'"]`); if(b) b.classList.add('selected'); });
+    onbData.med_estado = p.med_estado || 'no'; pick('med_estado', onbData.med_estado);
+    const t = document.getElementById('onb-med-notas'); if(t) t.value = p.med_notas || '';
+  }
+  async function saveHealthOnly(){
+    const btn = document.getElementById('onb-next'); btn.disabled=true; const old=btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Guardando...';
+    try{
+      const supabase = window.FMAuth.getClient();
+      const payload = {
+        med_done:true,
+        med_corazon: onbData.med_corazon === 'si',
+        med_dolor_pecho: onbData.med_dolor_pecho === 'si',
+        med_medicamentos: onbData.med_medicamentos === 'si',
+        med_lesiones: (onbData.med_lesiones||[]).join(','),
+        med_estado: onbData.med_estado || 'no',
+        med_notas: ((document.getElementById('onb-med-notas')||{}).value||'').trim()
+      };
+      const { error } = await supabase.from('profiles').update(payload).eq('id', currentUser.id);
+      if(error) throw error;
+      healthEditMode = false;
+      document.getElementById('onboarding-modal').classList.add('hidden');
+      await checkProfile(currentUser);
+    }catch(err){ onbError('No se pudo guardar: ' + (err.message||err) + '. ¿Corriste el SQL en Supabase?'); btn.disabled=false; btn.innerHTML=old; }
   }
   async function skipOnboarding(){
     document.getElementById('onboarding-modal').classList.add('hidden');
@@ -761,6 +817,7 @@
       userText.innerHTML = `Atleta conectado: <strong class="text-white">${profile.apodo}</strong> <span class="bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded-full uppercase ml-1.5 font-bold tracking-wider">${rank}</span> <span class="text-gray-500 font-normal ml-1">(${cloudTotalPoints} pts)</span>`;
       btnLogout.classList.remove('hidden');
       document.getElementById('btn-profile').classList.remove('hidden');
+      { const bh = document.getElementById('btn-health'); if (bh) bh.classList.remove('hidden'); }
       const btnEntrance = document.getElementById('btn-open-entrance');
       if (btnEntrance) btnEntrance.classList.add('hidden');
       
