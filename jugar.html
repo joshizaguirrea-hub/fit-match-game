@@ -117,7 +117,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="fm-supabase.js?v=32"></script>
 <script src="fm-routines.js?v=32"></script>
-<script src="fm-specialized-routines.js?v=32"></script>
+<script src="fm-specialized-routines.js?v=33"></script>
 <script src="fm-badges.js?v=32"></script>
 <script src="fm-videos.js?v=2"></script>
 <script src="fm-achievements.js?v=32"></script>
@@ -2687,11 +2687,12 @@ function renderRoutinePicker() {
   html += buildRail('Modo Espartano', '<i class="fa-solid fa-helmet-safety"></i>', '#a855f7', all.filter(r => r.level === 'espartano').slice(0, 12), "expandRoutineGroup('level','espartano','Modo Espartano')", all.filter(r => r.level === 'espartano').length);
 
   // Carriles por ESPECIALIDAD (lo que antes era el filtro Moderno)
-  const cats = ['gimnasio','yoga','pilates','cardio','calistenia','hipopresivos'];
+  const cats = ['gimnasio','casa','calistenia','cardio','yoga','pilates','hipopresivos'];
+  const CAT_LABELS = { gimnasio:'Gimnasio', casa:'En Casa', calistenia:'Calistenia', cardio:'Cardio', yoga:'Yoga', pilates:'Pilates', hipopresivos:'Hipopresivos' };
   cats.forEach(c => {
     const items = spec.filter(r => r.category === c);
     if (!items.length) return;
-    const label = c.charAt(0).toUpperCase() + c.slice(1);
+    const label = CAT_LABELS[c] || (c.charAt(0).toUpperCase() + c.slice(1));
     const icon = getCategoryIcon(c) || '<i class="fa-solid fa-dumbbell"></i>';
     html += buildRail(label, icon, 'var(--brand2)', items.slice(0, 12), "expandRoutineGroup('category','" + c + "','" + label + "')", items.length);
   });
@@ -2710,6 +2711,7 @@ function renderRoutinePicker() {
 function getCategoryIcon(category) {
   const icons = {
     'gimnasio': '<i class="fa-solid fa-dumbbell mr-1"></i>',
+    'casa': '<i class="fa-solid fa-house mr-1"></i>',
     'yoga': '<i class="fa-solid fa-spa mr-1"></i>',
     'pilates': '<i class="fa-solid fa-person-running mr-1"></i>',
     'cardio': '<i class="fa-solid fa-heart-pulse mr-1"></i>',
