@@ -150,8 +150,154 @@ const FM_SPECIALIZED_ROUTINES = [
       { name:"Respiración profunda con brazos arriba", reps:8 }
     ]
   },
-  // ============================================================
-  // === GIMNASIO PRO (divisiones modernas por grupo muscular) ===
+  // --- TERCERA EDAD: banco ampliado (incluye intermedio) ---
+  {
+    id:"senior_postura", name:"Postura Saludable", category:"senior", level:"básico", points:12, rounds:2,
+    description:"Fortalece la espalda alta y abre el pecho para corregir la postura. Adios a la joroba.",
+    equipment:["Silla"],
+    exercises:[
+      { name:"Retraccion de escapulas sentado", reps:14 },
+      { name:"Apertura de pecho con brazos", reps:12 },
+      { name:"Elevacion de brazos en T", reps:12 },
+      { name:"Estiramiento de cuello lateral (por lado)", reps:8 },
+      { name:"Inclinacion de barbilla suave", reps:10 }
+    ]
+  },
+  {
+    id:"senior_manos_munecas", name:"Manos y Muñecas Activas", category:"senior", level:"básico", points:10, rounds:2,
+    description:"Mantiene la movilidad y fuerza de manos y muñecas. Util para el dia a dia y la artritis.",
+    equipment:["Pelota blanda"],
+    exercises:[
+      { name:"Apreton de pelota blanda (por mano)", reps:15 },
+      { name:"Circulos de muñeca", reps:12 },
+      { name:"Apertura y cierre de dedos", reps:15 },
+      { name:"Flexion y extension de muñeca", reps:12 },
+      { name:"Toque pulgar con cada dedo", reps:10 }
+    ]
+  },
+  {
+    id:"senior_caminata", name:"Caminata Vigorizante", category:"senior", level:"básico", points:14, rounds:2,
+    description:"Cardio ligero de pie con apoyo para mejorar resistencia y animo. Mantente activo y feliz.",
+    equipment:["Silla","Pared"],
+    exercises:[
+      { name:"Marcha en el lugar con apoyo (segundos)", reps:45 },
+      { name:"Paso lateral con apoyo", reps:16 },
+      { name:"Toque de talon y punta", reps:16 },
+      { name:"Elevacion de rodilla con apoyo (por pierna)", reps:12 },
+      { name:"Respiracion con elevacion de brazos", reps:8 }
+    ]
+  },
+  {
+    id:"senior_fuerza_intermedio", name:"Fuerza Activa Plus", category:"senior", level:"intermedio", points:18, rounds:3,
+    description:"Para adultos mayores ya activos: mas fuerza con botellas y de pie con apoyo. Seguro y efectivo.",
+    equipment:["Silla","Botellas de agua"],
+    exercises:[
+      { name:"Sentarse y levantarse de la silla", reps:14 },
+      { name:"Remo con botellas inclinado", reps:14 },
+      { name:"Press de hombros con botellas", reps:12 },
+      { name:"Sentadilla con apoyo a media altura", reps:12 },
+      { name:"Elevacion de talones con apoyo", reps:16 },
+      { name:"Curl de biceps con botellas", reps:14 }
+    ]
+  },
+  {
+    id:"senior_equilibrio_plus", name:"Equilibrio Avanzado Senior", category:"senior", level:"intermedio", points:18, rounds:3,
+    description:"Reto de equilibrio para adultos mayores activos. Previene caidas y mejora la confianza al moverse.",
+    equipment:["Silla","Pared"],
+    exercises:[
+      { name:"Pararse en un pie sin apoyo (segundos, por pierna)", reps:15 },
+      { name:"Caminar punta-talon en linea (pasos)", reps:14 },
+      { name:"Sentadilla a silla controlada", reps:12 },
+      { name:"Paso al frente y atras con control (por pierna)", reps:12 },
+      { name:"Elevacion lateral de pierna sin apoyo (por lado)", reps:12 }
+    ]
+  },
+  {
+    id:"senior_yoga_suave", name:"Yoga en Silla", category:"senior", level:"básico", points:12, rounds:2,
+    description:"Yoga adaptado a la silla: respiracion, estiramiento y calma. Cuerpo y mente en paz.",
+    equipment:["Silla"],
+    exercises:[
+      { name:"Respiracion profunda guiada", reps:8 },
+      { name:"Giro de columna sentado (por lado)", reps:8 },
+      { name:"Estiramiento de brazos al cielo", reps:10 },
+      { name:"Flexion suave hacia adelante sentado", reps:8 },
+      { name:"Estiramiento de cuello y hombros", reps:10 }
+    ]
+  },
+  // --- CROSSFIT: banco ampliado ---
+  {
+    id:"cf_chispa", name:"Chispa (EMOM 10)", category:"crossfit", level:"básico", points:20, rounds:5,
+    description:"Tu primer EMOM: cada minuto arrancas una ronda y descansas lo que sobre. Ritmo y constancia.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Sentadillas al aire", reps:12 },
+      { name:"Flexiones", reps:8 },
+      { name:"Abdominales", reps:10 },
+      { name:"Saltos de tijera", reps:20 }
+    ]
+  },
+  {
+    id:"cf_brisa", name:"Brisa", category:"crossfit", level:"básico", points:20, rounds:4,
+    description:"WOD ligero para agarrar condicion. Movimientos simples a buen ritmo, sin equipo.",
+    equipment:["Peso corporal"],
+    exercises:[
+      { name:"Burpees suaves (sin salto)", reps:8 },
+      { name:"Zancadas alternas", reps:16 },
+      { name:"Escaladores", reps:24 },
+      { name:"Plancha (segundos)", reps:30 },
+      { name:"Sentadillas al aire", reps:15 }
+    ]
+  },
+  {
+    id:"cf_trueno", name:"Trueno (For Time)", category:"crossfit", level:"intermedio", points:30, rounds:5,
+    description:"5 rondas para completar lo mas rapido posible. Mantén la tecnica aunque el reloj corra.",
+    equipment:["Peso corporal","Barra de dominadas"],
+    exercises:[
+      { name:"Burpees", reps:10 },
+      { name:"Dominadas (o jalon)", reps:8 },
+      { name:"Sentadillas con salto", reps:15 },
+      { name:"Flexiones", reps:12 },
+      { name:"V-ups", reps:12 }
+    ]
+  },
+  {
+    id:"cf_ventisca", name:"Ventisca (AMRAP 15)", category:"crossfit", level:"intermedio", points:32, rounds:5,
+    description:"15 minutos de AMRAP con mochila. Tantas rondas como aguantes. Resistencia pura.",
+    equipment:["Mochila","Peso corporal"],
+    exercises:[
+      { name:"Thrusters con mochila", reps:12 },
+      { name:"Swing con mochila", reps:18 },
+      { name:"Burpees", reps:10 },
+      { name:"Zancadas con mochila", reps:16 },
+      { name:"Mountain climbers", reps:30 }
+    ]
+  },
+  {
+    id:"cf_avalancha", name:"Avalancha", category:"crossfit", level:"avanzado", points:42, rounds:6,
+    description:"6 rondas demoledoras de cuerpo completo. Solo para atletas con buena base. Imparable.",
+    equipment:["Peso corporal","Barra de dominadas","Mochila"],
+    exercises:[
+      { name:"Burpees con dominada", reps:10 },
+      { name:"Thrusters con mochila", reps:15 },
+      { name:"Pistol squats (por pierna)", reps:8 },
+      { name:"Flexiones explosivas", reps:12 },
+      { name:"Toes-to-bar", reps:12 },
+      { name:"Saltos de patinador", reps:24 }
+    ]
+  },
+  {
+    id:"cf_apocalipsis", name:"Apocalipsis (Chipper)", category:"crossfit", level:"espartano", points:58, rounds:1,
+    description:"Un chipper monstruoso: completa todas las repeticiones una sola vez, sin parar. La prueba final.",
+    equipment:["Peso corporal","Barra de dominadas"],
+    exercises:[
+      { name:"Burpees", reps:50 },
+      { name:"Sentadillas al aire", reps:100 },
+      { name:"Flexiones", reps:75 },
+      { name:"Dominadas", reps:40 },
+      { name:"Abdominales", reps:100 },
+      { name:"Zancadas alternas", reps:80 }
+    ]
+  },
   // ============================================================
   {
     id:"gym_pecho_biceps", name:"Pecho y Bíceps", category:"gimnasio", level:"intermedio", points:25, rounds:3,
