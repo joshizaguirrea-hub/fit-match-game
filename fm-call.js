@@ -40,12 +40,17 @@
     o.style.cssText = 'position:fixed;inset:0;z-index:100100;background:#05070d;display:none;flex-direction:column;font-family:\'Space Grotesk\',sans-serif';
     o.innerHTML =
       '<div id="fm-call-status" style="position:absolute;top:0;left:0;right:0;padding:14px;text-align:center;color:#eceefb;font-weight:700;z-index:2;background:linear-gradient(#05070dcc,transparent)"></div>' +
+      '<button id="fm-call-min" title="Minimizar" style="position:absolute;top:10px;right:12px;z-index:3;width:38px;height:38px;border-radius:50%;border:none;background:#222842cc;color:#fff;font-size:15px;cursor:pointer"><i class="fa-solid fa-compress"></i></button>' +
       '<video id="fm-remote-video" autoplay playsinline style="width:100%;height:100%;object-fit:cover;background:#0b0d13"></video>' +
       '<video id="fm-local-video" autoplay playsinline muted style="position:absolute;bottom:96px;right:16px;width:110px;height:150px;object-fit:cover;border-radius:14px;border:2px solid #7c5cff;background:#0b0d13;z-index:2"></video>' +
-      '<div style="position:absolute;bottom:0;left:0;right:0;padding:22px;display:flex;justify-content:center;gap:18px;z-index:2;background:linear-gradient(transparent,#05070dcc)">' +
+      '<div id="fm-call-controls" style="position:absolute;bottom:0;left:0;right:0;padding:22px;display:flex;justify-content:center;gap:18px;z-index:2;background:linear-gradient(transparent,#05070dcc)">' +
         '<button id="fm-call-mic" title="Microfono" style="width:56px;height:56px;border-radius:50%;border:none;background:#222842;color:#fff;font-size:20px;cursor:pointer"><i class="fa-solid fa-microphone"></i></button>' +
         '<button id="fm-call-hangup" title="Colgar" style="width:64px;height:64px;border-radius:50%;border:none;background:#ef4444;color:#fff;font-size:24px;cursor:pointer"><i class="fa-solid fa-phone-slash"></i></button>' +
         '<button id="fm-call-cam" title="Camara" style="width:56px;height:56px;border-radius:50%;border:none;background:#222842;color:#fff;font-size:20px;cursor:pointer"><i class="fa-solid fa-video"></i></button>' +
+      '</div>' +
+      '<div id="fm-call-mini-controls" style="display:none;position:absolute;bottom:6px;left:0;right:0;justify-content:center;gap:10px;z-index:3">' +
+        '<button id="fm-call-max" title="Agrandar" style="width:34px;height:34px;border-radius:50%;border:none;background:#7c5cff;color:#fff;font-size:13px;cursor:pointer"><i class="fa-solid fa-expand"></i></button>' +
+        '<button id="fm-call-hangup-mini" title="Colgar" style="width:34px;height:34px;border-radius:50%;border:none;background:#ef4444;color:#fff;font-size:13px;cursor:pointer"><i class="fa-solid fa-phone-slash"></i></button>' +
       '</div>';
     document.body.appendChild(o);
 
@@ -69,12 +74,60 @@
     document.getElementById('fm-call-hangup').onclick = hangup;
     document.getElementById('fm-call-mic').onclick = toggleMic;
     document.getElementById('fm-call-cam').onclick = toggleCam;
+    document.getElementById('fm-call-min').onclick = () => setMinimized(true);
+    document.getElementById('fm-call-max').onclick = () => setMinimized(false);
+    document.getElementById('fm-call-hangup-mini').onclick = hangup;
     document.getElementById('fm-inc-accept').onclick = acceptIncoming;
     document.getElementById('fm-inc-reject').onclick = rejectIncoming;
   }
 
   function setStatus(t){ const s = document.getElementById('fm-call-status'); if (s) s.textContent = t; }
   function showOverlay(show){ const o = document.getElementById('fm-call-overlay'); if (o) o.style.display = show ? 'flex' : 'none'; }
+
+  // Minimizar: la llamada se va a una ventanita en la esquina y deja
+  // el resto de la pagina USABLE (puedes ver tu rutina sin cortar la llamada)
+  let minimized = false;
+  function setMinimized(min) {
+    minimized = min;
+    const o = document.getElementById('fm-call-overlay');
+    if (!o) return;
+    const ctrl = document.getElementById('fm-call-controls');
+    const miniCtrl = document.getElementById('fm-call-mini-controls');
+    const localV = document.getElementById('fm-local-video');
+    const statusEl = document.getElementById('fm-call-status');
+    const minBtn = document.getElementById('fm-call-min');
+    if (min) {
+      o.style.inset = 'auto';
+      o.style.top = 'auto';
+      o.style.left = 'auto';
+      o.style.bottom = '14px';
+      o.style.right = '14px';
+      o.style.width = '170px';
+      o.style.height = '240px';
+      o.style.borderRadius = '16px';
+      o.style.overflow = 'hidden';
+      o.style.border = '2px solid #7c5cff';
+      o.style.boxShadow = '0 12px 32px rgba(0,0,0,.5)';
+      if (ctrl) ctrl.style.display = 'none';
+      if (miniCtrl) miniCtrl.style.display = 'flex';
+      if (localV) localV.style.display = 'none';
+      if (statusEl) statusEl.style.display = 'none';
+      if (minBtn) minBtn.style.display = 'none';
+    } else {
+      o.style.inset = '0';
+      o.style.top = '0'; o.style.left = '0'; o.style.bottom = '0'; o.style.right = '0';
+      o.style.width = '100%';
+      o.style.height = '100%';
+      o.style.borderRadius = '0';
+      o.style.border = 'none';
+      o.style.boxShadow = 'none';
+      if (ctrl) ctrl.style.display = 'flex';
+      if (miniCtrl) miniCtrl.style.display = 'none';
+      if (localV) localV.style.display = 'block';
+      if (statusEl) statusEl.style.display = 'block';
+      if (minBtn) minBtn.style.display = 'block';
+    }
+  }
 
   /* ---------- Media + PeerConnection ---------- */
   async function getMedia() {
@@ -232,6 +285,7 @@
     remoteStream = null; roomId = null; peerId = null; isCaller = false;
     const lv = document.getElementById('fm-local-video'); if (lv) lv.srcObject = null;
     const rv = document.getElementById('fm-remote-video'); if (rv) rv.srcObject = null;
+    if (minimized) setMinimized(false); // restaurar para la proxima llamada
     showOverlay(false);
     if (remote && window.FMNotify) window.FMNotify.toast({ title: 'Llamada finalizada', message: 'La otra persona colgo.', icon: 'fa-phone-slash', color: '#ef4444' });
   }
