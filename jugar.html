@@ -52,7 +52,7 @@
   ::-webkit-scrollbar{width:10px;}::-webkit-scrollbar-track{background:#181c2a;}
   ::-webkit-scrollbar-thumb{background:#3a4063;border-radius:5px;}
   ::-webkit-scrollbar-thumb:hover{background:#4a5180;}
-  /* Carriles horizontales estilo Netflix */
+  /* Carriles horizontales de rutinas */
   .rail{scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;}
   .rail::-webkit-scrollbar{display:none;}
   .rail-wrap{position:relative;}
@@ -129,7 +129,7 @@
 <script src="fm-call.js?v=2"></script>
 <script src="fm-trainer.js?v=3"></script>
 <script src="fm-monthly.js?v=1"></script>
-<script src="fm-guide.js?v=1"></script>
+<script src="fm-guide.js?v=2"></script>
 <script src="fm-profile.js?v=32"></script>
 </head>
 <body class="min-h-screen antialiased">
@@ -324,7 +324,7 @@
       <button onclick="if(window.FMGuide)FMGuide.open()" class="fun font-bold text-sm px-5 py-3 mt-4 ml-2 rounded-full border-2 border-gray-900 text-gray-700 bg-white hover:bg-gray-100 shadow-md transition-all"><i class="fa-solid fa-circle-question mr-2"></i>Guía</button>
     </div>
     
-    <!-- Selector de Categoría Principal (oculto: ahora todo es Netflix por carriles) -->
+    <!-- Selector de Categoría Principal (oculto: ahora todo se muestra por carriles) -->
     <div class="hidden items-center justify-center gap-3 mb-8">
       <button onclick="switchCategory('gods')" id="cat-gods-btn" class="fun font-bold text-sm px-6 py-3 rounded-full border-2 border-gray-900 bg-purple-600 text-white shadow-md transition-all">
         <i class="fa-solid fa-landmark mr-2"></i>Dioses Legendarios
@@ -2506,7 +2506,7 @@ function filterSpecialized(category) {
 
 function filterRoutines(culture) {
   activeFilter = culture;
-  if (culture === 'All') expandedGroup = null; // al entrar, vista Netflix completa
+  if (culture === 'All') expandedGroup = null; // al entrar, vista de carriles completa
   // Actualizar estilo de los botones de filtro
   const buttons = document.querySelectorAll('#culture-filters button');
   buttons.forEach(btn => {
@@ -2600,7 +2600,7 @@ function buildRoutineCard(r){
   `;
 }
 
-// Construye un carril horizontal (estilo Netflix) con flechas elegantes
+// Construye un carril horizontal de rutinas con flechas elegantes
 function buildRail(title, iconHtml, accent, routines, moreAction, totalCount){
   if(!routines || !routines.length) return '';
   const cards = routines.map(r => `<div class="snap-start shrink-0 w-72">${buildRoutineCard(r)}</div>`).join('');

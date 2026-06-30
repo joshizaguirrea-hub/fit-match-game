@@ -20,7 +20,7 @@
     },
     {
       icon: 'fa-film', color: '#22d3ee',
-      title: 'Rutinas estilo Netflix',
+      title: 'Rutinas por carriles',
       body: 'Las rutinas estan en carriles que se deslizan a los lados. Tienes carriles de <b>Gimnasio</b>, <b>En Casa</b>, <b>CrossFit</b>, <b>Tercera Edad</b>, <b>Calistenia</b> y los <b>Dioses y Culturas</b>. Cada carril tiene un boton <b>Ver mas</b> para abrir toda la coleccion.'
     },
     {
