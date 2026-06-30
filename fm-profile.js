@@ -1088,7 +1088,7 @@ const FM_NUT_LABELS = {
   diet_pattern: { omnivoro:'Omnívoro', vegetariano:'Vegetariano', vegano:'Vegano', pescetariano:'Pescetariano' },
   diet_style:   { ninguno:'Ninguno', keto:'Keto', lowcarb:'Low-carb', mediterraneo:'Mediterráneo', ayuno:'Ayuno intermitente' },
   fasting_protocol: { '16_8':'16:8 (ventana 8h)', '18_6':'18:6 (ventana 6h)', '20_4':'20:4 (Warrior)', 'omad':'OMAD (1 comida)', '5_2':'5:2 (semanal)' },
-  nutrition_pace: { lento:'Lento (sostenible)', moderado:'Moderado', agresivo:'Agresivo' },
+  nutrition_pace: { lento:'Lento (sin prisa, sostenible)', moderado:'Moderado (recomendado)', agresivo:'Rápido (resultados ya)' },
   spice_level:  { nada:'Suave', medio:'Medio', picante:'Picante' },
   cook_time:    { rapido:'Rápido (<15 min)', medio:'Medio (~30 min)', gusta_cocinar:'Me encanta cocinar' },
   cook_skill:   { principiante:'Principiante', intermedio:'Intermedio', avanzado:'Avanzado' },
@@ -1260,20 +1260,11 @@ function renderNutritionProfile(profile, isOwn){
       ${profile.diet_pattern ? nutChip('fa-leaf','Dieta', L.diet_pattern[profile.diet_pattern]||profile.diet_pattern) : ''}
       ${profile.diet_style ? nutChip('fa-seedling','Estilo', L.diet_style[profile.diet_style]||profile.diet_style) : ''}
       ${profile.meals_per_day ? nutChip('fa-utensils','Comidas/día', profile.meals_per_day) : ''}
-      ${profile.fasting_protocol ? nutChip('fa-hourglass-half','Ayuno', L.fasting_protocol[profile.fasting_protocol]||profile.fasting_protocol) : ''}
-      ${profile.eating_window ? nutChip('fa-clock','Ventana', profile.eating_window) : ''}
-      ${profile.nutrition_pace ? nutChip('fa-gauge-high','Ritmo', L.nutrition_pace[profile.nutrition_pace]||profile.nutrition_pace) : ''}
+      ${profile.nutrition_pace ? nutChip('fa-gauge-high','Velocidad meta', L.nutrition_pace[profile.nutrition_pace]||profile.nutrition_pace) : ''}
+      ${profile.budget_tier ? nutChip('fa-wallet','Presupuesto', L.budget_tier[profile.budget_tier]||profile.budget_tier) : ''}
       ${profile.allergies ? nutChip('fa-triangle-exclamation','Alergias', profile.allergies) : ''}
       ${profile.intolerances ? nutChip('fa-ban','Intolerancias', profile.intolerances) : ''}
       ${profile.dislikes ? nutChip('fa-face-frown','No le gusta', profile.dislikes) : ''}
-      ${profile.spice_level ? nutChip('fa-pepper-hot','Picante', L.spice_level[profile.spice_level]||profile.spice_level) : ''}
-      ${profile.cook_time ? nutChip('fa-clock','Tiempo cocina', L.cook_time[profile.cook_time]||profile.cook_time) : ''}
-      ${profile.cook_skill ? nutChip('fa-kitchen-set','Nivel cocina', L.cook_skill[profile.cook_skill]||profile.cook_skill) : ''}
-      ${profile.kitchen_equipment ? nutChip('fa-blender','Equipo', profile.kitchen_equipment) : ''}
-      ${profile.country ? nutChip('fa-earth-americas','País', profile.country) : ''}
-      ${profile.budget_tier ? nutChip('fa-wallet','Presupuesto', L.budget_tier[profile.budget_tier]||profile.budget_tier) : ''}
-      ${profile.cuisine ? nutChip('fa-bowl-food','Cocina fav.', profile.cuisine) : ''}
-      ${profile.medical_flags ? nutChip('fa-heart-pulse','Salud', profile.medical_flags) : ''}
     </div>
     <div id="nutrition-edit-form" class="hidden mt-4"></div>`;
   if(isOwn) buildNutritionForm(profile);
@@ -1291,20 +1282,11 @@ function buildNutritionForm(p){
       <div>${lb('Dieta')}${sel('nu-pattern', L.diet_pattern, p.diet_pattern)}</div>
       <div>${lb('Estilo')}${sel('nu-style', L.diet_style, p.diet_style)}</div>
       <div>${lb('Comidas/día')}<select id="nu-meals" style="${inS}"><option value="">-</option><option value="1" ${p.meals_per_day==1?'selected':''}>1 (OMAD)</option><option value="2" ${p.meals_per_day==2?'selected':''}>2</option><option value="3" ${p.meals_per_day==3?'selected':''}>3</option><option value="4" ${p.meals_per_day==4?'selected':''}>4</option><option value="5" ${p.meals_per_day==5?'selected':''}>5</option></select></div>
-      <div>${lb('Protocolo ayuno')}${sel('nu-fasting', L.fasting_protocol, p.fasting_protocol)}</div>
-      <div>${lb('Ventana (si ayunas)')}<input id="nu-window" type="text" value="${p.eating_window||''}" placeholder="12:00 - 20:00" style="${inS}"></div>
-      <div>${lb('Ritmo')}${sel('nu-pace', L.nutrition_pace, p.nutrition_pace)}</div>
-      <div>${lb('Picante')}${sel('nu-spice', L.spice_level, p.spice_level)}</div>
-      <div>${lb('Tiempo cocina')}${sel('nu-cooktime', L.cook_time, p.cook_time)}</div>
-      <div>${lb('Nivel cocina')}${sel('nu-cookskill', L.cook_skill, p.cook_skill)}</div>
+      <div>${lb('Velocidad de tu meta')}${sel('nu-pace', L.nutrition_pace, p.nutrition_pace)}</div>
       <div>${lb('Presupuesto')}${sel('nu-budget', L.budget_tier, p.budget_tier)}</div>
-      <div>${lb('País')}<input id="nu-country" type="text" value="${p.country||''}" placeholder="México..." style="${inS}"></div>
       <div>${lb('Alergias')}<input id="nu-allergies" type="text" value="${p.allergies||''}" placeholder="nueces, mariscos..." style="${inS}"></div>
       <div>${lb('Intolerancias')}<input id="nu-intol" type="text" value="${p.intolerances||''}" placeholder="lactosa..." style="${inS}"></div>
       <div>${lb('No le gusta')}<input id="nu-dislikes" type="text" value="${p.dislikes||''}" placeholder="hígado..." style="${inS}"></div>
-      <div>${lb('Cocina favorita')}<input id="nu-cuisine" type="text" value="${p.cuisine||''}" placeholder="mexicana, italiana..." style="${inS}"></div>
-      <div>${lb('Equipo de cocina')}<input id="nu-equip" type="text" value="${p.kitchen_equipment||''}" placeholder="estufa, horno, licuadora..." style="${inS}"></div>
-      <div class="md:col-span-3">${lb('Salud (opcional - guia general, no tratamiento)')}<input id="nu-medical" type="text" value="${p.medical_flags||''}" placeholder="diabetes, hipertension, embarazo..." style="${inS}"></div>
     </div>
     <div class="mt-4 rounded-xl p-3" style="background:#1c1633;border:1px solid #7c5cff55">
       <label class="flex items-center gap-2 cursor-pointer">
@@ -1340,20 +1322,11 @@ async function saveNutritionProfile(){
       diet_pattern: v('nu-pattern') || null,
       diet_style: v('nu-style') || null,
       meals_per_day: +v('nu-meals') || null,
-      fasting_protocol: v('nu-fasting') || null,
-      eating_window: v('nu-window') || null,
       nutrition_pace: v('nu-pace') || null,
-      spice_level: v('nu-spice') || null,
-      cook_time: v('nu-cooktime') || null,
-      cook_skill: v('nu-cookskill') || null,
       budget_tier: v('nu-budget') || null,
-      country: v('nu-country') || null,
       allergies: v('nu-allergies') || null,
       intolerances: v('nu-intol') || null,
       dislikes: v('nu-dislikes') || null,
-      cuisine: v('nu-cuisine') || null,
-      kitchen_equipment: v('nu-equip') || null,
-      medical_flags: v('nu-medical') || null,
       use_custom_plan: !!(document.getElementById('nu-usecustom') && document.getElementById('nu-usecustom').checked),
       custom_calories: +v('nu-ccal') || null,
       custom_protein_g: +v('nu-cprot') || null,
