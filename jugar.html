@@ -129,7 +129,7 @@
 <script src="fm-call.js?v=2"></script>
 <script src="fm-trainer.js?v=3"></script>
 <script src="fm-monthly.js?v=1"></script>
-<script src="fm-guide.js?v=2"></script>
+<script src="fm-guide.js?v=3"></script>
 <script src="fm-profile.js?v=32"></script>
 </head>
 <body class="min-h-screen antialiased">
@@ -320,8 +320,8 @@
     <div class="text-center mb-8">
       <h1 class="fun text-4xl sm:text-5xl font-extrabold mb-2" style="color:var(--txt)">Rutinas de <span style="background:linear-gradient(90deg,#7c5cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent">Entrenamiento</span></h1>
       <p class="text-gray-600 font-semibold max-w-xl mx-auto">Elige entre las rutinas legendarias de los Dioses o las rutinas especializadas modernas.</p>
-      <button onclick="if(window.FMMonthly)FMMonthly.open()" class="fun font-bold text-sm px-6 py-3 mt-4 rounded-full border-2 border-gray-900 text-white shadow-md transition-all" style="background:linear-gradient(135deg,#7c5cff,#0ea5a4)"><i class="fa-solid fa-calendar-check mr-2"></i>Ver mi plan del mes</button>
-      <button onclick="if(window.FMGuide)FMGuide.open()" class="fun font-bold text-sm px-5 py-3 mt-4 ml-2 rounded-full border-2 border-gray-900 text-gray-700 bg-white hover:bg-gray-100 shadow-md transition-all"><i class="fa-solid fa-circle-question mr-2"></i>Guía</button>
+      <button onclick="if(window.FMMonthly)FMMonthly.open()" id="btn-plan-mes" class="fun font-bold text-sm px-6 py-3 mt-4 rounded-full border-2 border-gray-900 text-white shadow-md transition-all" style="background:linear-gradient(135deg,#7c5cff,#0ea5a4)"><i class="fa-solid fa-calendar-check mr-2"></i>Ver mi plan del mes</button>
+      <button onclick="if(window.FMGuide)FMGuide.open()" id="btn-guia" class="fun font-bold text-sm px-5 py-3 mt-4 ml-2 rounded-full border-2 border-gray-900 text-gray-700 bg-white hover:bg-gray-100 shadow-md transition-all"><i class="fa-solid fa-circle-question mr-2"></i>Guía</button>
     </div>
     
     <!-- Selector de Categoría Principal (oculto: ahora todo se muestra por carriles) -->
