@@ -128,6 +128,7 @@
 <script src="fm-presence.js?v=3"></script>
 <script src="fm-dm.js?v=1"></script>
 <script src="fm-call.js?v=2"></script>
+<script src="fm-group-call.js?v=1"></script>
 <script src="fm-trainer.js?v=3"></script>
 <script src="fm-monthly.js?v=3"></script>
 <script src="fm-guide.js?v=3"></script>
@@ -3367,9 +3368,10 @@ async function createRoomCodeSession(routineId) {
         openRoutineDetail(routineId);
         setTimeout(() => {
           startRoutineWorkout();
-          alert(`¡Tu sala ha sido creada!\n\nEl Código de Sala es: ${code}\n\nCompártelo con tus amigos para que entrenen en tiempo real con este código.`);
+          if (window.FMGroupCall) window.FMGroupCall.attach(code);
+          alert(`¡Tu sala ha sido creada!\n\nEl Código de Sala es: ${code}\n\nCompártelo con tus amigos para entrenar en tiempo real.\n\nPara verse en video los 4: toca el botón rojo "Videollamada grupal" (abajo a la derecha).`);
           // Notificar en el chat de forma proactiva
-          sendGeneralChatNotice(`¡He abierto una Sala Multijugador! Únanse a mí con el Código: ${code}`);
+          sendGeneralChatNotice(`¡He abierto una Sala Multijugador! Únanse a mí con el Código: ${code} (y toquen "Videollamada grupal" para vernos)`);
         }, 300);
       }
     });
@@ -3414,6 +3416,7 @@ async function joinRoomCodeSessionPrompt() {
     .subscribe(status => {
       if (status === 'SUBSCRIBED') {
         console.log(`¡Unido al canal con código de sala: ${code}!`);
+        if (window.FMGroupCall) window.FMGroupCall.attach(code);
         // Pedir sincronización de rutina al creador de la sala
         activeCoopChannel.send({
           type: 'broadcast',
