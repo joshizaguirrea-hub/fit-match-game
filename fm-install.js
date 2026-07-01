@@ -19,6 +19,7 @@
   if (localStorage.getItem('fm_install_dismissed') === '1') return;
 
   let deferredPrompt = null;
+  let promptFired = false;
 
   function banner(innerHTML) {
     if (document.getElementById('fm-install-banner')) return document.getElementById('fm-install-banner');
@@ -45,6 +46,7 @@
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
+    promptFired = true;
     const b = banner(
       iconHTML() +
       '<div style="flex:1;min-width:0"><div style="color:#eceefb;font-weight:700;font-size:14px">Instala Fit Match</div>' +
@@ -83,5 +85,20 @@
         '<button onclick="fmInstallDismiss()" title="Cerrar" style="background:none;border:none;color:#8b92b0;font-size:18px;cursor:pointer;flex-shrink:0">&times;</button>'
       );
     }, 1500);
+  }
+
+  // ----- Respaldo Android/otros: si el prompt no se dispara solo, damos instrucciones -----
+  const isAndroid = /android/i.test(ua);
+  if (isAndroid && !(isIOS && isSafari)) {
+    setTimeout(() => {
+      if (promptFired || standalone) return; // ya hay boton nativo o ya instalada
+      if (document.getElementById('fm-install-banner')) return;
+      banner(
+        iconHTML() +
+        '<div style="flex:1;min-width:0"><div style="color:#eceefb;font-weight:700;font-size:14px">Instala Fit Match</div>' +
+        '<div style="color:#8b92b0;font-size:11px">Abre el men\u00fa <b>\u22ee</b> (arriba a la derecha) y elige <b>\u201cInstalar aplicaci\u00f3n\u201d</b>.</div></div>' +
+        '<button onclick="fmInstallDismiss()" title="Cerrar" style="background:none;border:none;color:#8b92b0;font-size:18px;cursor:pointer;flex-shrink:0">&times;</button>'
+      );
+    }, 4000);
   }
 })();
