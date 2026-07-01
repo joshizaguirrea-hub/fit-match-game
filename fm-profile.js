@@ -1034,7 +1034,13 @@ function buildFitnessForm(p){
   const form = document.getElementById('fitness-edit-form');
   if(!form) return;
   const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px';
+  const trainDays = String(p.train_days||'').split(',').map(s=>s.trim()).filter(s=>s!=='').map(Number);
+  const dayChip = (val,lbl)=>{
+    const on = trainDays.includes(val);
+    return `<label style="cursor:pointer"><input type="checkbox" class="fit-day" value="${val}" ${on?'checked':''} style="position:absolute;opacity:0;width:0;height:0"><span class="fd-pill" style="display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;border-radius:999px;border:2px solid #2c3350;background:#0f1117;color:#8b92b0;font-weight:800;font-size:13px">${lbl}</span></label>`;
+  };
   form.innerHTML = `
+    <style>input.fit-day:checked + .fd-pill{background:#7c5cff;color:#fff;border-color:#7c5cff}</style>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div><label class="text-[10px] uppercase" style="color:#8b92b0">Edad</label><input id="ed-edad" type="number" value="${p.edad||''}" style="${inS}"></div>
       <div><label class="text-[10px] uppercase" style="color:#8b92b0">Sexo</label><select id="ed-sexo" style="${inS}">${selOpts(FM_FIT_LABELS.sexo, p.sexo)}</select></div>
@@ -1044,6 +1050,13 @@ function buildFitnessForm(p){
       <div><label class="text-[10px] uppercase" style="color:#8b92b0">Objetivo</label><select id="ed-obj" style="${inS}">${selOpts(FM_FIT_LABELS.objetivo, p.objetivo)}</select></div>
       <div><label class="text-[10px] uppercase" style="color:#8b92b0">Equipo</label><select id="ed-equipo" style="${inS}">${selOpts(FM_FIT_LABELS.equipo, p.equipo)}</select></div>
       <div><label class="text-[10px] uppercase" style="color:#8b92b0">Días/sem</label><select id="ed-dias" style="${inS}"><option value="2" ${p.dias_semana==2?'selected':''}>2-3</option><option value="4" ${p.dias_semana==4?'selected':''}>4-5</option><option value="6" ${p.dias_semana==6?'selected':''}>6+</option></select></div>
+    </div>
+    <div class="mt-3">
+      <label class="text-[10px] uppercase" style="color:#8b92b0">Días de entreno (opcional)</label>
+      <div class="flex flex-wrap gap-1.5 mt-1">
+        ${dayChip(1,'L')}${dayChip(2,'M')}${dayChip(3,'M')}${dayChip(4,'J')}${dayChip(5,'V')}${dayChip(6,'S')}${dayChip(0,'D')}
+      </div>
+      <p class="text-[10px] mt-1" style="color:#5a6080">Si no eliges ninguno, repartimos automáticamente según tus días/semana.</p>
     </div>
     <div class="flex gap-2 mt-3">
       <button onclick="saveFitnessProfile()" class="text-xs font-bold px-4 py-2 rounded-lg" style="background:#34d399;color:#06281e"><i class="fa-solid fa-check mr-1"></i>Guardar</button>
@@ -1070,10 +1083,12 @@ async function saveFitnessProfile(){
       objetivo: document.getElementById('ed-obj').value,
       equipo: document.getElementById('ed-equipo').value,
       dias_semana: +document.getElementById('ed-dias').value || null,
+      train_days: Array.from(document.querySelectorAll('.fit-day:checked')).map(c=>c.value).join(','),
       onboarding_done: true
     };
     const { error } = await supa.from('profiles').update(payload).eq('id', user.id);
     if(error) throw error;
+    if(window.cloudProfile) Object.assign(window.cloudProfile, payload);
     loadProfileData();
   } catch(err){
     console.error(err);

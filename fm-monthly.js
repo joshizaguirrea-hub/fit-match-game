@@ -90,7 +90,10 @@
     const level = levelOf(p, totalPoints);
 
     const diasSem = (p && +p.dias_semana) || 3;
-    const pattern = PATTERNS[diasSem] || PATTERNS[3];
+    // Si el usuario eligio sus dias exactos (train_days), los respetamos.
+    // Si no, usamos el reparto automatico por cantidad de dias/semana.
+    const custom = String((p && p.train_days) || '').split(',').map(s=>s.trim()).filter(s=>s!=='').map(Number).filter(n=>n>=0 && n<=6);
+    const pattern = custom.length ? custom : (PATTERNS[diasSem] || PATTERNS[3]);
     const pool = planPool(p);
 
     // Construir calendario + contar planeados/hechos hasta hoy
