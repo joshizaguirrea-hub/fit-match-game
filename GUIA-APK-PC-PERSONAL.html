@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fit Match - Guia para tu PC personal (APK)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{font-family:system-ui,'Segoe UI',sans-serif;background:#0B0B0F;color:#F3F4F6}
+  .grad{background:linear-gradient(90deg,#7c5cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+  code{background:#1b2033;color:#a5f3fc;padding:2px 8px;border-radius:6px;font-size:.9em;word-break:break-all}
+  .card{background:#12141c;border:1px solid #262b3d;border-radius:16px}
+  .step{counter-increment:s}
+  .step h3::before{content:counter(s);display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;background:linear-gradient(135deg,#7c5cff,#22d3ee);color:#fff;border-radius:999px;font-weight:800;margin-right:10px;font-size:14px}
+  ol.res{counter-reset:s}
+</style>
+</head>
+<body class="max-w-3xl mx-auto px-5 py-10">
+
+  <h1 class="text-3xl font-extrabold mb-2"><span class="grad">Fit Match</span> en tu PC personal</h1>
+  <p class="text-gray-400 mb-8">Guia para trabajar el proyecto y generar el APK desde casa, sin las restricciones del trabajo.</p>
+
+  <div class="card p-5 mb-6 border-l-4" style="border-left-color:#34d399">
+    <h2 class="font-bold text-lg mb-1">Lo primero: tranquilidad</h2>
+    <p class="text-gray-300 text-sm">El <code>Fit-Match.apk</code> que ya tienes es un envoltorio de tu pagina web. Cuando actualizas el juego y lo subes a GitHub, <b>la app se actualiza sola</b>. Solo hay que regenerar el APK si cambias el nombre, el icono o la identidad de la app.</p>
+  </div>
+
+  <h2 class="text-xl font-bold mb-4 mt-8">Parte A - Trabajar el codigo del juego</h2>
+  <ol class="res space-y-4">
+    <li class="step card p-5">
+      <h3 class="font-bold inline-flex items-center">Instala Git / GitHub Desktop</h3>
+      <p class="text-gray-300 text-sm mt-2">Baja <code>GitHub Desktop</code> de <code>desktop.github.com</code> e inicia sesion con tu cuenta de GitHub (la misma: joshizaguirrea-hub).</p>
+    </li>
+    <li class="step card p-5">
+      <h3 class="font-bold inline-flex items-center">Clona el proyecto</h3>
+      <p class="text-gray-300 text-sm mt-2">En GitHub Desktop: <b>File &rarr; Clone repository</b> &rarr; elige <code>joshizaguirrea-hub/fit-match-game</code>. Se descarga a tu PC.</p>
+    </li>
+    <li class="step card p-5">
+      <h3 class="font-bold inline-flex items-center">Edita con tu asistente (Cascade)</h3>
+      <p class="text-gray-300 text-sm mt-2">Abre la carpeta en tu editor. Cuando cambies algo, en GitHub Desktop das <b>Commit</b> y luego <b>Push</b>. GitHub Pages publica solo tu sitio.</p>
+    </li>
+  </ol>
+
+  <h2 class="text-xl font-bold mb-4 mt-10">Parte B - Generar el APK (PWABuilder)</h2>
+  <ol class="res space-y-4">
+    <li class="step card p-5">
+      <h3 class="font-bold inline-flex items-center">Abre PWABuilder</h3>
+      <p class="text-gray-300 text-sm mt-2">Ve a <code>pwabuilder.com</code> y pega tu URL:<br><code>https://joshizaguirrea-hub.github.io/fit-match-game/</code></p>
+    </li>
+    <li class="step card p-5">
+      <h3 class="font-bold inline-flex items-center">Genera el paquete Android</h3>
+      <p class="text-gray-300 text-sm mt-2"><b>Package For Stores</b> &rarr; tarjeta <b>Android</b> &rarr; <b>Generate Package</b>. En <b>Signing key</b> deja <b>New</b>. Descarga el ZIP.</p>
+    </li>
+    <li class="step card p-5">
+      <h3 class="font-bold inline-flex items-center">Descomprime el ZIP</h3>
+      <p class="text-gray-300 text-sm mt-2">Adentro encontraras un <code>.apk</code> (viene <b>unsigned</b> = sin firmar) y un <code>.aab</code> (ese es solo para la Play Store). Guarda tambien el <code>signing.keystore</code> si aparece.</p>
+    </li>
+  </ol>
+
+  <h2 class="text-xl font-bold mb-4 mt-10">Parte C - Firmar el APK (para instalarlo)</h2>
+  <p class="text-gray-400 text-sm mb-4">Android no instala APKs sin firma. En tu PC personal esto es facil porque no hay proxy:</p>
+  <ol class="res space-y-4">
+    <li class="step card p-5">
+      <h3 class="font-bold inline-flex items-center">Instala Java</h3>
+      <p class="text-gray-300 text-sm mt-2">Baja <b>Temurin JRE 17</b> de <code>adoptium.net</code> (o busca "Adoptium Temurin"). Instalador normal de doble clic. Marca la opcion de "Add to PATH" si la ofrece.</p>
+    </li>
+    <li class="step card p-5">
+      <h3 class="font-bold inline-flex items-center">Baja el firmador</h3>
+      <p class="text-gray-300 text-sm mt-2">Descarga <code>uber-apk-signer-1.3.0.jar</code> desde:<br><code>github.com/patrickfav/uber-apk-signer/releases</code> (boton Assets). Ponlo en la MISMA carpeta que tu APK.</p>
+    </li>
+    <li class="step card p-5">
+      <h3 class="font-bold inline-flex items-center">Firma con un comando</h3>
+      <p class="text-gray-300 text-sm mt-2">Abre una terminal (CMD/PowerShell) en esa carpeta y ejecuta:</p>
+      <pre class="mt-2 p-3 bg-black rounded-lg text-cyan-300 text-xs overflow-x-auto">java -jar uber-apk-signer-1.3.0.jar --apks "Fit Match-unsigned.apk"</pre>
+      <p class="text-gray-300 text-sm mt-2">Te crea un archivo <code>...-aligned-debugSigned.apk</code> &rarr; <b>ESE es el instalable.</b></p>
+    </li>
+  </ol>
+
+  <h2 class="text-xl font-bold mb-4 mt-10">Parte D - Instalar en el celular (Android)</h2>
+  <ol class="res space-y-4">
+    <li class="step card p-5"><h3 class="font-bold inline-flex items-center">Pasa el APK al celular</h3><p class="text-gray-300 text-sm mt-2">Por WhatsApp (a ti mismo), correo o cable USB.</p></li>
+    <li class="step card p-5"><h3 class="font-bold inline-flex items-center">Abrelo e instala</h3><p class="text-gray-300 text-sm mt-2">Android avisara "fuente desconocida" &rarr; <b>Ajustes</b> &rarr; <b>Permitir</b> &rarr; <b>Instalar</b>. Es normal, es tu propia app.</p></li>
+  </ol>
+
+  <div class="card p-5 mt-10 border-l-4" style="border-left-color:#f59e0b">
+    <h2 class="font-bold text-lg mb-1">Notas honestas</h2>
+    <ul class="text-gray-300 text-sm list-disc pl-5 space-y-1">
+      <li>Solo <b>Android</b> instala APKs. En iPhone es "Compartir &rarr; Anadir a inicio" desde Safari.</li>
+      <li>La app necesita <b>internet</b> (carga tu web en vivo) y se <b>actualiza sola</b>.</li>
+      <li>La firma "debug" sirve perfecto para compartir con amigos/familia. Para la Play Store se usa otra firma.</li>
+    </ul>
+  </div>
+
+  <p class="text-center text-gray-600 text-xs mt-10">Guia hecha por Horus para el comandante Joshua. &#128021;</p>
+</body>
+</html>
