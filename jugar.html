@@ -72,6 +72,18 @@
   .rail-arrow-left{left:-8px;}
   .rail-arrow-right{right:-8px;}
   @media (hover:none){ .rail-arrow{display:none;} }
+  /* ===== Bandas de categoria de entrenamiento (selector) ===== */
+  .cat-band{position:relative;overflow:hidden;border-radius:22px;cursor:pointer;transition:transform .2s ease, box-shadow .2s ease;box-shadow:0 10px 30px rgba(0,0,0,.35);}
+  .cat-band:hover{transform:translateY(-4px) scale(1.008);box-shadow:0 18px 44px rgba(0,0,0,.5);}
+  .cat-band:active{transform:scale(.99);}
+  .cat-band .bandimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;transition:transform 3s ease;}
+  .cat-band:hover .bandimg{transform:scale(1.08);}
+  .cat-band .tint{position:absolute;inset:0;z-index:1;}
+  .cat-band .art{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:140px;opacity:.14;z-index:2;color:#fff;}
+  .cat-band .shine{position:absolute;inset:0;z-index:3;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.16) 50%,transparent 60%);transform:translateX(-120%);transition:transform .7s;}
+  .cat-band:hover .shine{transform:translateX(120%);}
+  .cat-fade{animation:catFade .4s ease both;}
+  @keyframes catFade{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
   /* seleccion de ejercicio en la carta */
   .exsel{cursor:pointer;transition:transform .12s, box-shadow .12s;}
   .exsel:hover{transform:translateX(2px);}
@@ -940,6 +952,7 @@ function startTraining(){
   }
   applyModeUI();
   showScreen('routine');
+  trainCategory = null; // siempre arranca en el selector de categorias
   filterRoutines('All');
 }
 function applyModeUI(){
@@ -2734,11 +2747,157 @@ function isBodyweight(r){ const e = getRoutineEquipment(r); return e.length === 
 function expandRoutineGroup(type, key, label){ expandedGroup = { type, key, label }; renderRoutinePicker(); const el = document.getElementById('screen-routine'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
 function collapseRoutineGroup(){ expandedGroup = null; renderRoutinePicker(); const el = document.getElementById('screen-routine'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
 
+// ============================================================
+// NUEVO FLUJO "ENTRENAR": selector de categorias + carriles por grupo muscular
+// ============================================================
+let trainCategory = null; // null = mostrar selector de categorias; id = mostrar sus rutinas
+
+// Categorias visuales (bandas). match define que rutinas caen en cada una.
+const TRAIN_CATS = [
+  { id:'gimnasio',    name:'GIM',                  desc:'Pesas, maquinas y fuerza',  icon:'fa-dumbbell',       c1:'#2563eb', c2:'#1e3a8a', img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=80', match:{ cats:['gimnasio'] } },
+  { id:'crossfit',    name:'CrossFit',             desc:'WODs intensos estilo box',  icon:'fa-fire',           c1:'#ef4444', c2:'#b91c1c', img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=900&q=80', match:{ cats:['crossfit','cardio'] } },
+  { id:'casa',        name:'Entrenamiento en casa',desc:'Sin equipo, peso corporal', icon:'fa-house',          c1:'#22c55e', c2:'#15803d', img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=900&q=80', match:{ cats:['casa','calistenia'] } },
+  { id:'yoga',        name:'Yoga',                 desc:'Flexibilidad y mente',      icon:'fa-spa',            c1:'#14b8a6', c2:'#0f766e', img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=900&q=80', match:{ cats:['yoga'] } },
+  { id:'pilates',     name:'Pilates',              desc:'Core y control',            icon:'fa-child-reaching', c1:'#ec4899', c2:'#be185d', img:'https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=900&q=80', match:{ cats:['pilates'] } },
+  { id:'hipopresivos',name:'Hipopresivos',         desc:'Suelo pelvico y postura',   icon:'fa-lungs',          c1:'#a855f7', c2:'#7e22ce', img:'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=900&q=80', match:{ cats:['hipopresivos'] } },
+  { id:'tercera',     name:'Tercera Edad',         desc:'Movilidad suave y segura',  icon:'fa-heart',          c1:'#f59e0b', c2:'#b45309', img:'https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?w=900&q=80', match:{ cats:['senior'] } },
+  { id:'dioses',      name:'Rutinas Tematicas - Dioses', desc:'9 culturas legendarias', icon:'fa-bolt-lightning', c1:'#7c3aed', c2:'#22d3ee', epic:true, img:'https://images.unsplash.com/photo-1608889175638-9322300c46e6?w=900&q=80', match:{ gods:true } },
+];
+
+function getCatRoutines(cat){
+  const gods = window.FMRoutines || [];
+  const spec = window.FMSpecializedRoutines || [];
+  if (cat.match.gods) return gods;
+  return spec.filter(r => cat.match.cats.includes(r.category));
+}
+
+// Carriles por grupo muscular (orden de aparicion)
+const MUSCLE_LANES = [
+  { id:'fullbody', label:'Full Body',                  icon:'fa-person-rays' },
+  { id:'pecho',    label:'Brazos & Pecho',             icon:'fa-hand-fist' },
+  { id:'espalda',  label:'Espalda, Hombros & Triceps', icon:'fa-child-reaching' },
+  { id:'core',     label:'Abdomen / Core',             icon:'fa-fire-flame-curved' },
+  { id:'piernas',  label:'Piernas & Gluteos',          icon:'fa-person-walking' },
+  { id:'funcional',label:'Funcionales',                icon:'fa-bolt' },
+];
+
+// Detecta el grupo muscular leyendo el nombre (peso 3) y los ejercicios (peso 1)
+const _MG_KW = {
+  piernas:  ['pierna','gluteo','glúteo','sentadilla','zancada','cuadriceps','cuádriceps','femoral','pantorrilla','desplante','tren inferior','peso muerto','pistol'],
+  pecho:    ['pecho','flexion','flexión','press de banca','press banca','pectoral','biceps','bíceps','curl'],
+  espalda:  ['espalda','dominada','remo','jalon','jalón','triceps','tríceps','hombro','deltoide','fondos','tren superior','pull'],
+  core:     ['abdomen','abdominal','core','plancha','oblicuo','crunch','sit-up','v-up','russian','plank','powerhouse'],
+  funcional:['crossfit','wod','amrap','emom','hiit','burpee','cardio','salto','funcional','murph','chipper','for time','swing','escalador'],
+  fullbody: ['full body','cuerpo completo','full pro','full fuerza','circuito','metabolico','metabólico','total'],
+};
+function inferMuscleGroup(r){
+  const name = (r.name||'').toLowerCase();
+  const exText = (r.exercises||[]).map(e=>(e.name||'').toLowerCase()).join(' ');
+  if (/full body|cuerpo completo|full pro|full fuerza|funcional total/.test(name)) return 'fullbody';
+  const score = { fullbody:0, pecho:0, espalda:0, core:0, piernas:0, funcional:0 };
+  Object.keys(_MG_KW).forEach(lane => {
+    _MG_KW[lane].forEach(kw => {
+      if (name.includes(kw)) score[lane] += 3;
+      if (exText.includes(kw)) score[lane] += 1;
+    });
+  });
+  let best = 'fullbody', bestScore = 0;
+  Object.keys(score).forEach(l => { if (score[l] > bestScore) { bestScore = score[l]; best = l; } });
+  return bestScore === 0 ? 'fullbody' : best;
+}
+
+// NIVEL 0: pinta el selector de categorias a pantalla completa
+function renderTrainCategories(all){
+  let html = '';
+  // Banner del entrenador IA + plan de la semana (se conservan del flujo anterior)
+  const goalTxt = objetivoLabel();
+  if (goalTxt) {
+    const apodo = (typeof cloudProfile !== 'undefined' && cloudProfile && cloudProfile.apodo) ? cloudProfile.apodo : 'Atleta';
+    const lvl = profileLevel();
+    html += '<div class="mb-4 p-4 rounded-2xl" style="background:linear-gradient(135deg,rgba(124,92,255,.18),rgba(52,211,153,.12));border:1px solid var(--border)"><div class="flex items-start gap-3"><div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background:var(--accent);color:#fff"><i class="fa-solid fa-dumbbell"></i></div><div class="min-w-0"><p class="fun font-bold text-sm" style="color:var(--txt)">Hola ' + apodo + ', soy tu entrenador IA</p><p class="text-xs leading-relaxed mt-0.5" style="color:var(--txt-soft)">Elige tu disciplina de hoy. Tus objetivos: <b style="color:var(--txt)">' + goalTxt + '</b> - nivel <b style="color:var(--txt)">' + lvl + '</b>.</p></div></div></div>';
+  }
+  html += buildRail('Tu plan de esta semana', '<i class="fa-solid fa-calendar-week"></i>', 'var(--accent)', smartRecommend(all, false));
+
+  // Encabezado del selector
+  html += '<div class="text-center mb-4 mt-2"><h2 class="fun text-2xl font-extrabold" style="color:var(--txt)">Que quieres entrenar hoy?</h2><p class="text-sm" style="color:var(--txt-soft)">Elige tu estilo. Luego veras las rutinas por grupo muscular.</p></div>';
+
+  // Bandas de categoria
+  html += '<div class="space-y-4">' + TRAIN_CATS.map((cat,i)=>buildCatBand(cat,i)).join('') + '</div>';
+  return html;
+}
+
+function buildCatBand(cat, i){
+  const routines = getCatRoutines(cat);
+  const count = routines.length;
+  const tint = 'background:linear-gradient(100deg, ' + cat.c2 + 'f2 0%, ' + cat.c1 + 'd9 38%, ' + cat.c1 + '66 68%, ' + cat.c2 + '22 100%)';
+  const epicTag = cat.epic ? '<div class="text-[10px] uppercase tracking-[.2em] font-extrabold text-yellow-300 mb-0.5"><i class="fa-solid fa-star mr-1"></i>Especial</div>' : '';
+  return ''
+    + '<div class="cat-band cat-fade" style="animation-delay:' + (i*0.05) + 's" onclick="openTrainCategory(\'' + cat.id + '\')">'
+    +   '<img class="bandimg" src="' + cat.img + '" alt="' + cat.name + '" loading="lazy" onerror="this.style.display=\'none\'">'
+    +   '<div class="tint" style="' + tint + '"></div>'
+    +   '<i class="fa-solid ' + cat.icon + ' art"></i>'
+    +   '<div class="shine"></div>'
+    +   '<div class="relative z-10 flex items-center gap-4 px-6" style="height:140px">'
+    +     '<div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shrink-0" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.25)"><i class="fa-solid ' + cat.icon + '"></i></div>'
+    +     '<div class="flex-1 min-w-0">' + epicTag
+    +       '<div class="fun text-2xl font-extrabold text-white leading-tight" style="text-shadow:0 2px 12px rgba(0,0,0,.5)">' + cat.name + '</div>'
+    +       '<div class="text-sm font-semibold text-white/90 truncate" style="text-shadow:0 1px 8px rgba(0,0,0,.5)">' + cat.desc + '</div>'
+    +     '</div>'
+    +     '<div class="text-right shrink-0"><div class="fun text-2xl font-extrabold text-white" style="text-shadow:0 2px 10px rgba(0,0,0,.6)">' + count + '</div><div class="text-[10px] uppercase tracking-wide text-white/85 font-bold">rutinas</div></div>'
+    +     '<div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background:rgba(255,255,255,.2)"><i class="fa-solid fa-chevron-right text-white"></i></div>'
+    +   '</div>'
+    + '</div>';
+}
+
+// NIVEL 1: rutinas de la categoria elegida, organizadas por carriles de grupo muscular
+function openTrainCategory(id){ trainCategory = id; expandedGroup = null; renderRoutinePicker(); const el = document.getElementById('screen-routine'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+function backToTrainCategories(){ trainCategory = null; expandedGroup = null; renderRoutinePicker(); const el = document.getElementById('screen-routine'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+
+function renderCategoryLanes(id){
+  const grid = document.getElementById('routines-grid');
+  const cat = TRAIN_CATS.find(c => c.id === id);
+  if (!cat) { backToTrainCategories(); return; }
+  const routines = getCatRoutines(cat);
+  grid.className = 'space-y-2';
+
+  // Hero de la categoria (con foto + color)
+  const heroTint = 'linear-gradient(120deg, ' + cat.c2 + 'e6, ' + cat.c1 + '99)';
+  let html = ''
+    + '<div class="relative overflow-hidden rounded-2xl mb-5" style="background:linear-gradient(120deg,' + cat.c1 + ',' + cat.c2 + ')">'
+    +   '<img src="' + cat.img + '" class="absolute inset-0 w-full h-full object-cover" style="opacity:.5" alt="" onerror="this.style.display=\'none\'">'
+    +   '<div class="absolute inset-0" style="background:' + heroTint + '"></div>'
+    +   '<div class="relative z-10 p-5">'
+    +     '<button onclick="backToTrainCategories()" class="inline-flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-full mb-3" style="background:rgba(0,0,0,.4);color:#fff;backdrop-filter:blur(4px)"><i class="fa-solid fa-arrow-left"></i> Categorias</button>'
+    +     '<div class="flex items-center gap-4">'
+    +       '<div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl text-white shrink-0" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.25)"><i class="fa-solid ' + cat.icon + '"></i></div>'
+    +       '<div><h2 class="fun text-3xl font-extrabold text-white" style="text-shadow:0 2px 12px rgba(0,0,0,.6)">' + cat.name + '</h2><p class="text-sm font-semibold text-white/90" style="text-shadow:0 1px 8px rgba(0,0,0,.6)">' + routines.length + ' rutinas - ' + cat.desc + '</p></div>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>';
+
+  // Carriles por grupo muscular
+  let lanes = '';
+  MUSCLE_LANES.forEach(lane => {
+    const items = routines.filter(r => inferMuscleGroup(r) === lane.id);
+    if (!items.length) return;
+    lanes += buildRail(lane.label, '<i class="fa-solid ' + lane.icon + '"></i>', cat.c1, items, null, items.length);
+  });
+  html += lanes || '<p class="text-center py-10" style="color:var(--txt-mut)">Proximamente mas rutinas en esta categoria.</p>';
+  grid.innerHTML = html;
+}
+
 function renderRoutinePicker() {
   const grid = document.getElementById('routines-grid');
   const gods = window.FMRoutines || [];
   const spec = window.FMSpecializedRoutines || [];
   const all = [...gods, ...spec];
+
+  // NUEVO FLUJO: selector de categorias (nivel 0) o carriles por musculo (nivel 1)
+  if (!expandedGroup) {
+    if (trainCategory === null) { grid.className = 'space-y-2'; grid.innerHTML = renderTrainCategories(all); return; }
+    renderCategoryLanes(trainCategory);
+    return;
+  }
 
   // --- Vista EXPANDIDA ("Ver mas"): rejilla de un solo grupo ---
   if (expandedGroup) {

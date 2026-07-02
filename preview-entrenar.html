@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fit Match - Prototipo "Entrenar" (nuevo flujo)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0b0d16; --surface:#141826; --surface2:#1b2030; --border:#2a3150; --txt:#eceefb; --soft:#9aa2c4; }
+  *{ font-family:'Inter',sans-serif; }
+  .fun{ font-family:'Space Grotesk',sans-serif; letter-spacing:-.01em; }
+  body{ background:var(--bg); color:var(--txt); margin:0; }
+  ::-webkit-scrollbar{ height:8px; width:8px; }
+  ::-webkit-scrollbar-thumb{ background:#2a3150; border-radius:99px; }
+  .lane-scroll{ scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
+  .lane-scroll > *{ scroll-snap-align:start; }
+  /* Bandas de categoria */
+  .cat-band{ position:relative; overflow:hidden; border-radius:22px; cursor:pointer; transition:transform .2s ease, box-shadow .2s ease; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .cat-band:hover{ transform:translateY(-4px) scale(1.008); box-shadow:0 18px 44px rgba(0,0,0,.5); }
+  .cat-band:active{ transform:scale(.99); }
+  .cat-band .bandimg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; transition:transform 3s ease; }
+  .cat-band:hover .bandimg{ transform:scale(1.08); }
+  .cat-band .tint{ position:absolute; inset:0; z-index:1; }
+  .cat-band .art{ position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:150px; opacity:.14; z-index:2; color:#fff; }
+  .cat-band .shine{ position:absolute; inset:0; z-index:3; background:linear-gradient(105deg, transparent 40%, rgba(255,255,255,.16) 50%, transparent 60%); transform:translateX(-120%); transition:transform .7s; }
+  .cat-band:hover .shine{ transform:translateX(120%); }
+  .fade-in{ animation:fadeIn .4s ease both; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(12px);} to{ opacity:1; transform:none;} }
+  .slide-in{ animation:slideIn .35s ease both; }
+  @keyframes slideIn{ from{ opacity:0; transform:translateX(24px);} to{ opacity:1; transform:none;} }
+  .rcard{ transition:transform .15s ease, border-color .15s ease; }
+  .rcard:hover{ transform:translateY(-4px); border-color:#4b5583; }
+  .hide{ display:none !important; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="w-full text-center text-[11px] font-bold py-1.5" style="background:#3a2f08;color:#fcd34d;border-bottom:1px solid #a16207">
+  <i class="fa-solid fa-flask mr-1"></i> PROTOTIPO VISUAL - no toca el juego real. Solo para decidir el look.
+</div>
+
+<!-- ==================== PANTALLA 1: SELECTOR DE CATEGORIAS ==================== -->
+<section id="screen-cats" class="max-w-3xl mx-auto px-4 pt-6 pb-24">
+  <div class="text-center mb-6 fade-in">
+    <p class="text-[11px] uppercase tracking-[.2em] font-bold" style="color:var(--soft)">Fit Match</p>
+    <h1 class="fun text-3xl font-extrabold mt-1">Que quieres entrenar hoy?</h1>
+    <p class="text-sm mt-1" style="color:var(--soft)">Elige tu estilo. Luego veras las rutinas por grupo muscular.</p>
+  </div>
+  <div id="cat-list" class="space-y-4"></div>
+</section>
+
+<!-- ==================== PANTALLA 2: RUTINAS FILTRADAS POR CARRILES ==================== -->
+<section id="screen-routines" class="hide max-w-6xl mx-auto pb-24">
+  <div id="rt-hero" class="relative overflow-hidden px-4 pt-5 pb-8">
+    <img id="rt-hero-img" class="absolute inset-0 w-full h-full object-cover" style="z-index:0;opacity:.5" alt="" onerror="this.style.display='none'">
+    <div id="rt-hero-tint" class="absolute inset-0" style="z-index:1"></div>
+    <button onclick="backToCats()" class="relative z-10 inline-flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-full mb-3" style="background:rgba(0,0,0,.4);color:#fff;backdrop-filter:blur(4px)">
+      <i class="fa-solid fa-arrow-left"></i> Volver
+    </button>
+    <div class="relative z-10 flex items-center gap-4">
+      <div id="rt-icon" class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl text-white shrink-0" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.25)"></div>
+      <div>
+        <h2 id="rt-title" class="fun text-3xl font-extrabold text-white" style="text-shadow:0 2px 12px rgba(0,0,0,.6)"></h2>
+        <p id="rt-sub" class="text-sm font-semibold text-white/90" style="text-shadow:0 1px 8px rgba(0,0,0,.6)"></p>
+      </div>
+    </div>
+  </div>
+  <div id="rt-lanes" class="px-4 space-y-7 mt-3"></div>
+</section>
+
+<script>
+/* ============================================================
+   DATOS DE MUESTRA (representativos de los datos reales).
+   Categorias + colores = propuesta. El "carril" (grupo
+   muscular) es la etiqueta NUEVA que habria que agregar.
+   ============================================================ */
+
+const LANES = [
+  { id:'fullbody', label:'Full Body',                 icon:'fa-person-rays' },
+  { id:'pecho',    label:'Brazos & Pecho',            icon:'fa-hand-fist' },
+  { id:'espalda',  label:'Espalda, Hombros & Triceps',icon:'fa-child-reaching' },
+  { id:'core',     label:'Abdomen / Core',            icon:'fa-fire-flame-curved' },
+  { id:'piernas',  label:'Piernas & Gluteos',         icon:'fa-person-walking' },
+  { id:'funcional',label:'Funcionales',               icon:'fa-bolt' },
+];
+
+const CATEGORIES = [
+  { id:'gimnasio',  name:'GIM',                  desc:'Pesas, maquinas y fuerza',  icon:'fa-dumbbell',       count:14, c1:'#2563eb', c2:'#1e3a8a', img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=80' },
+  { id:'crossfit',  name:'CrossFit',             desc:'WODs intensos estilo box',  icon:'fa-fire',           count:12, c1:'#ef4444', c2:'#b91c1c', img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=900&q=80' },
+  { id:'casa',      name:'Entrenamiento en casa',desc:'Sin equipo, peso corporal', icon:'fa-house',          count:16, c1:'#22c55e', c2:'#15803d', img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=900&q=80' },
+  { id:'yoga',      name:'Yoga',                 desc:'Flexibilidad y mente',      icon:'fa-spa',            count:10, c1:'#14b8a6', c2:'#0f766e', img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=900&q=80' },
+  { id:'pilates',   name:'Pilates',              desc:'Core y control',            icon:'fa-child-reaching', count:10, c1:'#ec4899', c2:'#be185d', img:'https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=900&q=80' },
+  { id:'hipopresivos',name:'Hipopresivos',       desc:'Suelo pelvico y postura',   icon:'fa-lungs',          count:8,  c1:'#a855f7', c2:'#7e22ce', img:'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=900&q=80' },
+  { id:'tercera',   name:'Tercera Edad',         desc:'Movilidad suave y segura',  icon:'fa-heart',          count:8,  c1:'#f59e0b', c2:'#b45309', img:'https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?w=900&q=80' },
+  { id:'dioses',    name:'Rutinas Tematicas - Dioses', desc:'9 culturas legendarias', icon:'fa-bolt-lightning', count:72, c1:'#7c3aed', c2:'#22d3ee', epic:true, img:'https://images.unsplash.com/photo-1608889175638-9322300c46e6?w=900&q=80' },
+];
+
+const SAMPLE = {
+  gimnasio: [
+    { lane:'pecho',   name:'Press de Empuje',     level:'intermedio', points:30, rounds:4 },
+    { lane:'pecho',   name:'Titanes del Pecho',   level:'avanzado',   points:40, rounds:4 },
+    { lane:'espalda', name:'Espalda de Acero',    level:'intermedio', points:30, rounds:4 },
+    { lane:'piernas', name:'Dia de Pierna',       level:'avanzado',   points:40, rounds:5 },
+    { lane:'fullbody',name:'Full Body Hierro',    level:'basico',     points:20, rounds:3 },
+    { lane:'core',    name:'Abdomen de Roca',     level:'intermedio', points:30, rounds:4 },
+  ],
+  crossfit: [
+    { lane:'funcional',name:'Tormenta Inicial',   level:'basico',     points:20, rounds:5 },
+    { lane:'funcional',name:'Huracan',            level:'intermedio', points:30, rounds:4 },
+    { lane:'funcional',name:'Infierno',           level:'avanzado',   points:40, rounds:5 },
+    { lane:'fullbody', name:'WOD Espartano',      level:'espartano',  points:50, rounds:4 },
+    { lane:'core',     name:'Core Metabolico',    level:'intermedio', points:30, rounds:4 },
+  ],
+  casa: [
+    { lane:'fullbody', name:'Casa Full Body',     level:'basico',     points:20, rounds:3 },
+    { lane:'pecho',    name:'Flexiones Progresivas',level:'intermedio',points:30, rounds:4 },
+    { lane:'piernas',  name:'Piernas Sin Equipo', level:'intermedio', points:30, rounds:4 },
+    { lane:'core',     name:'Core en el Suelo',   level:'basico',     points:20, rounds:3 },
+    { lane:'espalda',  name:'Espalda con Toalla', level:'basico',     points:20, rounds:3 },
+  ],
+  yoga: [
+    { lane:'fullbody', name:'Saludo al Sol',      level:'basico',     points:15, rounds:3 },
+    { lane:'core',     name:'Core Zen',           level:'intermedio', points:25, rounds:3 },
+    { lane:'espalda',  name:'Espalda Serena',     level:'basico',     points:15, rounds:3 },
+  ],
+  pilates: [
+    { lane:'core',     name:'Powerhouse',         level:'intermedio', points:25, rounds:4 },
+    { lane:'fullbody', name:'Control Total',      level:'basico',     points:15, rounds:3 },
+    { lane:'piernas',  name:'Piernas & Gluteos',  level:'intermedio', points:25, rounds:4 },
+  ],
+  hipopresivos: [
+    { lane:'core',     name:'Suelo Pelvico I',    level:'basico',     points:15, rounds:3 },
+    { lane:'core',     name:'Transverso Pro',     level:'intermedio', points:25, rounds:3 },
+  ],
+  tercera: [
+    { lane:'fullbody', name:'Movilidad Diaria',   level:'basico',     points:10, rounds:2 },
+    { lane:'piernas',  name:'Piernas Firmes',     level:'basico',     points:10, rounds:2 },
+    { lane:'espalda',  name:'Postura Sana',       level:'basico',     points:10, rounds:2 },
+  ],
+  dioses: [
+    { lane:'fullbody', name:'Prometeo (El Titan)',level:'basico',     points:10, rounds:3, culture:'Grecia' },
+    { lane:'pecho',    name:'Afrodita',           level:'intermedio', points:20, rounds:3, culture:'Grecia' },
+    { lane:'piernas',  name:'Thor (Trueno)',      level:'avanzado',   points:35, rounds:4, culture:'Nordicos' },
+    { lane:'core',     name:'Anubis',             level:'espartano',  points:50, rounds:4, culture:'Egipto' },
+    { lane:'funcional',name:'Sun Wukong',         level:'avanzado',   points:35, rounds:4, culture:'China' },
+    { lane:'espalda',  name:'Musashi',            level:'espartano',  points:50, rounds:4, culture:'Japon' },
+  ],
+};
+
+const LEVEL_COLORS = {
+  'basico':    { bg:'#064e3b', fg:'#6ee7b7', label:'Basico' },
+  'intermedio':{ bg:'#1e3a8a', fg:'#93c5fd', label:'Intermedio' },
+  'avanzado':  { bg:'#7c2d12', fg:'#fdba74', label:'Avanzado' },
+  'espartano': { bg:'#4c1d95', fg:'#c4b5fd', label:'Espartano' },
+};
+
+/* ---------- PANTALLA 1: bandas ---------- */
+function renderCategories(){
+  const cont = document.getElementById('cat-list');
+  cont.innerHTML = CATEGORIES.map((cat, i) => {
+    const tint = 'background:linear-gradient(100deg, ' + cat.c2 + 'f2 0%, ' + cat.c1 + 'd9 38%, ' + cat.c1 + '66 68%, ' + cat.c2 + '22 100%)';
+    const epicTag = cat.epic ? '<div class="text-[10px] uppercase tracking-[.2em] font-extrabold text-yellow-300 mb-0.5"><i class="fa-solid fa-star mr-1"></i>Especial</div>' : '';
+    return ''
+      + '<div class="cat-band fade-in" style="animation-delay:' + (i*0.05) + 's" onclick="openCategory(\'' + cat.id + '\')">'
+      +   '<img class="bandimg" src="' + cat.img + '" alt="' + cat.name + '" loading="lazy" onerror="this.style.display=\'none\'">'
+      +   '<div class="tint" style="' + tint + '"></div>'
+      +   '<i class="fa-solid ' + cat.icon + ' art"></i>'
+      +   '<div class="shine"></div>'
+      +   '<div class="relative z-10 flex items-center gap-4 px-6" style="height:150px">'
+      +     '<div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shrink-0" style="background:rgba(255,255,255,.2);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.25)"><i class="fa-solid ' + cat.icon + '"></i></div>'
+      +     '<div class="flex-1 min-w-0">' + epicTag
+      +       '<div class="fun text-2xl font-extrabold text-white leading-tight" style="text-shadow:0 2px 12px rgba(0,0,0,.5)">' + cat.name + '</div>'
+      +       '<div class="text-sm font-semibold text-white/90 truncate" style="text-shadow:0 1px 8px rgba(0,0,0,.5)">' + cat.desc + '</div>'
+      +     '</div>'
+      +     '<div class="text-right shrink-0"><div class="fun text-2xl font-extrabold text-white" style="text-shadow:0 2px 10px rgba(0,0,0,.6)">' + cat.count + '</div><div class="text-[10px] uppercase tracking-wide text-white/85 font-bold">rutinas</div></div>'
+      +     '<div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background:rgba(255,255,255,.2)"><i class="fa-solid fa-chevron-right text-white"></i></div>'
+      +   '</div>'
+      + '</div>';
+  }).join('');
+}
+
+/* ---------- PANTALLA 2: rutinas por carriles ---------- */
+function openCategory(catId){
+  const cat = CATEGORIES.find(c => c.id === catId);
+  const routines = SAMPLE[catId] || [];
+
+  const hero = document.getElementById('rt-hero');
+  hero.style.background = 'linear-gradient(120deg, ' + cat.c1 + ', ' + cat.c2 + ')';
+  document.getElementById('rt-hero-img').src = cat.img;
+  document.getElementById('rt-hero-img').style.display = '';
+  document.getElementById('rt-hero-tint').style.background = 'linear-gradient(120deg, ' + cat.c2 + 'e6, ' + cat.c1 + '99)';
+  document.getElementById('rt-icon').innerHTML = '<i class="fa-solid ' + cat.icon + '"></i>';
+  document.getElementById('rt-title').textContent = cat.name;
+  document.getElementById('rt-sub').textContent = routines.length + ' rutinas de muestra - ' + cat.desc;
+
+  const lanesCont = document.getElementById('rt-lanes');
+  lanesCont.innerHTML = LANES.map(lane => {
+    const items = routines.filter(r => r.lane === lane.id);
+    if(!items.length) return '';
+    return ''
+      + '<div class="slide-in">'
+      +   '<div class="flex items-center gap-2 mb-3">'
+      +     '<div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm" style="background:var(--surface2);color:' + cat.c1 + '"><i class="fa-solid ' + lane.icon + '"></i></div>'
+      +     '<h3 class="fun text-lg font-extrabold">' + lane.label + '</h3>'
+      +     '<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:var(--surface2);color:var(--soft)">' + items.length + '</span>'
+      +   '</div>'
+      +   '<div class="lane-scroll flex gap-3 overflow-x-auto pb-2">' + items.map(r => routineCard(r, cat)).join('') + '</div>'
+      + '</div>';
+  }).join('') || '<p class="text-center py-10" style="color:var(--soft)">Aun no hay rutinas de muestra aqui.</p>';
+
+  document.getElementById('screen-cats').classList.add('hide');
+  document.getElementById('screen-routines').classList.remove('hide');
+  window.scrollTo(0,0);
+}
+
+function routineCard(r, cat){
+  const lv = LEVEL_COLORS[r.level] || LEVEL_COLORS['basico'];
+  const culture = r.culture ? '<div class="text-[10px] font-bold uppercase tracking-wide mb-1" style="color:' + cat.c1 + '"><i class="fa-solid fa-landmark mr-1"></i>' + r.culture + '</div>' : '';
+  return ''
+    + '<div class="rcard shrink-0 rounded-2xl p-4 flex flex-col" style="width:200px;background:var(--surface);border:1px solid var(--border)">'
+    +   '<div class="w-full h-24 rounded-xl mb-3 overflow-hidden relative">'
+    +     '<img src="' + cat.img + '" class="w-full h-full object-cover" alt="" onerror="this.style.display=\'none\'">'
+    +     '<div class="absolute inset-0" style="background:linear-gradient(135deg, ' + cat.c1 + '99, ' + cat.c2 + '66)"></div>'
+    +     '<i class="fa-solid ' + cat.icon + ' absolute" style="right:8px;bottom:6px;font-size:26px;color:#fff;opacity:.85"></i>'
+    +   '</div>'
+    +   culture
+    +   '<div class="fun font-extrabold text-base leading-tight mb-2" style="min-height:40px">' + r.name + '</div>'
+    +   '<div class="flex items-center gap-2 mb-3">'
+    +     '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:' + lv.bg + ';color:' + lv.fg + '">' + lv.label + '</span>'
+    +     '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:var(--surface2);color:var(--soft)">' + r.rounds + ' rondas</span>'
+    +   '</div>'
+    +   '<div class="flex items-center justify-between mt-auto">'
+    +     '<span class="fun font-extrabold" style="color:#fbbf24">+' + r.points + ' <span class="text-[10px]" style="color:var(--soft)">pts</span></span>'
+    +     '<button class="text-xs font-bold px-3 py-1.5 rounded-lg text-white" style="background:linear-gradient(135deg, ' + cat.c1 + ', ' + cat.c2 + ')">Entrenar</button>'
+    +   '</div>'
+    + '</div>';
+}
+
+function backToCats(){
+  document.getElementById('screen-routines').classList.add('hide');
+  document.getElementById('screen-cats').classList.remove('hide');
+  window.scrollTo(0,0);
+}
+
+renderCategories();
+</script>
+</body>
+</html>
