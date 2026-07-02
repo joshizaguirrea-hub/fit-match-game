@@ -30,6 +30,12 @@
     if (!iso) return 'Sin hora';
     try { return new Date(iso).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return iso; }
   }
+  // Aviso elegante (usa FMNotify si existe; nunca el alert blanco del navegador)
+  function toast(message, title, color) {
+    if (window.FMNotify && window.FMNotify.toast) {
+      window.FMNotify.toast({ title: title || 'Salas', message: message, icon: 'fa-people-roof', color: color || '#7c5cff' });
+    } else { alert(message); }
+  }
 
   // ---------- OVERLAY ----------
   function ensureOverlay() {
@@ -37,24 +43,24 @@
     if (ov) return ov;
     ov = document.createElement('div');
     ov.id = 'fm-rooms-overlay';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:100070;display:none;align-items:flex-start;justify-content:center;background:rgba(6,8,16,.92);backdrop-filter:blur(6px);overflow-y:auto;padding:18px;font-family:\'Space Grotesk\',sans-serif';
-    ov.innerHTML = '<div id="fm-rooms-card" style="background:#181c2a;border:1px solid #2c3350;border-radius:20px;max-width:460px;width:100%;color:#eceefb;box-shadow:0 20px 60px rgba(0,0,0,.5);margin:14px 0"></div>';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100070;display:none;align-items:flex-start;justify-content:center;background:rgba(6,8,16,.94);backdrop-filter:blur(8px);overflow-y:auto;padding:18px;font-family:\'Space Grotesk\',sans-serif;color-scheme:dark';
+    ov.innerHTML = '<div id="fm-rooms-card" style="background:linear-gradient(180deg,#1a1f31,#12151f);border:1px solid #2b3252;border-radius:22px;max-width:430px;width:100%;color:#e7eaf6;box-shadow:0 24px 70px rgba(0,0,0,.6);margin:14px 0;overflow:hidden"></div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', e => { if (e.target === ov) close(); });
     return ov;
   }
   function card() { ensureOverlay(); return document.getElementById('fm-rooms-card'); }
   function header(title) {
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #2c3350">' +
-      '<h3 style="font-weight:800;font-size:17px;margin:0"><i class="fa-solid fa-people-roof" style="color:#7c5cff;margin-right:8px"></i>' + title + '</h3>' +
-      '<button onclick="FMRooms.close()" style="background:#222842;color:#c7cded;border:none;border-radius:10px;width:32px;height:32px;cursor:pointer">\u2715</button></div>';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #262c47;background:rgba(124,92,255,.06)">' +
+      '<h3 style="font-weight:700;font-size:14px;margin:0;letter-spacing:.01em"><i class="fa-solid fa-people-roof" style="color:#8b7bff;margin-right:8px"></i>' + title + '</h3>' +
+      '<button onclick="FMRooms.close()" style="background:#242a44;color:#aab2d5;border:none;border-radius:9px;width:30px;height:30px;cursor:pointer;font-size:13px;transition:.15s" onmouseover="this.style.background=&quot;#2f3760&quot;" onmouseout="this.style.background=&quot;#242a44&quot;">\u2715</button></div>';
   }
-  const btnP = 'background:linear-gradient(150deg,#7c3aed,#22d3ee);color:#fff;border:none;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer;font-family:inherit;font-size:14px';
-  const btnS = 'background:#222842;color:#c7cded;border:none;border-radius:12px;padding:11px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px';
-  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:10px 12px;color:#eceefb;font-size:14px;font-family:inherit;box-sizing:border-box';
+  const btnP = 'background:linear-gradient(150deg,#7c3aed,#22d3ee);color:#fff;border:none;border-radius:12px;padding:11px 15px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;letter-spacing:.01em;box-shadow:0 6px 16px rgba(124,58,237,.28)';
+  const btnS = 'background:#242a44;color:#c2c9ea;border:1px solid #313961;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;font-family:inherit;font-size:12.5px';
+  const inS = 'width:100%;background:#0e1119;border:1px solid #2b3252;border-radius:11px;padding:10px 12px;color:#e7eaf6;font-size:13px;font-family:inherit;box-sizing:border-box;color-scheme:dark;outline:none';
 
   function open() {
-    if (!me()) { alert('Inicia sesi\u00f3n para crear o unirte a una sala.'); return; }
+    if (!me()) { toast('Inicia sesi\u00f3n para crear o unirte a una sala.', 'Salas', '#f59e0b'); return; }
     ensureOverlay().style.display = 'flex';
     showList();
   }
@@ -70,7 +76,7 @@
     c.innerHTML = header('Salas de entrenamiento') +
       '<div style="padding:16px 18px">' +
         '<button onclick="FMRooms.showCreate()" style="' + btnP + ';width:100%;margin-bottom:14px"><i class="fa-solid fa-plus mr-1"></i> Crear una sala</button>' +
-        '<button onclick="FMRooms.joinByCode()" style="' + btnS + ';width:100%;margin-bottom:16px"><i class="fa-solid fa-keyboard mr-1"></i> Unirme con un c\u00f3digo</button>' +
+        '<button onclick="FMRooms.showJoinByCode()" style="' + btnS + ';width:100%;margin-bottom:16px"><i class="fa-solid fa-keyboard mr-1"></i> Unirme con un c\u00f3digo</button>' +
         '<p style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8b92b0;font-weight:700;margin:0 0 8px">Salas abiertas</p>' +
         '<div id="fm-rooms-list"><p style="color:#8b92b0;font-size:13px">Cargando...</p></div>' +
       '</div>';
@@ -166,14 +172,31 @@
     }
   }
 
-  // ---------- UNIRSE POR CODIGO ----------
-  async function joinByCode() {
-    let code = prompt('Escribe el c\u00f3digo de la sala (4 letras):');
-    if (!code) return;
-    code = code.trim().toUpperCase();
+  // ---------- UNIRSE POR CODIGO (formulario elegante, sin prompt blanco) ----------
+  function showJoinByCode() {
+    const c = card();
+    c.innerHTML = header('Unirme con c\u00f3digo') +
+      '<div style="padding:18px">' +
+        '<p style="font-size:12.5px;color:#9aa2c4;margin:0 0 14px;text-align:center">Escribe el c\u00f3digo de 4 letras que te compartieron.</p>' +
+        '<input id="fm-join-code" maxlength="4" autocomplete="off" oninput="this.value=this.value.toUpperCase()" placeholder="K7QM" ' +
+          'style="' + inS + ';text-align:center;font-size:30px;font-weight:800;letter-spacing:.25em;padding:14px">' +
+        '<div style="display:flex;gap:10px;margin-top:16px">' +
+          '<button onclick="FMRooms.showList()" style="' + btnS + '">Cancelar</button>' +
+          '<button onclick="FMRooms.doJoinByCode()" style="' + btnP + ';flex:1"><i class="fa-solid fa-right-to-bracket mr-1"></i>Entrar</button>' +
+        '</div>' +
+        '<p id="fm-join-msg" style="color:#f43f5e;font-size:12.5px;margin-top:12px;min-height:16px;text-align:center"></p>' +
+      '</div>';
+    const inp = document.getElementById('fm-join-code'); if (inp) inp.focus();
+  }
+
+  async function doJoinByCode() {
+    const msg = document.getElementById('fm-join-msg');
+    const inp = document.getElementById('fm-join-code');
+    let code = inp ? inp.value.trim().toUpperCase() : '';
+    if (code.length !== 4) { if (msg) msg.textContent = 'El c\u00f3digo debe tener 4 letras.'; return; }
     const s = sb(); if (!s) return;
     const { data, error } = await s.from('training_rooms').select('*').eq('code', code).eq('status', 'abierta').order('created_at', { ascending: false }).limit(1);
-    if (error || !data || !data.length) { alert('No encontr\u00e9 una sala abierta con ese c\u00f3digo.'); return; }
+    if (error || !data || !data.length) { if (msg) msg.textContent = 'No encontr\u00e9 una sala abierta con ese c\u00f3digo.'; return; }
     enter(data[0].id, data[0]);
   }
 
@@ -185,7 +208,7 @@
       const { data } = await s.from('training_rooms').select('*').eq('id', roomId).single();
       room = data;
     }
-    if (!room) { alert('Esa sala ya no existe.'); return; }
+    if (!room) { toast('Esa sala ya no existe.', 'Salas', '#f43f5e'); return; }
     if (room.status !== 'abierta' && room.host_id !== myId()) {
       // ya arranco: unirse directo al entrenamiento
       launchFor(room);
@@ -247,7 +270,7 @@
         const updated = payload.new;
         currentRoom = updated;
         if (updated.status === 'en_curso') launchFor(updated);
-        else if (updated.status === 'cerrada') { alert('El anfitri\u00f3n cerr\u00f3 la sala.'); leave(); }
+        else if (updated.status === 'cerrada') { toast('El anfitri\u00f3n cerr\u00f3 la sala.', 'Salas', '#f43f5e'); leave(); }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'training_room_members', filter: 'room_id=eq.' + room.id }, () => refreshMembers(room))
       .subscribe();
@@ -263,7 +286,7 @@
       // El realtime nos devolvera el UPDATE y disparara launchFor; por si acaso, lanzamos ya.
       launchFor(Object.assign({}, currentRoom, { status: 'en_curso' }));
     } catch (e) {
-      alert('No se pudo iniciar: ' + (e.message || e));
+      toast('No se pudo iniciar: ' + (e.message || e), 'Salas', '#f43f5e');
       if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
     }
   }
@@ -299,5 +322,5 @@
     showList();
   }
 
-  window.FMRooms = { open, close, showList, showCreate, doCreate, joinByCode, enter, start, leave };
+  window.FMRooms = { open, close, showList, showCreate, doCreate, showJoinByCode, doJoinByCode, enter, start, leave };
 })();
