@@ -942,7 +942,7 @@ function buildHealthForm(p){
       </div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-      <div>${lb('Embarazo / posparto (<6 meses)')}<select id="hl-estado" style="${inS}"><option value="no" ${(!p.med_estado||p.med_estado==='no')?'selected':''}>No</option><option value="embarazada" ${p.med_estado==='embarazada'?'selected':''}>Embarazada</option><option value="posparto" ${p.med_estado==='posparto'?'selected':''}>Posparto</option></select></div>
+      ${p.sexo!=='hombre' ? `<div>${lb('Embarazo / posparto (<6 meses)')}<select id="hl-estado" style="${inS}"><option value="no" ${(!p.med_estado||p.med_estado==='no')?'selected':''}>No</option><option value="embarazada" ${p.med_estado==='embarazada'?'selected':''}>Embarazada</option><option value="posparto" ${p.med_estado==='posparto'?'selected':''}>Posparto</option></select></div>` : ''}
       <div>${lb('Otra condici\u00f3n (opcional)')}<input id="hl-notas" type="text" value="${(p.med_notas||'').replace(/"/g,'&quot;')}" placeholder="asma, diabetes, hernia..." style="${inS}"></div>
     </div>
     <p class="text-[10px] mt-2" style="color:#8b92b0"><i class="fa-solid fa-circle-info mr-1"></i>Orientaci\u00f3n general, no reemplaza el consejo m\u00e9dico.</p>
@@ -966,7 +966,7 @@ async function saveHealthProfile(){
       med_dolor_pecho: document.getElementById('hl-dolor').value==='si',
       med_medicamentos: document.getElementById('hl-medic').value==='si',
       med_lesiones: lesiones.join(','),
-      med_estado: document.getElementById('hl-estado').value,
+      med_estado: (document.getElementById('hl-estado') ? document.getElementById('hl-estado').value : 'no'),
       med_notas: (document.getElementById('hl-notas').value||'').trim()
     };
     const { error }=await supa.from('profiles').update(payload).eq('id', user.id);
@@ -1037,10 +1037,12 @@ function buildFitnessForm(p){
   const trainDays = String(p.train_days||'').split(',').map(s=>s.trim()).filter(s=>s!=='').map(Number);
   const dayChip = (val,lbl)=>{
     const on = trainDays.includes(val);
-    return `<label style="cursor:pointer"><input type="checkbox" class="fit-day" value="${val}" ${on?'checked':''} style="position:absolute;opacity:0;width:0;height:0"><span class="fd-pill" style="display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;border-radius:999px;border:2px solid #2c3350;background:#0f1117;color:#8b92b0;font-weight:800;font-size:13px">${lbl}</span></label>`;
+    const base='display:inline-flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:999px;border:2px solid #2c3350;font-weight:800;font-size:14px;cursor:pointer;';
+    const onS='background:#7c5cff;color:#fff;border-color:#7c5cff';
+    const offS='background:#0f1117;color:#8b92b0';
+    return `<button type="button" class="fit-day" data-day="${val}" data-on="${on?'1':'0'}" onclick="fmToggleDay(this)" style="${base}${on?onS:offS}">${lbl}</button>`;
   };
   form.innerHTML = `
-    <style>input.fit-day:checked + .fd-pill{background:#7c5cff;color:#fff;border-color:#7c5cff}</style>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div><label class="text-[10px] uppercase" style="color:#8b92b0">Edad</label><input id="ed-edad" type="number" value="${p.edad||''}" style="${inS}"></div>
       <div><label class="text-[10px] uppercase" style="color:#8b92b0">Sexo</label><select id="ed-sexo" style="${inS}">${selOpts(FM_FIT_LABELS.sexo, p.sexo)}</select></div>
@@ -1068,6 +1070,14 @@ function toggleFitnessEdit(show){
   const form = document.getElementById('fitness-edit-form');
   if(form) form.classList.toggle('hidden', !show);
 }
+function fmToggleDay(btn){
+  const next = btn.getAttribute('data-on')!=='1';
+  btn.setAttribute('data-on', next?'1':'0');
+  btn.style.background = next?'#7c5cff':'#0f1117';
+  btn.style.color = next?'#fff':'#8b92b0';
+  btn.style.borderColor = next?'#7c5cff':'#2c3350';
+}
+window.fmToggleDay = fmToggleDay;
 async function saveFitnessProfile(){
   const msg = document.getElementById('fitness-edit-msg');
   try {
@@ -1083,7 +1093,7 @@ async function saveFitnessProfile(){
       objetivo: document.getElementById('ed-obj').value,
       equipo: document.getElementById('ed-equipo').value,
       dias_semana: +document.getElementById('ed-dias').value || null,
-      train_days: Array.from(document.querySelectorAll('.fit-day:checked')).map(c=>c.value).join(','),
+      train_days: Array.from(document.querySelectorAll('.fit-day[data-on="1"]')).map(b=>b.getAttribute('data-day')).join(','),
       onboarding_done: true
     };
     const { error } = await supa.from('profiles').update(payload).eq('id', user.id);

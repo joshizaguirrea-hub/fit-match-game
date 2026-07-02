@@ -37,7 +37,7 @@
 <script src="fm-achievements.js?v=18"></script>
 <script src="fm-nutrition.js?v=31"></script>
 <script src="fm-recipes.js?v=31"></script>
-<script src="fm-profile.js?v=22"></script>
+<script src="fm-profile.js?v=23"></script>
 <script src="fm-install.js?v=2"></script>
 <script src="fm-safety.js?v=1"></script>
 <script src="fm-presence.js?v=3"></script>
@@ -190,7 +190,7 @@
 
 <!-- ===== ONBOARDING FITNESS (perfil inteligente) ===== -->
 <div id="onboarding-modal" class="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center hidden z-[60] p-4">
-  <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-md w-full relative shadow-2xl">
+  <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-md w-full relative shadow-2xl max-h-[92vh] overflow-y-auto">
     <div class="flex items-center justify-between mb-1">
       <h3 class="athletic text-xl font-bold uppercase text-white">Tu perfil fitness</h3>
       <button onclick="skipOnboarding()" class="text-gray-500 hover:text-gray-300 text-xs font-semibold">Omitir</button>
@@ -303,7 +303,7 @@
             <button type="button" data-group="med_lesiones" onclick="onbToggleMulti('med_lesiones','muneca',this)" class="onb-opt py-2 rounded-lg border border-gray-800 bg-gray-950 text-white text-xs font-semibold">Muñeca</button>
           </div>
         </div>
-        <div>
+        <div id="onb-preg-q">
           <p class="text-gray-300 text-xs font-semibold mb-1">¿Estás embarazada o diste a luz hace menos de 6 meses?</p>
           <div class="grid grid-cols-3 gap-2">
             <button type="button" data-group="med_estado" onclick="onbSelect('med_estado','no',this)" class="onb-opt py-2 rounded-lg border border-gray-800 bg-gray-950 text-white text-xs font-semibold">No</button>
@@ -670,6 +670,9 @@
     document.getElementById('onb-back').classList.toggle('hidden', onbStep === 1);
     document.getElementById('onb-next').innerHTML = onbStep === 5 ? 'Finalizar <i class="fa-solid fa-check ml-1"></i>' : 'Siguiente <i class="fa-solid fa-arrow-right ml-1"></i>';
     document.getElementById('onb-error').classList.add('hidden');
+    // Ocultar la pregunta de embarazo si el usuario es hombre
+    const preg = document.getElementById('onb-preg-q');
+    if (preg) preg.classList.toggle('hidden', onbData.sexo === 'hombre');
     const back = document.getElementById('onb-back');
     if (healthEditMode) {
       document.getElementById('onb-next').innerHTML = 'Guardar <i class="fa-solid fa-check ml-1"></i>';
@@ -716,6 +719,7 @@
   function openHealthEdit(){
     healthEditMode = true;
     Object.keys(onbData).forEach(k => delete onbData[k]);
+    onbData.sexo = (currentProfile || window.currentProfile || {}).sexo || '';
     document.querySelectorAll('.onb-opt.selected').forEach(b => b.classList.remove('selected'));
     onbStep = 5;
     onbRender();
