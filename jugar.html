@@ -140,6 +140,7 @@
 <script src="fm-call.js?v=2"></script>
 <script src="fm-group-call.js?v=3"></script>
 <script src="fm-music.js?v=2"></script>
+<script src="fm-fx.js?v=1"></script>
 <script src="fm-install.js?v=2"></script>
 <script src="fm-trainer.js?v=3"></script>
 <script src="fm-monthly.js?v=4"></script>
@@ -1470,6 +1471,7 @@ async function showMissionComplete({ points, routineName, timeSec, coins, streak
 
   ov.classList.remove('hidden');
   mcFireConfetti();
+  if (window.FMFX) window.FMFX.success();
 
   // Racha: usa la ya calculada si vino, si no la consulta
   const st = (typeof streak === 'number') ? streak : await mcGetStreak();
@@ -2207,6 +2209,7 @@ function syncCoopChecklistUI(checkedIndices) {
 }
 
 function syncCoopNextRoundUI(nextRoundVal) {
+  workoutPhase = 'round';
   currentRound = nextRoundVal;
   updateRoutineNameUI();
   generateActiveChecklist();
@@ -2967,6 +2970,17 @@ function closeRoutineModal() {
 }
 
 let currentRound = 1;
+let workoutPhase = 'round'; // 'warmup' | 'round'
+const REST_BETWEEN_ROUNDS = 90; // 1:30 de descanso entre rondas
+const WARMUP_PREP = 20;         // pequena preparacion antes de la ronda 1
+// Calentamiento universal (sin equipo, apto para todos)
+const WARMUP_EXERCISES = [
+  { name: 'Marcha en el sitio', detail: '40 seg' },
+  { name: 'Rotacion de hombros y brazos', detail: '30 seg' },
+  { name: 'Rotacion de cadera', detail: '30 seg' },
+  { name: 'Sentadillas suaves (movilidad)', detail: '15 rep' },
+  { name: 'Jumping jacks suaves', detail: '30 seg' }
+];
 
 function startRoutineWorkout() {
   closeRoutineModal();
@@ -2974,6 +2988,7 @@ function startRoutineWorkout() {
 
   const r = selectedRoutine;
   currentRound = 1;
+  workoutPhase = 'warmup'; // siempre empezamos con calentamiento
   
   // Rellenar datos
   document.getElementById('active-routine-culture').textContent = r.culture;
@@ -3002,12 +3017,38 @@ function startRoutineWorkout() {
 
 function updateRoutineNameUI() {
   const r = selectedRoutine;
-  document.getElementById('active-routine-name').innerHTML = r.name + ' <span class="text-purple-600 block sm:inline text-lg sm:text-xl font-bold ml-1">(Ronda ' + currentRound + ' de ' + r.rounds + ')</span>';
+  const nameEl = document.getElementById('active-routine-name');
+  const descEl = document.getElementById('active-routine-desc');
+  if (workoutPhase === 'warmup') {
+    nameEl.innerHTML = r.name + ' <span class="text-orange-500 block sm:inline text-lg sm:text-xl font-bold ml-1"><i class="fa-solid fa-fire-flame-curved mr-1"></i>Calentamiento</span>';
+    if (descEl) descEl.textContent = 'Prepara tu cuerpo (2-3 min). Marca cada movimiento al terminarlo y pulsa “Empezar Ronda 1”.';
+  } else {
+    nameEl.innerHTML = r.name + ' <span class="text-purple-600 block sm:inline text-lg sm:text-xl font-bold ml-1">(Ronda ' + currentRound + ' de ' + r.rounds + ')</span>';
+    if (descEl) descEl.textContent = 'Realiza las repeticiones a tu ritmo con buena técnica. Al terminar la ronda hay 1:30 de descanso con aviso.';
+  }
 }
 
 function generateActiveChecklist() {
   const r = selectedRoutine;
   const listCont = document.getElementById('active-routine-list');
+
+  // --- CALENTAMIENTO ---
+  if (workoutPhase === 'warmup') {
+    listCont.innerHTML = WARMUP_EXERCISES.map(ex => `
+      <div onclick="toggleExerciseCheck(this)" class="flex justify-between items-center bg-white border-2 border-gray-900 rounded-2xl px-5 py-3.5 cursor-pointer transition-all hover:bg-orange-50 group">
+        <div class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg border-2 border-gray-900 flex items-center justify-center bg-white text-white transition-all group-hover:border-orange-500 check-box-marker">
+            <i class="fa-solid fa-check text-xs"></i>
+          </div>
+          <span class="text-gray-800 font-bold text-sm group-hover:text-orange-700 transition-all text-left">${ex.name}</span>
+        </div>
+        <span class="bg-orange-100 text-orange-800 text-xs px-2.5 py-1 rounded-lg border-2 border-gray-900 font-bold font-mono">${ex.detail}</span>
+      </div>
+    `).join('');
+    return;
+  }
+
+  // --- RONDA NORMAL ---
   listCont.innerHTML = r.exercises.map((ex, idx) => {
     return `
       <div onclick="toggleExerciseCheck(this)" class="flex justify-between items-center bg-white border-2 border-gray-900 rounded-2xl px-5 py-3.5 cursor-pointer transition-all hover:bg-purple-50 group">
@@ -3090,8 +3131,10 @@ function updateRoutineButtonUI() {
   const btn = document.getElementById('btn-complete-routine');
   btn.disabled = true;
   btn.style.opacity = "0.5";
-  
-  if (currentRound < r.rounds) {
+
+  if (workoutPhase === 'warmup') {
+    btn.innerHTML = `<span>Empezar Ronda 1</span> <i class="fa-solid fa-fire"></i>`;
+  } else if (currentRound < r.rounds) {
     btn.innerHTML = `<span>Siguiente Ronda (${currentRound + 1}/${r.rounds})</span> <i class="fa-solid fa-arrow-right"></i>`;
   } else {
     btn.innerHTML = `<span>¡Completar Entrenamiento!</span> <i class="fa-solid fa-trophy text-yellow-300"></i>`;
@@ -3105,12 +3148,14 @@ function toggleExerciseCheck(el) {
   
   if (el.classList.contains('bg-purple-50')) {
     box.className = "w-7 h-7 rounded-lg border-2 border-purple-600 flex items-center justify-center bg-purple-600 text-white transition-all check-box-marker";
+    if (window.FMFX) window.FMFX.check();
   } else {
     box.className = "w-7 h-7 rounded-lg border-2 border-gray-900 flex items-center justify-center bg-white text-white transition-all check-box-marker";
+    if (window.FMFX) window.FMFX.click();
   }
 
   // Verificar si todos están listos
-  const total = selectedRoutine.exercises.length;
+  const total = (workoutPhase === 'warmup') ? WARMUP_EXERCISES.length : selectedRoutine.exercises.length;
   const checked = document.querySelectorAll('#active-routine-list .bg-purple-50').length;
   const btn = document.getElementById('btn-complete-routine');
   
@@ -3135,15 +3180,41 @@ async function finishRoutineWorkout() {
   const r = selectedRoutine;
   if (!r) return;
 
-  // Si aún faltan rondas, avanzar de ronda en lugar de finalizar
+  // FIN DEL CALENTAMIENTO -> breve preparacion -> Ronda 1
+  if (workoutPhase === 'warmup') {
+    if (window.FMFX) window.FMFX.roundDone();
+    const startRound1 = () => {
+      workoutPhase = 'round';
+      currentRound = 1;
+      updateRoutineNameUI();
+      generateActiveChecklist();
+      updateRoutineButtonUI();
+      document.getElementById('routine-active-modal').scrollTop = 0;
+    };
+    if (window.FMFX && window.FMFX.restTimer) {
+      window.FMFX.restTimer({ seconds: WARMUP_PREP, label: '\u00a1Prep\u00e1rate!', next: 'Ronda 1', onDone: startRound1 });
+    } else { startRound1(); }
+    return;
+  }
+
+  // FIN DE RONDA (aun faltan) -> DESCANSO 1:30 con campanita -> siguiente ronda
   if (currentRound < r.rounds) {
-    currentRound++;
-    updateRoutineNameUI();
-    generateActiveChecklist();
-    updateRoutineButtonUI();
-    
-    // Scroll al inicio del modal
-    document.getElementById('routine-active-modal').scrollTop = 0;
+    if (window.FMFX) window.FMFX.roundDone();
+    const goNextRound = () => {
+      currentRound++;
+      updateRoutineNameUI();
+      generateActiveChecklist();
+      updateRoutineButtonUI();
+      document.getElementById('routine-active-modal').scrollTop = 0;
+    };
+    if (window.FMFX && window.FMFX.restTimer) {
+      window.FMFX.restTimer({
+        seconds: REST_BETWEEN_ROUNDS,
+        label: 'Descanso',
+        next: 'Ronda ' + (currentRound + 1) + ' de ' + r.rounds,
+        onDone: goNextRound
+      });
+    } else { goNextRound(); }
     return;
   }
 
