@@ -129,7 +129,7 @@
 <script src="fm-routines.js?v=32"></script>
 <script src="fm-specialized-routines.js?v=36"></script>
 <script src="fm-safety.js?v=1"></script>
-<script src="fm-badges.js?v=32"></script>
+<script src="fm-badges.js?v=33"></script>
 <script src="fm-videos.js?v=2"></script>
 <script src="fm-achievements.js?v=32"></script>
 <script src="fm-nutrition.js?v=32"></script>
@@ -141,7 +141,7 @@
 <script src="fm-group-call.js?v=3"></script>
 <script src="fm-music.js?v=2"></script>
 <script src="fm-fx.js?v=1"></script>
-<script src="fm-rooms.js?v=2"></script>
+<script src="fm-rooms.js?v=3"></script>
 <script src="fm-install.js?v=2"></script>
 <script src="fm-trainer.js?v=3"></script>
 <script src="fm-monthly.js?v=4"></script>
@@ -734,6 +734,11 @@
     <div id="mc-streak" class="rounded-2xl py-3 px-4 mb-3 flex items-center justify-center gap-2" style="background:linear-gradient(150deg,#7c2d12,#b45309)">
       <i class="fa-solid fa-fire" style="color:#fdba74;font-size:22px"></i>
       <span class="text-white font-bold text-sm" id="mc-streak-text">¡Racha encendida!</span>
+    </div>
+
+    <div id="mc-team" class="hidden rounded-2xl py-3 px-4 mb-3 flex items-center justify-center gap-2" style="background:linear-gradient(150deg,#065f46,#0d9488)">
+      <i class="fa-solid fa-people-group" style="color:#5eead4;font-size:22px"></i>
+      <span class="text-white font-bold text-sm" id="mc-team-text">¡Entrené en equipo!</span>
     </div>
 
     <div class="flex justify-around mb-5 text-center">
@@ -1362,6 +1367,7 @@ let cloudCoins = 0;
 const FM_COINS = {
   porEntreno: 10,
   retoDelDia: 25,
+  salaGrupal: 15,
   rachaHitos: { 3:30, 7:100, 14:200, 30:500 }
 };
 
@@ -1453,7 +1459,7 @@ async function mcGetStreak(){
   }catch(e){ return 0; }
 }
 
-async function showMissionComplete({ points, routineName, timeSec, coins, streak }){
+async function showMissionComplete({ points, routineName, timeSec, coins, streak, team }){
   const ov = document.getElementById('mission-complete-overlay');
   if(!ov) return;
   const mins = Math.floor((timeSec||0)/60);
@@ -1462,6 +1468,10 @@ async function showMissionComplete({ points, routineName, timeSec, coins, streak
   document.getElementById('mc-points').textContent = points || 0;
   document.getElementById('mc-time').textContent = `${mins}:${String(secs).padStart(2,'0')}`;
   document.getElementById('mc-total').textContent = (typeof cloudTotalPoints!=='undefined' && cloudTotalPoints!=null) ? cloudTotalPoints : (G.players[0]?.pts || 0);
+
+  // Medalla "Entrené en equipo" (solo si el entreno fue en una sala grupal)
+  const teamBox = document.getElementById('mc-team');
+  if(teamBox){ teamBox.classList.toggle('hidden', !team); }
 
   // FitCoins ganadas en este entreno
   const coinsTxt = document.getElementById('mc-coins-text');
@@ -2508,7 +2518,7 @@ cloudUser = user;
   }
 }
 
-async function syncWorkoutToCloud(ok, points, level, exercise) {
+async function syncWorkoutToCloud(ok, points, level, exercise, isRoom) {
   if (!cloudUser) return;
   const supabase = window.FMAuth.getClient();
   if (!supabase) return;
@@ -2517,7 +2527,7 @@ async function syncWorkoutToCloud(ok, points, level, exercise) {
     const { error } = await supabase.from('workouts').insert({
       user_id: cloudUser.id,
       puntos: ok ? points : 0,
-      modo: G.training ? 'entrenamiento' : 'juego',
+      modo: isRoom ? 'sala' : (G.training ? 'entrenamiento' : 'juego'),
       nivel: level,
       ejercicio: exercise
     });
@@ -3229,9 +3239,12 @@ async function finishRoutineWorkout() {
   // Actualizar puntos locales del jugador
   G.players[0].pts += r.points;
 
+  // ¿Se completó dentro de una Sala de Entrenamiento grupal?
+  const inRoom = !!window.FM_CURRENT_ROOM;
+
   // Registrar en la nube si está conectado
   if (cloudUser) {
-    await syncWorkoutToCloud(true, r.points, r.level, r.name);
+    await syncWorkoutToCloud(true, r.points, r.level, r.name, inRoom);
   }
 
   // === ECONOMIA: calcular y otorgar FitCoins ===
@@ -3244,13 +3257,18 @@ async function finishRoutineWorkout() {
     if (dailyChallengeRoutine && r.id === dailyChallengeRoutine.id) {
       coinsEarned += FM_COINS.retoDelDia;
     }
+    // Bonus por entrenar acompañado en una sala grupal
+    if (inRoom) coinsEarned += FM_COINS.salaGrupal;
     // Bonus por hito de racha (sin doble pago)
     coinsEarned += mcStreakBonus(streak);
     await addFitCoins(coinsEarned);
   }
 
   // Pantalla de Mision Cumplida (retencion + dopamina)
-  showMissionComplete({ points: r.points, routineName: r.name, timeSec: routineSecondsElapsed, coins: coinsEarned, streak });
+  showMissionComplete({ points: r.points, routineName: r.name, timeSec: routineSecondsElapsed, coins: coinsEarned, streak, team: inRoom });
+
+  // Limpiar el marcador de sala (ya se conto este entreno)
+  window.FM_CURRENT_ROOM = null;
 }
 
 /* ============ BASE DE DATOS DE EXPLICACIÓN DE EJERCICIOS ============ */

@@ -59,6 +59,13 @@ const FM_BADGES = {
     Mayas: { name: "Guardián de la Selva", icon: "fa-tree", color: "bg-green-400", requirement: 100, description: "Completaste 100 puntos en rutinas mayas" },
     Aztecas: { name: "Guerrero Águila", icon: "fa-feather", color: "bg-orange-400", requirement: 100, description: "Completaste 100 puntos en rutinas aztecas" },
     Incas: { name: "Hijo del Sol", icon: "fa-sun", color: "bg-yellow-500", requirement: 100, description: "Completaste 100 puntos en rutinas incas" }
+  },
+  // Insignias de EQUIPO (por numero de salas grupales completadas)
+  equipo: {
+    team1: { name: "Entrené en equipo", icon: "fa-people-group", color: "bg-teal-500", requirement: 1, description: "Completaste tu primera sala de entrenamiento grupal" },
+    team5: { name: "Compañero de Batalla", icon: "fa-people-group", color: "bg-cyan-500", requirement: 5, description: "Completaste 5 salas grupales" },
+    team15: { name: "Líder de Manada", icon: "fa-crown", color: "bg-purple-500", requirement: 15, description: "Completaste 15 salas grupales" },
+    team30: { name: "Leyenda del Clan", icon: "fa-shield-halved", color: "bg-yellow-500", requirement: 30, description: "Completaste 30 salas grupales" }
   }
 };
 
@@ -132,6 +139,16 @@ function getEarnedBadges(workouts) {
         level: 'master',
         currentPoints: points
       });
+    }
+  });
+  
+  // Insignias de EQUIPO (por numero de salas grupales completadas)
+  const teamCount = (workouts || []).filter(w => w.modo === 'sala' && (w.puntos || 0) > 0).length;
+  const teamBadges = FM_BADGES.equipo || {};
+  Object.keys(teamBadges).forEach(level => {
+    const badge = teamBadges[level];
+    if (teamCount >= badge.requirement) {
+      earnedBadges.push({ ...badge, category: 'equipo', level: level, currentPoints: teamCount });
     }
   });
   

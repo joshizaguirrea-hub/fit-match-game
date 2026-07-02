@@ -294,6 +294,8 @@
   function launchFor(room) {
     if (launched) return;   // evitar doble arranque (realtime + local)
     launched = true;
+    // Marcar que este entreno es de una SALA GRUPAL (bonus FitCoins + medalla)
+    window.FM_CURRENT_ROOM = { code: room.code, id: room.id, name: room.routine_name };
     close();
     const c = document.getElementById('fm-rooms-overlay'); if (c) c.style.display = 'none';
     if (roomChannel) { try { sb().removeChannel(roomChannel); } catch (e) {} roomChannel = null; }
