@@ -2975,6 +2975,7 @@ function setBodySide(s){
 function shuffleArr(a){ const x = a.slice(); for (let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=x[i]; x[i]=x[j]; x[j]=t; } return x; }
 
 // Junta ejercicios reales de la categoria que apuntan a ese grupo muscular
+// Cada ejercicio hereda el NIVEL de la rutina de la que proviene.
 function collectGroupExercises(catId, group){
   const cat = TRAIN_CATS.find(c => c.id === catId);
   const routines = getCatRoutines(cat);
@@ -2982,16 +2983,28 @@ function collectGroupExercises(catId, group){
   routines.forEach(r => (r.exercises||[]).forEach(ex => {
     if (inferMuscleGroup({ name: ex.name, exercises: [ex] }) === group){
       const key = (ex.name||'').toLowerCase();
-      if (!seen[key]){ seen[key] = 1; pool.push(ex); }
+      if (!seen[key]){ seen[key] = 1; pool.push({ name: ex.name, reps: ex.reps || 12, level: r.level || 'básico' }); }
     }
   }));
   if (pool.length < 6){ // fallback: cualquier ejercicio de la categoria
     routines.forEach(r => (r.exercises||[]).forEach(ex => {
       const key = (ex.name||'').toLowerCase();
-      if (!seen[key]){ seen[key] = 1; pool.push(ex); }
+      if (!seen[key]){ seen[key] = 1; pool.push({ name: ex.name, reps: ex.reps || 12, level: r.level || 'básico' }); }
     }));
   }
   return pool;
+}
+
+// Etiqueta visual de nivel del ejercicio
+function exLevelBadge(level){
+  const map = {
+    'básico':      { t:'Básico',      bg:'#064e3b', fg:'#6ee7b7' },
+    'intermedio':  { t:'Intermedio',  bg:'#1e3a8a', fg:'#93c5fd' },
+    'avanzado':    { t:'Avanzado',    bg:'#7c2d12', fg:'#fdba74' },
+    'espartano':   { t:'Espartano',   bg:'#4c1d95', fg:'#c4b5fd' },
+  };
+  const lv = map[level] || map['básico'];
+  return '<span class="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0" style="background:' + lv.bg + ';color:' + lv.fg + '">' + lv.t + '</span>';
 }
 
 function selectBodyGroup(group){
@@ -3010,7 +3023,7 @@ function buildAndShowAssembled(group){
   const g = BODY_GROUPS[group];
   const catObj = TRAIN_CATS.find(c => c.id === bodyCat);
   const pool = collectGroupExercises(bodyCat, group);
-  const picked = shuffleArr(pool).slice(0, 6).map(ex => ({ name: ex.name, reps: ex.reps || 12 }));
+  const picked = shuffleArr(pool).slice(0, 6).map(ex => ({ name: ex.name, reps: ex.reps || 12, level: ex.level || 'básico' }));
   const rounds = bodyCat === 'crossfit' ? 4 : 3;
   const points = Math.min(50, 12 + picked.length*3 + (bodyCat === 'crossfit' ? 8 : 0));
   window.FM_ASSEMBLED = {
@@ -3040,6 +3053,7 @@ function buildAndShowAssembled(group){
         + '<div class="flex items-center gap-3 p-2.5 rounded-xl" style="background:var(--surface2);border:1px solid var(--border)">'
         +   '<div class="w-7 h-7 rounded-lg flex items-center justify-center fun font-extrabold text-sm shrink-0" style="background:' + g.color + '33;color:' + g.color + '">' + (i+1) + '</div>'
         +   '<div class="flex-1 min-w-0 fun font-bold text-sm" style="color:var(--txt)">' + e.name + '</div>'
+        +   exLevelBadge(e.level)
         +   '<span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style="background:var(--bg);color:var(--txt-soft)">x' + e.reps + '</span>'
         + '</div>').join('')
     +   '</div>'
@@ -3253,7 +3267,10 @@ function openRoutineDetail(id, category = 'gods') {
                 ${ex.name}
                 <button onclick="showExerciseHelp('${ex.name.replace(/'/g, "\\'")}', event)" class="text-xs focus:outline-none" style="color:var(--accent)" title="Ver guía de técnica"><i class="fa-solid fa-circle-info"></i></button>
               </span>
-              <span class="text-xs px-2.5 py-1 rounded-md font-bold whitespace-nowrap" style="background:var(--brand);color:#fff">${ex.reps} rep${ex.reps > 1 ? 's' : ''}</span>
+              <span class="flex items-center gap-1.5 shrink-0">
+                ${exLevelBadge(ex.level || r.level)}
+                <span class="text-xs px-2.5 py-1 rounded-md font-bold whitespace-nowrap" style="background:var(--brand);color:#fff">${ex.reps} rep${ex.reps > 1 ? 's' : ''}</span>
+              </span>
             </div>
             <div class="flex flex-wrap gap-1 mt-1.5">${eqTags}</div>
           </div>
