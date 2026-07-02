@@ -1608,6 +1608,7 @@ function switchSidebarTab(tab) {
       content.classList.add('hidden');
     }
   });
+  if (tab === 'online' && typeof renderOnlineList === 'function') renderOnlineList();
 }
 
 async function loadSideChat() {
@@ -1733,46 +1734,66 @@ async function initPresenceTracker() {
       showIncomingInvite(payload.payload);
     }
   }).subscribe();
+
+  // Refresco periodico desde la base de datos (ve a quien entra desde cualquier pagina)
+  if (!window._fmOnlineTimer) {
+    renderOnlineList();
+    window._fmOnlineTimer = setInterval(() => { if (!document.hidden) renderOnlineList(); }, 20000);
+  }
 }
 
 async function renderOnlineList() {
   const onlineCont = document.getElementById('side-online-list');
   const countSpan = document.getElementById('online-count');
-  const supabase = window.FMAuth.getClient();
-  if (!supabase) return;
-  
-  const keys = Object.keys(currentOnlineUsers);
-  countSpan.textContent = keys.length;
+  if (!onlineCont) return;
 
-  // Renderizar la lista de atletas conectados
-  if (keys.length <= 1) {
+  // FUENTE 1 (confiable, todas las paginas): heartbeat en la base de datos
+  let dbOnline = [];
+  if (window.FMPresence) { try { dbOnline = await window.FMPresence.fetchOnline(window.FMAuth.getClient()); } catch(e){} }
+
+  // FUENTE 2 (instantanea, misma pagina): canal Realtime -> aporta puntos
+  // Unimos ambas por id para no duplicar.
+  const byId = {};
+  dbOnline.forEach(u => { if (u && u.id) byId[u.id] = { id: u.id, apodo: u.apodo, points: 0 }; });
+  Object.keys(currentOnlineUsers || {}).forEach(k => {
+    const st = currentOnlineUsers[k] && currentOnlineUsers[k][0];
+    if (st && st.id) byId[st.id] = { id: st.id, apodo: st.apodo, points: st.points || 0 };
+  });
+
+  const myId = (cloudProfile && cloudProfile.id) || (window.currentProfile && window.currentProfile.id);
+  const online = Object.values(byId).filter(u => u.id && u.id !== myId);
+  const onlineIds = new Set(Object.keys(byId));
+
+  if (countSpan) countSpan.textContent = online.length;
+
+  if (!online.length) {
     onlineCont.innerHTML = `<p class="text-gray-500 text-center py-4">No hay otros atletas online actualmente.</p>`;
   } else {
-    onlineCont.innerHTML = keys.map(k => {
-      if (cloudProfile && k === cloudProfile.apodo) return '';
-      const state = currentOnlineUsers[k][0];
-      const rank = getMilitaryRank(state.points || 0);
-
+    onlineCont.innerHTML = online.map(u => {
+      const pts = u.points || 0;
+      const rank = getMilitaryRank(pts);
+      const apodo = u.apodo || 'Atleta';
+      const apEsc = apodo.replace(/'/g, "\\'");
       return `
         <div class="flex justify-between items-center bg-gray-900 border border-gray-800 rounded-xl p-3">
           <div class="text-left">
             <div class="flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              <span class="font-bold text-white text-xs">${state.apodo}</span>
+              <span class="font-bold text-white text-xs">${apodo}</span>
             </div>
-            <span class="text-[9px] text-gray-500 uppercase font-bold">${rank} (${state.points || 0} pts)</span>
+            <span class="text-[9px] text-gray-500 uppercase font-bold">${rank}${pts?` (${pts} pts)`:''}</span>
           </div>
           <div class="flex gap-1.5">
-            <button onclick="sendTrainingInvite('${state.apodo}', '${state.id}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-2.5 rounded-lg text-[10px] transition shadow">
+            <button onclick="sendTrainingInvite('${apEsc}', '${u.id}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1 px-2.5 rounded-lg text-[10px] transition shadow">
               ¿Entrenamos?
             </button>
-            <button onclick="if(window.FMDM)FMDM.open('${state.id}','${(state.apodo||'').replace(/'/g, "\\'")}')" title="Chat privado" class="bg-gray-800 hover:bg-gray-700 text-purple-300 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow">
+            <button onclick="if(window.FMDM)FMDM.open('${u.id}','${apEsc}')" title="Chat privado" class="bg-gray-800 hover:bg-gray-700 text-purple-300 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow">
               <i class="fa-solid fa-comment-dots"></i>
             </button>
-            <button onclick="if(window.FMCall)FMCall.start('${state.id}','${(state.apodo||'').replace(/'/g, "\\'")}')" title="Videollamada" class="bg-gray-800 hover:bg-gray-700 text-green-400 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow">
+            <button onclick="if(window.FMCall)FMCall.start('${u.id}','${apEsc}')" title="Videollamada" class="bg-gray-800 hover:bg-gray-700 text-green-400 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow">
               <i class="fa-solid fa-video"></i>
             </button>
-            <button onclick="sendFriendRequest('${state.id}', '${state.apodo}')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow">
+            <button onclick="sendFriendRequest('${u.id}', '${apEsc}')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow">
               <i class="fa-solid fa-user-plus"></i>
             </button>
           </div>
@@ -1781,15 +1802,16 @@ async function renderOnlineList() {
     }).join('');
   }
 
-  // Cargar Atletas Fuera de Línea (Offline)
-  loadRegisteredOfflineList(keys);
+  // Cargar Atletas Fuera de Linea (Offline)
+  loadRegisteredOfflineList(onlineIds);
 }
 
-async function loadRegisteredOfflineList(onlineKeys) {
+async function loadRegisteredOfflineList(onlineIds) {
   const offlineCont = document.getElementById('side-offline-list');
   const supabase = window.FMAuth.getClient();
   if (!supabase) return;
 
+  const onIds = (onlineIds instanceof Set) ? onlineIds : new Set(onlineIds || []);
   try {
     const { data: profiles, error } = await supabase
       .from('profiles')
@@ -1805,7 +1827,7 @@ async function loadRegisteredOfflineList(onlineKeys) {
     // Filtrar para mostrar solo los que no están online y no somos nosotros
     const offlineUsers = profiles.filter(p => {
       let isMe = cloudProfile && p.id === cloudProfile.id;
-      let isOnline = onlineKeys.includes(p.apodo);
+      let isOnline = onIds.has(p.id);
       return !isMe && !isOnline;
     });
 
