@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fit Match - Prototipo "Cuerpo Interactivo"</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0b0d16; --surface:#141826; --surface2:#1b2030; --border:#2a3150; --txt:#eceefb; --soft:#9aa2c4; }
+  *{ font-family:'Inter',sans-serif; }
+  .fun{ font-family:'Space Grotesk',sans-serif; letter-spacing:-.01em; }
+  body{ background:var(--bg); color:var(--txt); margin:0; }
+  .hide{ display:none !important; }
+  .fade{ animation:f .3s ease both; } @keyframes f{ from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
+  /* Zonas musculares interactivas */
+  .muscle{ fill:#3a4266; stroke:#0b0d16; stroke-width:1.5; cursor:pointer; transition:fill .18s, filter .18s; }
+  .muscle:hover{ fill:var(--hl); filter:drop-shadow(0 0 6px var(--hl)); }
+  .muscle.active{ fill:var(--hl); filter:drop-shadow(0 0 10px var(--hl)); }
+  .body-base{ fill:#20263c; stroke:#141826; stroke-width:2; }
+  .mlabel{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11px; fill:#cdd3f0; pointer-events:none; text-shadow:0 1px 3px #000; }
+  .chip{ transition:transform .12s, background .18s; cursor:pointer; }
+  .chip:hover{ transform:translateY(-2px); }
+  .rcard{ transition:transform .15s, border-color .15s; }
+  .rcard:hover{ transform:translateY(-3px); border-color:#4b5583; }
+  .lane-scroll::-webkit-scrollbar{ height:7px; } .lane-scroll::-webkit-scrollbar-thumb{ background:#2a3150; border-radius:99px; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="w-full text-center text-[11px] font-bold py-1.5" style="background:#3a2f08;color:#fcd34d;border-bottom:1px solid #a16207">
+  <i class="fa-solid fa-flask mr-1"></i> PROTOTIPO - filtro por cuerpo interactivo (GIM / CASA / CrossFit). No es oficial aun.
+</div>
+
+<section class="max-w-4xl mx-auto px-4 pt-5 pb-24">
+  <!-- Toggle de categoria (contexto) -->
+  <div class="flex justify-center gap-2 mb-4">
+    <button data-cat="gimnasio" class="cat-toggle chip fun font-bold text-sm px-5 py-2 rounded-full" style="background:#2563eb;color:#fff"><i class="fa-solid fa-dumbbell mr-1"></i>GIM</button>
+    <button data-cat="casa" class="cat-toggle chip fun font-bold text-sm px-5 py-2 rounded-full" style="background:var(--surface2);color:var(--soft)"><i class="fa-solid fa-house mr-1"></i>Casa</button>
+    <button data-cat="crossfit" class="cat-toggle chip fun font-bold text-sm px-5 py-2 rounded-full" style="background:var(--surface2);color:var(--soft)"><i class="fa-solid fa-fire mr-1"></i>CrossFit</button>
+  </div>
+
+  <div class="text-center mb-4 fade">
+    <h1 class="fun text-3xl font-extrabold">Que quieres entrenar hoy?</h1>
+    <p class="text-sm mt-1" style="color:var(--soft)">Toca un musculo en la figura o elige abajo. Se iluminara y veras tus rutinas.</p>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-6 items-start">
+    <!-- FIGURA HUMANA -->
+    <div class="flex flex-col items-center">
+      <svg viewBox="0 0 320 480" class="w-full max-w-[300px]" id="body-svg">
+        <!-- Silueta base (cuerpo con brazos y piernas extendidos) -->
+        <g class="body-base">
+          <!-- cabeza -->
+          <circle cx="160" cy="48" r="30"/>
+          <!-- cuello -->
+          <rect x="149" y="74" width="22" height="20" rx="6"/>
+          <!-- torso -->
+          <path d="M112 100 Q160 88 208 100 L214 210 Q160 226 106 210 Z"/>
+          <!-- brazos extendidos (diagonales hacia afuera-abajo) -->
+          <path d="M112 104 L60 150 L44 230 L66 236 L92 168 L120 130 Z"/>
+          <path d="M208 104 L260 150 L276 230 L254 236 L228 168 L200 130 Z"/>
+          <!-- pelvis -->
+          <path d="M112 205 Q160 220 208 205 L204 250 Q160 262 116 250 Z"/>
+          <!-- piernas extendidas (ligeramente abiertas) -->
+          <path d="M118 250 L96 360 L86 456 L118 456 L138 360 L150 256 Z"/>
+          <path d="M202 250 L224 360 L234 456 L202 456 L182 360 L170 256 Z"/>
+        </g>
+
+        <!-- ZONAS MUSCULARES INTERACTIVAS (encima de la silueta) -->
+        <!-- Hombros -->
+        <path class="muscle" data-group="espalda" style="--hl:#f59e0b" d="M112 100 Q130 92 138 108 L124 130 Q112 118 112 104 Z"/>
+        <path class="muscle" data-group="espalda" style="--hl:#f59e0b" d="M208 100 Q190 92 182 108 L196 130 Q208 118 208 104 Z"/>
+        <!-- Pecho -->
+        <path class="muscle" data-group="pecho" style="--hl:#2563eb" d="M124 116 Q160 108 196 116 L198 156 Q160 170 122 156 Z"/>
+        <!-- Brazos -->
+        <path class="muscle" data-group="pecho" style="--hl:#3b82f6" d="M60 150 L44 230 L66 236 L92 168 Z"/>
+        <path class="muscle" data-group="pecho" style="--hl:#3b82f6" d="M260 150 L276 230 L254 236 L228 168 Z"/>
+        <!-- Abdomen / Core -->
+        <path class="muscle" data-group="core" style="--hl:#a855f7" d="M126 160 Q160 172 194 160 L200 208 Q160 222 120 208 Z"/>
+        <!-- Piernas -->
+        <path class="muscle" data-group="piernas" style="--hl:#22c55e" d="M118 252 L96 360 L86 452 L116 452 L136 360 L150 258 Z"/>
+        <path class="muscle" data-group="piernas" style="--hl:#22c55e" d="M202 252 L224 360 L234 452 L204 452 L184 360 L170 258 Z"/>
+
+        <!-- etiquetas -->
+        <text class="mlabel" x="160" y="140" text-anchor="middle">PECHO</text>
+        <text class="mlabel" x="160" y="190" text-anchor="middle">CORE</text>
+        <text class="mlabel" x="46" y="200" text-anchor="middle" transform="rotate(-70 46 200)">BRAZO</text>
+        <text class="mlabel" x="274" y="200" text-anchor="middle" transform="rotate(70 274 200)">BRAZO</text>
+        <text class="mlabel" x="116" y="410" text-anchor="middle">PIERNA</text>
+        <text class="mlabel" x="204" y="410" text-anchor="middle">PIERNA</text>
+        <text class="mlabel" x="122" y="104" text-anchor="middle" font-size="9">HOMBRO</text>
+        <text class="mlabel" x="198" y="104" text-anchor="middle" font-size="9">HOMBRO</text>
+      </svg>
+
+      <!-- Chips para lo que no se ve de frente -->
+      <div class="flex flex-wrap justify-center gap-2 mt-3">
+        <button class="grp-chip chip fun font-bold text-xs px-4 py-2 rounded-full" data-group="fullbody" style="background:var(--surface2);color:var(--txt)"><i class="fa-solid fa-person-rays mr-1"></i>Full Body</button>
+        <button class="grp-chip chip fun font-bold text-xs px-4 py-2 rounded-full" data-group="espalda" style="background:var(--surface2);color:var(--txt)"><i class="fa-solid fa-child-reaching mr-1"></i>Espalda & Triceps</button>
+        <button class="grp-chip chip fun font-bold text-xs px-4 py-2 rounded-full" data-group="funcional" style="background:var(--surface2);color:var(--txt)"><i class="fa-solid fa-bolt mr-1"></i>Funcional</button>
+      </div>
+    </div>
+
+    <!-- PANEL DE RUTINAS -->
+    <div id="panel" class="min-h-[200px]">
+      <div id="panel-empty" class="text-center py-16 px-4 rounded-2xl" style="background:var(--surface);border:1px dashed var(--border)">
+        <i class="fa-solid fa-hand-pointer text-4xl mb-3" style="color:var(--soft)"></i>
+        <p class="fun font-bold" style="color:var(--txt)">Toca un musculo</p>
+        <p class="text-sm mt-1" style="color:var(--soft)">Elige que quieres trabajar y aparecen tus rutinas aqui.</p>
+      </div>
+      <div id="panel-list" class="hide"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+const GROUPS = {
+  fullbody: { label:'Full Body',                  icon:'fa-person-rays',      color:'#7c5cff' },
+  pecho:    { label:'Brazos & Pecho',             icon:'fa-hand-fist',        color:'#2563eb' },
+  espalda:  { label:'Espalda, Hombros & Triceps', icon:'fa-child-reaching',   color:'#f59e0b' },
+  core:     { label:'Abdomen / Core',             icon:'fa-fire-flame-curved',color:'#a855f7' },
+  piernas:  { label:'Piernas & Gluteos',          icon:'fa-person-walking',   color:'#22c55e' },
+  funcional:{ label:'Funcionales',                icon:'fa-bolt',             color:'#ef4444' },
+};
+
+// Rutinas de muestra por categoria + grupo
+const DATA = {
+  gimnasio: {
+    pecho:[{n:'Pecho y Biceps',l:'intermedio',p:25,r:3},{n:'Push Hipertrofia',l:'avanzado',p:35,r:4},{n:'Brazos Bombazo',l:'intermedio',p:25,r:3}],
+    espalda:[{n:'Espalda y Triceps',l:'intermedio',p:25,r:3},{n:'Pull Hipertrofia',l:'avanzado',p:35,r:4},{n:'Hombros y Core',l:'intermedio',p:25,r:3}],
+    core:[{n:'Hombros y Core',l:'intermedio',p:25,r:3}],
+    piernas:[{n:'Pierna y Gluteo',l:'intermedio',p:25,r:3},{n:'Pierna Avanzada',l:'avanzado',p:35,r:4}],
+    fullbody:[{n:'Full Body Fuerza',l:'avanzado',p:35,r:4}],
+    funcional:[],
+  },
+  casa: {
+    pecho:[{n:'Pecho y Brazos en Casa',l:'basico',p:15,r:3},{n:'Pecho Avanzado en Casa',l:'avanzado',p:35,r:4},{n:'Brazos Tonificados',l:'basico',p:14,r:3}],
+    espalda:[{n:'Espalda y Biceps en Casa',l:'basico',p:15,r:3},{n:'Tren Superior en Casa',l:'intermedio',p:25,r:3}],
+    core:[{n:'Core de Acero en Casa',l:'basico',p:15,r:3},{n:'Abdomen Definido',l:'intermedio',p:22,r:3},{n:'Core Extremo',l:'avanzado',p:32,r:4}],
+    piernas:[{n:'Pierna y Gluteo en Casa',l:'intermedio',p:25,r:3},{n:'Gluteos Firmes',l:'basico',p:15,r:3},{n:'Pierna Potente',l:'intermedio',p:25,r:4}],
+    fullbody:[{n:'Full Body en Casa',l:'basico',p:15,r:3},{n:'Full Body Pro',l:'avanzado',p:35,r:4}],
+    funcional:[{n:'HIIT Quemagrasa',l:'intermedio',p:25,r:4},{n:'Funcional Total',l:'intermedio',p:25,r:3},{n:'Cardio Express',l:'basico',p:14,r:3}],
+  },
+  crossfit: {
+    pecho:[], espalda:[], core:[{n:'Core Metabolico',l:'intermedio',p:30,r:4}],
+    piernas:[], fullbody:[{n:'WOD Espartano',l:'espartano',p:50,r:4},{n:'El Titan (Murph)',l:'espartano',p:55,r:1}],
+    funcional:[{n:'Tormenta Inicial',l:'basico',p:20,r:5},{n:'Huracan',l:'intermedio',p:30,r:4},{n:'Infierno',l:'avanzado',p:40,r:5},{n:'Apocalipsis',l:'espartano',p:58,r:1}],
+  },
+};
+
+const LV = { basico:{b:'#064e3b',f:'#6ee7b7',t:'Basico'}, intermedio:{b:'#1e3a8a',f:'#93c5fd',t:'Intermedio'}, avanzado:{b:'#7c2d12',f:'#fdba74',t:'Avanzado'}, espartano:{b:'#4c1d95',f:'#c4b5fd',t:'Espartano'} };
+
+let activeCat = 'gimnasio';
+let activeGroup = null;
+
+function setCat(cat){
+  activeCat = cat;
+  document.querySelectorAll('.cat-toggle').forEach(b=>{
+    const on = b.dataset.cat===cat;
+    const colors = { gimnasio:'#2563eb', casa:'#22c55e', crossfit:'#ef4444' };
+    b.style.background = on ? colors[cat] : 'var(--surface2)';
+    b.style.color = on ? '#fff' : 'var(--soft)';
+  });
+  if(activeGroup) selectGroup(activeGroup); // re-filtra con la nueva categoria
+}
+
+function selectGroup(group){
+  activeGroup = group;
+  // marcar zonas activas en el SVG
+  document.querySelectorAll('.muscle').forEach(m=>m.classList.toggle('active', m.dataset.group===group));
+  document.querySelectorAll('.grp-chip').forEach(c=>{
+    const on = c.dataset.group===group;
+    c.style.background = on ? GROUPS[group].color : 'var(--surface2)';
+    c.style.color = on ? '#fff' : 'var(--txt)';
+  });
+
+  const g = GROUPS[group];
+  const items = (DATA[activeCat] && DATA[activeCat][group]) || [];
+  document.getElementById('panel-empty').classList.add('hide');
+  const list = document.getElementById('panel-list');
+  list.classList.remove('hide');
+  list.classList.add('fade');
+  let html = '<div class="flex items-center gap-2 mb-3">'
+    + '<div class="w-9 h-9 rounded-xl flex items-center justify-center text-white" style="background:'+g.color+'"><i class="fa-solid '+g.icon+'"></i></div>'
+    + '<div><h2 class="fun text-xl font-extrabold leading-none">'+g.label+'</h2><span class="text-xs" style="color:var(--soft)">'+items.length+' rutinas</span></div></div>';
+  if(!items.length){
+    html += '<p class="text-center py-10 rounded-2xl" style="background:var(--surface);border:1px dashed var(--border);color:var(--soft)">Sin rutinas de este grupo en esta categoria. Prueba otro musculo o categoria.</p>';
+  } else {
+    html += '<div class="space-y-2">'+items.map(r=>rcard(r,g)).join('')+'</div>';
+  }
+  list.innerHTML = html;
+  // trigger reflow para re-animar
+  void list.offsetWidth; list.classList.remove('fade'); void list.offsetWidth; list.classList.add('fade');
+}
+
+function rcard(r,g){
+  const lv = LV[r.l]||LV.basico;
+  return '<div class="rcard flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface);border:1px solid var(--border)">'
+    + '<div class="w-11 h-11 rounded-xl flex items-center justify-center text-lg text-white shrink-0" style="background:linear-gradient(135deg,'+g.color+',#0008)"><i class="fa-solid '+g.icon+'"></i></div>'
+    + '<div class="flex-1 min-w-0"><div class="fun font-bold text-sm truncate">'+r.n+'</div>'
+    + '<div class="flex items-center gap-1.5 mt-0.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:'+lv.b+';color:'+lv.f+'">'+lv.t+'</span>'
+    + '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:var(--surface2);color:var(--soft)">'+r.r+' rondas</span></div></div>'
+    + '<div class="text-right shrink-0"><div class="fun font-extrabold" style="color:#fbbf24">+'+r.p+'</div><div class="text-[9px]" style="color:var(--soft)">PX</div></div>'
+    + '<button class="text-xs font-bold px-3 py-2 rounded-lg text-white shrink-0" style="background:'+g.color+'">Entrenar</button>'
+    + '</div>';
+}
+
+// eventos
+document.querySelectorAll('.muscle').forEach(m=> m.addEventListener('click', ()=>selectGroup(m.dataset.group)));
+document.querySelectorAll('.grp-chip').forEach(c=> c.addEventListener('click', ()=>selectGroup(c.dataset.group)));
+document.querySelectorAll('.cat-toggle').forEach(b=> b.addEventListener('click', ()=>setCat(b.dataset.cat)));
+</script>
+</body>
+</html>

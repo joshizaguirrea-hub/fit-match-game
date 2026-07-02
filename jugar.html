@@ -84,6 +84,15 @@
   .cat-band:hover .shine{transform:translateX(120%);}
   .cat-fade{animation:catFade .4s ease both;}
   @keyframes catFade{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+  /* ===== Cuerpo interactivo (GIM/Casa/CrossFit) ===== */
+  .body-base{ fill:#161b2c; stroke:#0a0c14; stroke-width:2.5; }
+  .body-inert{ fill:#222a40; stroke:#0a0c14; stroke-width:1; pointer-events:none; }
+  .muscle{ fill:#39415f; stroke:#0a0c14; stroke-width:1; cursor:pointer; transition:fill .15s, filter .15s; }
+  .muscle.hl{ filter:drop-shadow(0 0 5px currentColor); }
+  .g-pecho.hl,.g-pecho.active{ fill:#2563eb; color:#2563eb; }
+  .g-espalda.hl,.g-espalda.active{ fill:#f59e0b; color:#f59e0b; }
+  .g-core.hl,.g-core.active{ fill:#a855f7; color:#a855f7; }
+  .g-piernas.hl,.g-piernas.active{ fill:#22c55e; color:#22c55e; }
   /* seleccion de ejercicio en la carta */
   .exsel{cursor:pointer;transition:transform .12s, box-shadow .12s;}
   .exsel:hover{transform:translateX(2px);}
@@ -140,6 +149,7 @@
 <script src="fm-supabase.js?v=32"></script>
 <script src="fm-routines.js?v=32"></script>
 <script src="fm-specialized-routines.js?v=36"></script>
+<script src="fm-bodymap-data.js?v=1"></script>
 <script src="fm-safety.js?v=1"></script>
 <script src="fm-badges.js?v=33"></script>
 <script src="fm-videos.js?v=2"></script>
@@ -2276,7 +2286,8 @@ function closeInviteRoutine() {
 }
 function findRoutineById(id) {
   return (window.FMRoutines || []).find(r => r.id === id)
-      || (window.FMSpecializedRoutines || []).find(r => r.id === id) || null;
+      || (window.FMSpecializedRoutines || []).find(r => r.id === id)
+      || ((window.FM_ASSEMBLED && window.FM_ASSEMBLED.id === id) ? window.FM_ASSEMBLED : null);
 }
 function renderInviteRoutineOptions() {
   const cont = document.getElementById('invite-routine-options');
@@ -2853,16 +2864,10 @@ function buildCatBand(cat, i){
 function openTrainCategory(id){ trainCategory = id; expandedGroup = null; renderRoutinePicker(); const el = document.getElementById('screen-routine'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
 function backToTrainCategories(){ trainCategory = null; expandedGroup = null; renderRoutinePicker(); const el = document.getElementById('screen-routine'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
 
-function renderCategoryLanes(id){
-  const grid = document.getElementById('routines-grid');
-  const cat = TRAIN_CATS.find(c => c.id === id);
-  if (!cat) { backToTrainCategories(); return; }
-  const routines = getCatRoutines(cat);
-  grid.className = 'space-y-2';
-
-  // Hero de la categoria (con foto + color)
+// Hero reutilizable de la cabecera de categoria
+function buildCatHero(cat, subtitle){
   const heroTint = 'linear-gradient(120deg, ' + cat.c2 + 'e6, ' + cat.c1 + '99)';
-  let html = ''
+  return ''
     + '<div class="relative overflow-hidden rounded-2xl mb-5" style="background:linear-gradient(120deg,' + cat.c1 + ',' + cat.c2 + ')">'
     +   '<img src="' + cat.img + '" class="absolute inset-0 w-full h-full object-cover" style="opacity:.5" alt="" onerror="this.style.display=\'none\'">'
     +   '<div class="absolute inset-0" style="background:' + heroTint + '"></div>'
@@ -2870,12 +2875,23 @@ function renderCategoryLanes(id){
     +     '<button onclick="backToTrainCategories()" class="inline-flex items-center gap-2 text-sm font-bold px-3 py-1.5 rounded-full mb-3" style="background:rgba(0,0,0,.4);color:#fff;backdrop-filter:blur(4px)"><i class="fa-solid fa-arrow-left"></i> Categorias</button>'
     +     '<div class="flex items-center gap-4">'
     +       '<div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl text-white shrink-0" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.25)"><i class="fa-solid ' + cat.icon + '"></i></div>'
-    +       '<div><h2 class="fun text-3xl font-extrabold text-white" style="text-shadow:0 2px 12px rgba(0,0,0,.6)">' + cat.name + '</h2><p class="text-sm font-semibold text-white/90" style="text-shadow:0 1px 8px rgba(0,0,0,.6)">' + routines.length + ' rutinas - ' + cat.desc + '</p></div>'
+    +       '<div><h2 class="fun text-3xl font-extrabold text-white" style="text-shadow:0 2px 12px rgba(0,0,0,.6)">' + cat.name + '</h2><p class="text-sm font-semibold text-white/90" style="text-shadow:0 1px 8px rgba(0,0,0,.6)">' + subtitle + '</p></div>'
     +     '</div>'
     +   '</div>'
     + '</div>';
+}
 
-  // Carriles por grupo muscular
+function renderCategoryLanes(id){
+  const grid = document.getElementById('routines-grid');
+  const cat = TRAIN_CATS.find(c => c.id === id);
+  if (!cat) { backToTrainCategories(); return; }
+  grid.className = 'space-y-2';
+
+  // GIM / Casa / CrossFit -> cuerpo interactivo. El resto -> carriles.
+  if (BODY_CATS.includes(id)) { renderBodyInteractive(cat); return; }
+
+  const routines = getCatRoutines(cat);
+  let html = buildCatHero(cat, routines.length + ' rutinas - ' + cat.desc);
   let lanes = '';
   MUSCLE_LANES.forEach(lane => {
     const items = routines.filter(r => inferMuscleGroup(r) === lane.id);
@@ -2884,6 +2900,154 @@ function renderCategoryLanes(id){
   });
   html += lanes || '<p class="text-center py-10" style="color:var(--txt-mut)">Proximamente mas rutinas en esta categoria.</p>';
   grid.innerHTML = html;
+}
+
+// ============================================================
+// CUERPO INTERACTIVO (GIM / Casa / CrossFit)
+// ============================================================
+const BODY_CATS = ['gimnasio','casa','crossfit'];
+const BODY_SLUG_GROUP = {
+  chest:'pecho', biceps:'pecho', forearm:'pecho',
+  abs:'core', obliques:'core',
+  deltoids:'espalda', trapezius:'espalda', triceps:'espalda', 'upper-back':'espalda', 'lower-back':'espalda',
+  quadriceps:'piernas', calves:'piernas', adductors:'piernas', tibialis:'piernas', gluteal:'piernas', hamstring:'piernas', knees:'piernas',
+};
+const BODY_GROUPS = {
+  pecho:{ label:'Brazos & Pecho', color:'#2563eb', icon:'fa-hand-fist' },
+  espalda:{ label:'Espalda, Hombros & Triceps', color:'#f59e0b', icon:'fa-child-reaching' },
+  core:{ label:'Abdomen / Core', color:'#a855f7', icon:'fa-fire-flame-curved' },
+  piernas:{ label:'Piernas & Gluteos', color:'#22c55e', icon:'fa-person-walking' },
+};
+let bodySide = 'front', bodyCat = null, bodyGroup = null;
+
+function renderBodyInteractive(cat){
+  bodyCat = cat.id; bodySide = 'front'; bodyGroup = null;
+  const grid = document.getElementById('routines-grid');
+  grid.innerHTML = buildCatHero(cat, 'Toca un musculo y te armo la rutina')
+    + '<div class="grid md:grid-cols-2 gap-5 items-start">'
+    +   '<div class="flex flex-col items-center">'
+    +     '<div class="flex gap-2 mb-2">'
+    +       '<button id="body-front-btn" onclick="setBodySide(\'front\')" class="fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:var(--accent);color:#fff"><i class="fa-solid fa-user mr-1"></i>Frente</button>'
+    +       '<button id="body-back-btn" onclick="setBodySide(\'back\')" class="fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:var(--surface2);color:var(--txt-soft)"><i class="fa-solid fa-user mr-1"></i>Espalda</button>'
+    +     '</div>'
+    +     '<svg id="body-svg" class="w-full" style="max-width:260px;height:auto"></svg>'
+    +     '<div id="body-chips" class="flex flex-wrap justify-center gap-2 mt-2"></div>'
+    +   '</div>'
+    +   '<div id="body-panel"><div id="body-empty" class="text-center py-12 px-4 rounded-2xl" style="background:var(--surface);border:1px dashed var(--border)"><i class="fa-solid fa-hand-pointer text-3xl mb-2" style="color:var(--txt-mut)"></i><p class="fun font-bold" style="color:var(--txt)">Toca un musculo</p><p class="text-sm mt-1" style="color:var(--txt-soft)">Te armo una rutina para ese grupo.</p></div><div id="body-list" class="hide"></div></div>'
+    + '</div>';
+  document.getElementById('body-chips').innerHTML = Object.keys(BODY_GROUPS).map(k =>
+    '<button onclick="selectBodyGroup(\'' + k + '\')" data-bchip="' + k + '" class="fun font-bold text-[11px] px-3 py-1.5 rounded-full" style="background:var(--surface2);color:var(--txt)">' + BODY_GROUPS[k].label + '</button>'
+  ).join('');
+  renderBodySvg();
+}
+
+function renderBodySvg(){
+  const svg = document.getElementById('body-svg'); if (!svg || typeof FM_BODY_FRONT === 'undefined') return;
+  const data = bodySide === 'front' ? FM_BODY_FRONT : FM_BODY_BACK;
+  const outline = bodySide === 'front' ? FM_BODY_OUTLINE_FRONT : FM_BODY_OUTLINE_BACK;
+  svg.setAttribute('viewBox', bodySide === 'front' ? '0 0 724 1448' : '724 0 724 1448');
+  let h = '<path d="' + outline + '" class="body-base"></path>';
+  Object.keys(data).forEach(slug => {
+    const grp = BODY_SLUG_GROUP[slug];
+    (data[slug] || []).forEach(d => {
+      if (grp) h += '<path d="' + d + '" class="muscle g-' + grp + '" data-bgroup="' + grp + '"></path>';
+      else h += '<path d="' + d + '" class="body-inert"></path>';
+    });
+  });
+  svg.innerHTML = h;
+  svg.querySelectorAll('.muscle').forEach(m => {
+    const g = m.dataset.bgroup;
+    m.addEventListener('mouseenter', () => svg.querySelectorAll('.muscle[data-bgroup="' + g + '"]').forEach(p => p.classList.add('hl')));
+    m.addEventListener('mouseleave', () => svg.querySelectorAll('.muscle[data-bgroup="' + g + '"]').forEach(p => p.classList.remove('hl')));
+    m.addEventListener('click', () => selectBodyGroup(g));
+  });
+  if (bodyGroup) svg.querySelectorAll('.muscle[data-bgroup="' + bodyGroup + '"]').forEach(p => p.classList.add('active'));
+}
+
+function setBodySide(s){
+  bodySide = s;
+  const fb = document.getElementById('body-front-btn'), bb = document.getElementById('body-back-btn');
+  if (fb){ fb.style.background = s==='front'?'var(--accent)':'var(--surface2)'; fb.style.color = s==='front'?'#fff':'var(--txt-soft)'; }
+  if (bb){ bb.style.background = s==='back'?'var(--accent)':'var(--surface2)'; bb.style.color = s==='back'?'#fff':'var(--txt-soft)'; }
+  renderBodySvg();
+}
+
+function shuffleArr(a){ const x = a.slice(); for (let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=x[i]; x[i]=x[j]; x[j]=t; } return x; }
+
+// Junta ejercicios reales de la categoria que apuntan a ese grupo muscular
+function collectGroupExercises(catId, group){
+  const cat = TRAIN_CATS.find(c => c.id === catId);
+  const routines = getCatRoutines(cat);
+  const seen = {}, pool = [];
+  routines.forEach(r => (r.exercises||[]).forEach(ex => {
+    if (inferMuscleGroup({ name: ex.name, exercises: [ex] }) === group){
+      const key = (ex.name||'').toLowerCase();
+      if (!seen[key]){ seen[key] = 1; pool.push(ex); }
+    }
+  }));
+  if (pool.length < 6){ // fallback: cualquier ejercicio de la categoria
+    routines.forEach(r => (r.exercises||[]).forEach(ex => {
+      const key = (ex.name||'').toLowerCase();
+      if (!seen[key]){ seen[key] = 1; pool.push(ex); }
+    }));
+  }
+  return pool;
+}
+
+function selectBodyGroup(group){
+  bodyGroup = group;
+  const svg = document.getElementById('body-svg');
+  if (svg) svg.querySelectorAll('.muscle').forEach(p => p.classList.toggle('active', p.dataset.bgroup === group));
+  document.querySelectorAll('[data-bchip]').forEach(c => {
+    const on = c.dataset.bchip === group;
+    c.style.background = on ? BODY_GROUPS[group].color : 'var(--surface2)';
+    c.style.color = on ? '#fff' : 'var(--txt)';
+  });
+  buildAndShowAssembled(group);
+}
+
+function buildAndShowAssembled(group){
+  const g = BODY_GROUPS[group];
+  const catObj = TRAIN_CATS.find(c => c.id === bodyCat);
+  const pool = collectGroupExercises(bodyCat, group);
+  const picked = shuffleArr(pool).slice(0, 6).map(ex => ({ name: ex.name, reps: ex.reps || 12 }));
+  const rounds = bodyCat === 'crossfit' ? 4 : 3;
+  const points = Math.min(50, 12 + picked.length*3 + (bodyCat === 'crossfit' ? 8 : 0));
+  window.FM_ASSEMBLED = {
+    id: 'armada_' + bodyCat + '_' + group,
+    name: 'Rutina de ' + g.label,
+    category: bodyCat,
+    level: 'personalizada',
+    points: points, rounds: rounds,
+    description: 'Rutina armada para trabajar ' + g.label + ' con lo mejor de ' + catObj.name + '.',
+    exercises: picked,
+    _assembled: true
+  };
+  const rt = window.FM_ASSEMBLED;
+  document.getElementById('body-empty').classList.add('hide');
+  const list = document.getElementById('body-list');
+  list.classList.remove('hide');
+  list.innerHTML = ''
+    + '<div class="rounded-2xl overflow-hidden cat-fade" style="background:var(--surface);border:1px solid var(--border)">'
+    +   '<div class="p-4" style="background:linear-gradient(120deg,' + g.color + ',' + g.color + '99)">'
+    +     '<div class="flex items-center gap-3">'
+    +       '<div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl text-white" style="background:rgba(255,255,255,.2)"><i class="fa-solid ' + g.icon + '"></i></div>'
+    +       '<div><div class="fun text-xl font-extrabold text-white">' + rt.name + '</div><div class="text-xs font-semibold text-white/90">' + rt.exercises.length + ' ejercicios - ' + rt.rounds + ' rondas - +' + rt.points + ' PX</div></div>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div class="p-3 space-y-2">'
+    +   rt.exercises.map((e,i) => ''
+        + '<div class="flex items-center gap-3 p-2.5 rounded-xl" style="background:var(--surface2);border:1px solid var(--border)">'
+        +   '<div class="w-7 h-7 rounded-lg flex items-center justify-center fun font-extrabold text-sm shrink-0" style="background:' + g.color + '33;color:' + g.color + '">' + (i+1) + '</div>'
+        +   '<div class="flex-1 min-w-0 fun font-bold text-sm" style="color:var(--txt)">' + e.name + '</div>'
+        +   '<span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style="background:var(--bg);color:var(--txt-soft)">x' + e.reps + '</span>'
+        + '</div>').join('')
+    +   '</div>'
+    +   '<div class="p-3 pt-0 flex gap-2">'
+    +     '<button onclick="buildAndShowAssembled(\'' + group + '\')" class="px-3 py-3 rounded-xl fun font-bold" style="background:var(--surface2);color:var(--txt)" title="Otra variante"><i class="fa-solid fa-shuffle"></i></button>'
+    +     '<button onclick="openRoutineDetail(\'' + rt.id + '\',\'specialized\')" class="flex-1 py-3 rounded-xl fun font-extrabold text-white" style="background:linear-gradient(120deg,' + g.color + ',' + g.color + 'cc)"><i class="fa-solid fa-play mr-1"></i>Empezar esta rutina</button>'
+    +   '</div>'
+    + '</div>';
 }
 
 function renderRoutinePicker() {
@@ -3023,7 +3187,8 @@ function estimateDuration(r){
 
 function openRoutineDetail(id, category = 'gods') {
   const list = category === 'gods' ? (window.FMRoutines || []) : (window.FMSpecializedRoutines || []);
-  const r = list.find(x => x.id === id);
+  let r = list.find(x => x.id === id);
+  if (!r && window.FM_ASSEMBLED && window.FM_ASSEMBLED.id === id) r = window.FM_ASSEMBLED;
   if (!r) return;
   selectedRoutine = r;
 

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fit Match - Prototipo "Biblioteca de Ejercicios"</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0b0d16; --surface:#141826; --surface2:#1b2030; --border:#2a3150; --txt:#eceefb; --soft:#9aa2c4; --accent:#7c5cff; }
+  *{ font-family:'Inter',sans-serif; }
+  .fun{ font-family:'Space Grotesk',sans-serif; letter-spacing:-.01em; }
+  body{ background:var(--bg); color:var(--txt); margin:0; }
+  .exrow{ transition:transform .12s, border-color .12s; cursor:pointer; }
+  .exrow:hover{ transform:translateX(3px); border-color:#4b5583; }
+  .modal-bg{ background:rgba(6,8,16,.88); backdrop-filter:blur(6px); }
+  .hide{ display:none !important; }
+  .fade{ animation:f .25s ease both; } @keyframes f{ from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
+  .imgbox img{ width:100%; height:100%; object-fit:cover; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="w-full text-center text-[11px] font-bold py-1.5" style="background:#3a2f08;color:#fcd34d;border-bottom:1px solid #a16207">
+  <i class="fa-solid fa-flask mr-1"></i> PROTOTIPO - fotos de dominio publico (free-exercise-db) + descripciones en espanol. No es oficial aun.
+</div>
+
+<section class="max-w-2xl mx-auto px-4 pt-6 pb-24">
+  <div class="text-center mb-6 fade">
+    <p class="text-[11px] uppercase tracking-[.2em] font-bold" style="color:var(--soft)">Fit Match</p>
+    <h1 class="fun text-3xl font-extrabold mt-1">Biblioteca de Ejercicios</h1>
+    <p class="text-sm mt-1" style="color:var(--soft)">Toca un ejercicio para ver como se hace: fotos + pasos + musculos.</p>
+  </div>
+  <div id="ex-list" class="space-y-3"></div>
+
+  <div class="mt-8 p-4 rounded-2xl text-sm" style="background:var(--surface);border:1px solid var(--border);color:var(--soft)">
+    <b style="color:var(--txt)"><i class="fa-solid fa-lightbulb mr-1" style="color:#fbbf24"></i>Como funcionaria en el juego:</b>
+    tienes <b style="color:var(--txt)">856 ejercicios</b>, pero son variantes de ~120 movimientos base.
+    Creamos la ficha una sola vez por movimiento base y todas las variantes la reutilizan (DRY).
+    Dentro de cada rutina, cada ejercicio tendria un boton <i class="fa-solid fa-circle-info" style="color:var(--accent)"></i>
+    que abre esta ficha.
+  </div>
+</section>
+
+<!-- MODAL DETALLE -->
+<div id="ex-modal" class="hide fixed inset-0 z-50 modal-bg flex items-center justify-center p-4">
+  <div class="fade w-full max-w-md rounded-3xl overflow-hidden" style="background:var(--surface);border:1px solid var(--border);max-height:92vh;overflow-y:auto">
+    <div class="relative">
+      <div id="m-imgs" class="grid grid-cols-2 gap-0.5" style="background:#0a0c14"></div>
+      <button onclick="closeEx()" class="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-white" style="background:rgba(0,0,0,.55)"><i class="fa-solid fa-xmark"></i></button>
+      <span id="m-tag" class="absolute top-3 left-3 text-[10px] font-bold uppercase px-2.5 py-1 rounded-full text-white"></span>
+    </div>
+    <div class="p-5">
+      <h2 id="m-name" class="fun text-2xl font-extrabold mb-1"></h2>
+      <div id="m-muscles" class="flex flex-wrap gap-1.5 mb-3"></div>
+      <p id="m-desc" class="text-sm leading-relaxed mb-4" style="color:var(--soft)"></p>
+      <h3 class="fun font-bold text-sm mb-2" style="color:var(--txt)"><i class="fa-solid fa-list-ol mr-1" style="color:var(--accent)"></i>Como se hace</h3>
+      <ol id="m-steps" class="space-y-2 mb-4"></ol>
+      <div id="m-tip" class="p-3 rounded-xl text-xs" style="background:#3a2f08;border:1px solid #a16207;color:#fcd34d"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const IMG_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+
+// 6 ejemplos reales de Fit Match. imgs = carpeta free-exercise-db. desc/pasos = espanol experto.
+const EXERCISES = [
+  {
+    name:'Sentadillas clasicas', base:'Sentadilla', group:'Piernas & Gluteos', color:'#22c55e',
+    folder:'Bodyweight_Squat', muscles:['Cuadriceps','Gluteos','Isquiotibiales'],
+    desc:'El rey de los ejercicios de pierna. Fortalece cuadriceps, gluteos y core mientras mejora tu movilidad de cadera y rodilla.',
+    steps:['Parate con los pies al ancho de los hombros, puntas ligeramente hacia afuera.','Baja empujando la cadera hacia atras, como si te sentaras en una silla invisible.','Manten la espalda recta y el pecho arriba; las rodillas siguen la direccion de los pies.','Baja hasta que los muslos queden paralelos al piso (o hasta donde tu movilidad permita).','Sube empujando con los talones hasta extender por completo.'],
+    tip:'Error comun: que las rodillas se metan hacia adentro. Empuja las rodillas hacia afuera al bajar.'
+  },
+  {
+    name:'Flexiones de pecho clasicas', base:'Flexion', group:'Brazos & Pecho', color:'#2563eb',
+    folder:'Pushups', muscles:['Pectorales','Triceps','Hombros'],
+    desc:'Ejercicio estrella para el tren superior. Trabaja pecho, triceps y hombros usando solo tu peso corporal.',
+    steps:['Colocate en plancha alta: manos un poco mas anchas que los hombros.','Manten el cuerpo en linea recta de la cabeza a los talones (aprieta el abdomen).','Baja doblando los codos hasta que el pecho casi toque el suelo.','Empuja el piso para volver a la posicion inicial extendiendo los brazos.'],
+    tip:'Si es muy dificil, apoya las rodillas en el suelo. Nunca dejes caer la cadera.'
+  },
+  {
+    name:'Plancha tradicional isometrica', base:'Plancha', group:'Abdomen / Core', color:'#a855f7',
+    folder:'Plank', muscles:['Core','Abdominales','Hombros'],
+    desc:'El mejor ejercicio isometrico de core. Fortalece todo el abdomen, la zona lumbar y estabiliza la columna.',
+    steps:['Apoyate sobre los antebrazos y las puntas de los pies.','Los codos deben quedar justo debajo de los hombros.','Aprieta el abdomen y los gluteos para formar una linea recta.','Manten la posicion sin dejar caer la cadera ni levantarla de mas.'],
+    tip:'No aguantes la respiracion. Respira lento y constante mientras sostienes.'
+  },
+  {
+    name:'Zancadas caminando', base:'Zancada', group:'Piernas & Gluteos', color:'#22c55e',
+    folder:'Bodyweight_Walking_Lunge', muscles:['Cuadriceps','Gluteos','Isquiotibiales'],
+    desc:'Excelente para piernas y gluteos de forma unilateral, mejora el equilibrio y corrige descompensaciones.',
+    steps:['Da un paso largo hacia adelante con una pierna.','Baja el cuerpo hasta que ambas rodillas formen 90 grados.','La rodilla de atras casi toca el suelo; el torso se mantiene erguido.','Empuja con la pierna de adelante y da el siguiente paso con la otra.'],
+    tip:'La rodilla de adelante no debe pasar la punta del pie. Da pasos largos.'
+  },
+  {
+    name:'Abdominales (Crunch)', base:'Abdominal', group:'Abdomen / Core', color:'#a855f7',
+    folder:'Crunches', muscles:['Recto abdominal','Oblicuos'],
+    desc:'El clasico para trabajar la parte superior del abdomen de forma controlada y segura.',
+    steps:['Acuestate boca arriba con las rodillas dobladas y pies apoyados.','Coloca las manos detras de la cabeza sin jalar el cuello.','Eleva los hombros del suelo contrayendo el abdomen.','Baja lento y controlado sin dejar caer de golpe.'],
+    tip:'No jales tu cabeza con las manos. El movimiento nace del abdomen, no del cuello.'
+  },
+  {
+    name:'Superman basico en suelo', base:'Superman', group:'Espalda, Hombros & Triceps', color:'#f59e0b',
+    folder:'Superman', muscles:['Espalda baja','Gluteos','Hombros'],
+    desc:'Fortalece la zona lumbar y toda la cadena posterior. Ideal para contrarrestar tantas horas sentado.',
+    steps:['Acuestate boca abajo con brazos extendidos al frente.','Eleva al mismo tiempo brazos, pecho y piernas del suelo.','Aprieta gluteos y espalda baja en el punto mas alto.','Baja lento y controlado. Repite.'],
+    tip:'No fuerces el cuello: mira hacia el suelo para mantener la nuca alineada.'
+  },
+];
+
+function renderList(){
+  document.getElementById('ex-list').innerHTML = EXERCISES.map((e,i)=>''
+    + '<div class="exrow flex items-center gap-3 p-3 rounded-2xl" style="background:var(--surface);border:1px solid var(--border)" onclick="openEx('+i+')">'
+    +   '<div class="imgbox w-16 h-16 rounded-xl overflow-hidden shrink-0" style="background:#0a0c14">'
+    +     '<img src="'+IMG_BASE+e.folder+'/0.jpg" alt="'+e.name+'" onerror="this.parentElement.innerHTML=\'<div class=\\\'w-full h-full flex items-center justify-center\\\' style=\\\'color:'+e.color+'\\\'><i class=\\\'fa-solid fa-dumbbell text-2xl\\\'></i></div>\'">'
+    +   '</div>'
+    +   '<div class="flex-1 min-w-0">'
+    +     '<div class="fun font-bold text-base truncate">'+e.name+'</div>'
+    +     '<div class="text-xs" style="color:'+e.color+'">'+e.group+'</div>'
+    +   '</div>'
+    +   '<i class="fa-solid fa-circle-info text-lg" style="color:var(--accent)"></i>'
+    + '</div>').join('');
+}
+
+function openEx(i){
+  const e = EXERCISES[i];
+  document.getElementById('m-imgs').innerHTML =
+      '<div class="imgbox" style="aspect-ratio:4/3"><img src="'+IMG_BASE+e.folder+'/0.jpg" alt="inicio" onerror="this.parentElement.style.display=\'none\'"></div>'
+    + '<div class="imgbox" style="aspect-ratio:4/3"><img src="'+IMG_BASE+e.folder+'/1.jpg" alt="final" onerror="this.parentElement.style.display=\'none\'"></div>';
+  const tag = document.getElementById('m-tag'); tag.textContent = e.group; tag.style.background = e.color;
+  document.getElementById('m-name').textContent = e.name;
+  document.getElementById('m-muscles').innerHTML = e.muscles.map(m=>'<span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:var(--surface2);color:var(--soft)"><i class="fa-solid fa-bolt mr-1" style="color:'+e.color+'"></i>'+m+'</span>').join('');
+  document.getElementById('m-desc').textContent = e.desc;
+  document.getElementById('m-steps').innerHTML = e.steps.map((s,n)=>'<li class="flex gap-2 text-sm" style="color:var(--txt)"><span class="fun font-extrabold shrink-0" style="color:'+e.color+'">'+(n+1)+'.</span><span style="color:var(--soft)">'+s+'</span></li>').join('');
+  document.getElementById('m-tip').innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i>'+e.tip;
+  document.getElementById('ex-modal').classList.remove('hide');
+}
+function closeEx(){ document.getElementById('ex-modal').classList.add('hide'); }
+document.getElementById('ex-modal').addEventListener('click', ev=>{ if(ev.target.id==='ex-modal') closeEx(); });
+
+renderList();
+</script>
+</body>
+</html>

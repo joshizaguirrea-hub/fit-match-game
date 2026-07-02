@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fit Match - Cuerpo Interactivo PRO</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0b0d16; --surface:#141826; --surface2:#1b2030; --border:#2a3150; --txt:#eceefb; --soft:#9aa2c4; }
+  *{ font-family:'Inter',sans-serif; }
+  .fun{ font-family:'Space Grotesk',sans-serif; letter-spacing:-.01em; }
+  body{ background:var(--bg); color:var(--txt); margin:0; }
+  .hide{ display:none !important; }
+  .fade{ animation:f .3s ease both; } @keyframes f{ from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
+  .chip{ transition:transform .12s, background .18s; cursor:pointer; }
+  .chip:hover{ transform:translateY(-2px); }
+  /* Cuerpo */
+  .body-base{ fill:#161b2c; stroke:#0a0c14; stroke-width:2.5; }
+  .body-inert{ fill:#222a40; stroke:#0a0c14; stroke-width:1; pointer-events:none; }
+  .muscle{ fill:#39415f; stroke:#0a0c14; stroke-width:1; cursor:pointer; transition:fill .15s, filter .15s; }
+  .muscle.hl{ filter:drop-shadow(0 0 5px currentColor); }
+  .g-pecho.hl,.g-pecho.active{ fill:#2563eb; color:#2563eb; }
+  .g-espalda.hl,.g-espalda.active{ fill:#f59e0b; color:#f59e0b; }
+  .g-core.hl,.g-core.active{ fill:#a855f7; color:#a855f7; }
+  .g-piernas.hl,.g-piernas.active{ fill:#22c55e; color:#22c55e; }
+  .exrow{ transition:transform .12s, border-color .12s; }
+  .exrow:hover{ transform:translateX(3px); border-color:#4b5583; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="w-full text-center text-[11px] font-bold py-1.5" style="background:#3a2f08;color:#fcd34d;border-bottom:1px solid #a16207">
+  <i class="fa-solid fa-flask mr-1"></i> PROTOTIPO - anatomia profesional interactiva (MIT). No es oficial aun.
+</div>
+
+<section class="max-w-5xl mx-auto px-4 pt-5 pb-24">
+  <div class="flex justify-center gap-2 mb-3">
+    <button data-cat="gimnasio" class="cat-toggle chip fun font-bold text-sm px-5 py-2 rounded-full" style="background:#2563eb;color:#fff"><i class="fa-solid fa-dumbbell mr-1"></i>GIM</button>
+    <button data-cat="casa" class="cat-toggle chip fun font-bold text-sm px-5 py-2 rounded-full" style="background:var(--surface2);color:var(--soft)"><i class="fa-solid fa-house mr-1"></i>Casa</button>
+    <button data-cat="crossfit" class="cat-toggle chip fun font-bold text-sm px-5 py-2 rounded-full" style="background:var(--surface2);color:var(--soft)"><i class="fa-solid fa-fire mr-1"></i>CrossFit</button>
+  </div>
+  <div class="text-center mb-3 fade">
+    <h1 class="fun text-3xl font-extrabold">Que quieres entrenar hoy?</h1>
+    <p class="text-sm mt-1" style="color:var(--soft)">Toca un musculo. Gira el cuerpo para ver la espalda. Te armo la rutina.</p>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-6 items-start">
+    <!-- CUERPO -->
+    <div class="flex flex-col items-center">
+      <div class="flex gap-2 mb-2">
+        <button id="btn-front" class="chip fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:#7c5cff;color:#fff"><i class="fa-solid fa-user mr-1"></i>Frente</button>
+        <button id="btn-back" class="chip fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:var(--surface2);color:var(--soft)"><i class="fa-solid fa-user rotate-180 mr-1"></i>Espalda</button>
+      </div>
+      <svg id="body-svg" class="w-full max-w-[280px]" style="height:auto"></svg>
+      <div class="flex flex-wrap justify-center gap-2 mt-2">
+        <button class="grp-chip chip fun font-bold text-[11px] px-3 py-1.5 rounded-full" data-group="pecho" style="background:var(--surface2);color:var(--txt)">Brazos & Pecho</button>
+        <button class="grp-chip chip fun font-bold text-[11px] px-3 py-1.5 rounded-full" data-group="espalda" style="background:var(--surface2);color:var(--txt)">Espalda & Hombros</button>
+        <button class="grp-chip chip fun font-bold text-[11px] px-3 py-1.5 rounded-full" data-group="core" style="background:var(--surface2);color:var(--txt)">Core</button>
+        <button class="grp-chip chip fun font-bold text-[11px] px-3 py-1.5 rounded-full" data-group="piernas" style="background:var(--surface2);color:var(--txt)">Piernas</button>
+      </div>
+    </div>
+
+    <!-- RUTINA ARMADA -->
+    <div id="panel" class="min-h-[200px]">
+      <div id="panel-empty" class="text-center py-16 px-4 rounded-2xl" style="background:var(--surface);border:1px dashed var(--border)">
+        <i class="fa-solid fa-hand-pointer text-4xl mb-3" style="color:var(--soft)"></i>
+        <p class="fun font-bold" style="color:var(--txt)">Toca un musculo</p>
+        <p class="text-sm mt-1" style="color:var(--soft)">Te armo una rutina completa para ese grupo.</p>
+      </div>
+      <div id="panel-list" class="hide"></div>
+    </div>
+  </div>
+</section>
+
+<script src="fm-bodymap-data.js"></script>
+<script>
+const SLUG_GROUP = {
+  chest:'pecho', biceps:'pecho', forearm:'pecho',
+  abs:'core', obliques:'core',
+  deltoids:'espalda', trapezius:'espalda', triceps:'espalda', 'upper-back':'espalda', 'lower-back':'espalda',
+  quadriceps:'piernas', calves:'piernas', adductors:'piernas', tibialis:'piernas', gluteal:'piernas', hamstring:'piernas', knees:'piernas',
+};
+const GROUPS = {
+  pecho:{ label:'Brazos & Pecho', color:'#2563eb', icon:'fa-hand-fist' },
+  espalda:{ label:'Espalda, Hombros & Triceps', color:'#f59e0b', icon:'fa-child-reaching' },
+  core:{ label:'Abdomen / Core', color:'#a855f7', icon:'fa-fire-flame-curved' },
+  piernas:{ label:'Piernas & Gluteos', color:'#22c55e', icon:'fa-person-walking' },
+};
+
+// Pool de ejercicios reales por grupo y categoria (muestra). Reps entre parentesis.
+const POOL = {
+  gimnasio:{
+    pecho:['Press de banca con mancuernas|12','Aperturas con mancuerna|12','Curl de biceps con barra|12','Fondos en paralelas|10','Press inclinado|12','Curl martillo|12'],
+    espalda:['Remo con barra|12','Jalon al pecho|12','Elevaciones laterales|15','Extension de triceps en polea|12','Face pull|15','Encogimientos de trapecio|15'],
+    core:['Plancha con peso (seg)|40','Crunch en maquina|15','Elevacion de piernas colgado|12','Giros rusos con disco|24','Plancha lateral (seg)|30','Rueda abdominal|10'],
+    piernas:['Sentadilla con barra|12','Prensa de pierna|15','Peso muerto rumano|12','Zancadas con mancuernas|16','Curl femoral|15','Elevacion de talones|20'],
+  },
+  casa:{
+    pecho:['Flexiones de pecho clasicas|12','Flexiones diamante|10','Fondos en silla|12','Curl de biceps con mochila|15','Flexiones inclinadas|12','Flexiones declinadas|10'],
+    espalda:['Remo con mochila|15','Superman basico en suelo|12','Face pull con banda|15','Fondos de triceps en silla|12','Elevaciones laterales con botellas|15','Remo invertido bajo mesa|10'],
+    core:['Plancha tradicional (seg)|40','Abdominales cortos (Crunch)|15','Giros rusos|24','Elevacion de piernas|12','Plancha lateral (seg)|30','Bicicleta abdominal|20'],
+    piernas:['Sentadillas clasicas|20','Zancadas alternas|16','Puente de gluteos|15','Sentadilla sumo|15','Elevacion de talones|20','Sentadilla bulgara con silla|12'],
+  },
+  crossfit:{
+    pecho:['Flexiones explosivas|12','Burpees|12','Push press con mochila|12','Flexiones hindu|10','Thrusters|15','Flexiones pike|10'],
+    espalda:['Dominadas|8','Renegade row con mochila|12','Kettlebell swing|15','Man makers|8','Remo alto|15','Superman dinamico|15'],
+    core:['Toes to bar|10','Hollow hold (seg)|30','V-ups|12','Escaladores|30','Plancha con toque de hombro|20','Russian twist|24'],
+    piernas:['Sentadillas con salto|15','Zancadas con salto|16','Box jumps|12','Wall sit (seg)|45','Pistol asistida|10','Air squats|25'],
+  },
+};
+
+const svg = document.getElementById('body-svg');
+let side = 'front', activeCat = 'gimnasio', activeGroup = null;
+
+function renderBody(){
+  const data = side==='front'?FM_BODY_FRONT:FM_BODY_BACK;
+  const outline = side==='front'?FM_BODY_OUTLINE_FRONT:FM_BODY_OUTLINE_BACK;
+  svg.setAttribute('viewBox', side==='front'?'0 0 724 1448':'724 0 724 1448');
+  let html = '<path d="'+outline+'" class="body-base"/>';
+  Object.keys(data).forEach(slug=>{
+    const grp = SLUG_GROUP[slug];
+    (data[slug]||[]).forEach(d=>{
+      if(grp) html += '<path d="'+d+'" class="muscle g-'+grp+'" data-group="'+grp+'"></path>';
+      else html += '<path d="'+d+'" class="body-inert"></path>';
+    });
+  });
+  svg.innerHTML = html;
+  bindMuscles();
+  applyActive();
+}
+
+function bindMuscles(){
+  svg.querySelectorAll('.muscle').forEach(m=>{
+    const g = m.dataset.group;
+    m.addEventListener('mouseenter', ()=>hoverGroup(g,true));
+    m.addEventListener('mouseleave', ()=>hoverGroup(g,false));
+    m.addEventListener('click', ()=>selectGroup(g));
+  });
+}
+function hoverGroup(g,on){ svg.querySelectorAll('.muscle[data-group="'+g+'"]').forEach(p=>p.classList.toggle('hl',on)); }
+function applyActive(){
+  svg.querySelectorAll('.muscle').forEach(p=>p.classList.toggle('active', activeGroup && p.dataset.group===activeGroup));
+}
+
+// pseudo-random estable por grupo+cat para variar la rutina
+function buildRoutine(cat, group){
+  const pool = (POOL[cat] && POOL[cat][group]) || [];
+  const g = GROUPS[group];
+  const exs = pool.map(s=>{ const [n,r]=s.split('|'); return {n, r}; });
+  const rounds = cat==='crossfit'?4:3;
+  const pts = Math.min(50, 10 + exs.length*3 + (cat==='crossfit'?10:0));
+  return { name:'Rutina de '+g.label, rounds, points:pts, exs };
+}
+
+function selectGroup(group){
+  activeGroup = group;
+  applyActive();
+  document.querySelectorAll('.grp-chip').forEach(c=>{
+    const on = c.dataset.group===group;
+    c.style.background = on ? GROUPS[group].color : 'var(--surface2)';
+    c.style.color = on ? '#fff' : 'var(--txt)';
+  });
+  const g = GROUPS[group];
+  const rt = buildRoutine(activeCat, group);
+  document.getElementById('panel-empty').classList.add('hide');
+  const list = document.getElementById('panel-list');
+  list.classList.remove('hide');
+  let html = '<div class="rounded-2xl overflow-hidden fade" style="background:var(--surface);border:1px solid var(--border)">'
+    + '<div class="p-4" style="background:linear-gradient(120deg,'+g.color+','+g.color+'99)">'
+    +   '<div class="flex items-center gap-3">'
+    +     '<div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl text-white" style="background:rgba(255,255,255,.2)"><i class="fa-solid '+g.icon+'"></i></div>'
+    +     '<div><div class="fun text-xl font-extrabold text-white">'+rt.name+'</div>'
+    +     '<div class="text-xs font-semibold text-white/90">'+rt.exs.length+' ejercicios - '+rt.rounds+' rondas - +'+rt.points+' PX</div></div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="p-3 space-y-2">'
+    + rt.exs.map((e,i)=>''
+        + '<div class="exrow flex items-center gap-3 p-2.5 rounded-xl" style="background:var(--surface2);border:1px solid var(--border)">'
+        +   '<div class="w-7 h-7 rounded-lg flex items-center justify-center fun font-extrabold text-sm shrink-0" style="background:'+g.color+'33;color:'+g.color+'">'+(i+1)+'</div>'
+        +   '<div class="flex-1 min-w-0 fun font-bold text-sm truncate">'+e.n+'</div>'
+        +   '<span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style="background:var(--bg);color:var(--soft)">x'+e.r+'</span>'
+        + '</div>').join('')
+    + '</div>'
+    + '<div class="p-3 pt-0"><button class="w-full py-3 rounded-xl fun font-extrabold text-white" style="background:linear-gradient(120deg,'+g.color+','+g.color+'cc)"><i class="fa-solid fa-play mr-1"></i>Empezar esta rutina</button></div>'
+    + '</div>';
+  list.innerHTML = html;
+}
+
+function setSide(s){
+  side = s;
+  document.getElementById('btn-front').style.background = s==='front'?'#7c5cff':'var(--surface2)';
+  document.getElementById('btn-front').style.color = s==='front'?'#fff':'var(--soft)';
+  document.getElementById('btn-back').style.background = s==='back'?'#7c5cff':'var(--surface2)';
+  document.getElementById('btn-back').style.color = s==='back'?'#fff':'var(--soft)';
+  renderBody();
+}
+function setCat(cat){
+  activeCat = cat;
+  const colors = { gimnasio:'#2563eb', casa:'#22c55e', crossfit:'#ef4444' };
+  document.querySelectorAll('.cat-toggle').forEach(b=>{
+    const on=b.dataset.cat===cat;
+    b.style.background = on?colors[cat]:'var(--surface2)'; b.style.color = on?'#fff':'var(--soft)';
+  });
+  if(activeGroup) selectGroup(activeGroup);
+}
+
+document.getElementById('btn-front').addEventListener('click',()=>setSide('front'));
+document.getElementById('btn-back').addEventListener('click',()=>setSide('back'));
+document.querySelectorAll('.cat-toggle').forEach(b=>b.addEventListener('click',()=>setCat(b.dataset.cat)));
+document.querySelectorAll('.grp-chip').forEach(c=>c.addEventListener('click',()=>selectGroup(c.dataset.group)));
+
+renderBody();
+</script>
+</body>
+</html>
