@@ -2913,17 +2913,20 @@ const BODY_SLUG_GROUP = {
   quadriceps:'piernas', calves:'piernas', adductors:'piernas', tibialis:'piernas', gluteal:'piernas', hamstring:'piernas', knees:'piernas',
 };
 const BODY_GROUPS = {
-  pecho:{ label:'Brazos & Pecho', color:'#2563eb', icon:'fa-hand-fist' },
-  espalda:{ label:'Espalda, Hombros & Triceps', color:'#f59e0b', icon:'fa-child-reaching' },
-  core:{ label:'Abdomen / Core', color:'#a855f7', icon:'fa-fire-flame-curved' },
-  piernas:{ label:'Piernas & Gluteos', color:'#22c55e', icon:'fa-person-walking' },
+  pecho:{ label:'Brazos & Pecho', short:'Pecho', color:'#2563eb', icon:'fa-hand-fist' },
+  espalda:{ label:'Espalda, Hombros & Triceps', short:'Espalda', color:'#f59e0b', icon:'fa-child-reaching' },
+  core:{ label:'Abdomen / Core', short:'Core', color:'#a855f7', icon:'fa-fire-flame-curved' },
+  piernas:{ label:'Piernas & Gluteos', short:'Piernas', color:'#22c55e', icon:'fa-person-walking' },
 };
-let bodySide = 'front', bodyCat = null, bodyGroup = null;
+let bodySide = 'front', bodyCat = null, bodyLevel = 'todos', bodyMode = 'auto';
+let bodySel = [];          // grupos musculares seleccionados (multi)
+let bodyManualPicks = {};  // ejercicios elegidos a mano: nombre -> {name,reps,level}
 
 function renderBodyInteractive(cat){
-  bodyCat = cat.id; bodySide = 'front'; bodyGroup = null;
+  bodyCat = cat.id; bodySide = 'front'; bodyLevel = 'todos'; bodyMode = 'auto';
+  bodySel = []; bodyManualPicks = {};
   const grid = document.getElementById('routines-grid');
-  grid.innerHTML = buildCatHero(cat, 'Toca un musculo y te armo la rutina')
+  grid.innerHTML = buildCatHero(cat, 'Marca uno o varios musculos y arma tu rutina')
     + '<div class="grid md:grid-cols-2 gap-5 items-start">'
     +   '<div class="flex flex-col items-center">'
     +     '<div class="flex gap-2 mb-2">'
@@ -2931,14 +2934,45 @@ function renderBodyInteractive(cat){
     +       '<button id="body-back-btn" onclick="setBodySide(\'back\')" class="fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:var(--surface2);color:var(--txt-soft)"><i class="fa-solid fa-user mr-1"></i>Espalda</button>'
     +     '</div>'
     +     '<svg id="body-svg" class="w-full" style="max-width:260px;height:auto"></svg>'
+    +     '<p class="text-[11px] text-center mt-1" style="color:var(--txt-mut)">Puedes marcar varios (ej. Espalda + Piernas)</p>'
     +     '<div id="body-chips" class="flex flex-wrap justify-center gap-2 mt-2"></div>'
     +   '</div>'
-    +   '<div id="body-panel"><div id="body-empty" class="text-center py-12 px-4 rounded-2xl" style="background:var(--surface);border:1px dashed var(--border)"><i class="fa-solid fa-hand-pointer text-3xl mb-2" style="color:var(--txt-mut)"></i><p class="fun font-bold" style="color:var(--txt)">Toca un musculo</p><p class="text-sm mt-1" style="color:var(--txt-soft)">Te armo una rutina para ese grupo.</p></div><div id="body-list" class="hide"></div></div>'
+    +   '<div id="body-panel" class="space-y-3">'
+    +     buildBodyControls()
+    +     '<div id="body-content"></div>'
+    +   '</div>'
     + '</div>';
-  document.getElementById('body-chips').innerHTML = Object.keys(BODY_GROUPS).map(k =>
-    '<button onclick="selectBodyGroup(\'' + k + '\')" data-bchip="' + k + '" class="fun font-bold text-[11px] px-3 py-1.5 rounded-full" style="background:var(--surface2);color:var(--txt)">' + BODY_GROUPS[k].label + '</button>'
-  ).join('');
+  renderBodyChips();
   renderBodySvg();
+  refreshBodyPanel();
+}
+
+// Controles: selector de nivel + modo (automatica / elegir yo)
+function buildBodyControls(){
+  const levels = [['todos','Todos'],['principiante','Principiante'],['intermedio','Intermedio'],['avanzado','Avanzado']];
+  const lvBtns = levels.map(([id,lbl]) =>
+    '<button onclick="setBodyLevel(\'' + id + '\')" data-blvl="' + id + '" class="fun font-bold text-[11px] px-3 py-1.5 rounded-full" style="background:var(--surface2);color:var(--txt)">' + lbl + '</button>'
+  ).join('');
+  const modes = [['auto','Automatica','fa-wand-magic-sparkles'],['manual','Elegir yo','fa-hand-pointer']];
+  const mdBtns = modes.map(([id,lbl,ic]) =>
+    '<button onclick="setBodyMode(\'' + id + '\')" data-bmode="' + id + '" class="fun font-bold text-xs px-3 py-2 rounded-xl flex-1" style="background:var(--surface2);color:var(--txt)"><i class="fa-solid ' + ic + ' mr-1"></i>' + lbl + '</button>'
+  ).join('');
+  return ''
+    + '<div class="rounded-2xl p-3" style="background:var(--surface);border:1px solid var(--border)">'
+    +   '<p class="fun font-bold text-[11px] mb-1.5" style="color:var(--txt-soft)"><i class="fa-solid fa-signal mr-1" style="color:var(--accent)"></i>Nivel</p>'
+    +   '<div class="flex flex-wrap gap-1.5 mb-3">' + lvBtns + '</div>'
+    +   '<p class="fun font-bold text-[11px] mb-1.5" style="color:var(--txt-soft)"><i class="fa-solid fa-sliders mr-1" style="color:var(--accent)"></i>Como armamos la rutina</p>'
+    +   '<div class="flex gap-2">' + mdBtns + '</div>'
+    + '</div>';
+}
+
+function renderBodyChips(){
+  const cont = document.getElementById('body-chips'); if (!cont) return;
+  cont.innerHTML = Object.keys(BODY_GROUPS).map(k => {
+    const on = bodySel.includes(k);
+    const g = BODY_GROUPS[k];
+    return '<button onclick="toggleBodyGroup(\'' + k + '\')" data-bchip="' + k + '" class="fun font-bold text-[11px] px-3 py-1.5 rounded-full" style="background:' + (on?g.color:'var(--surface2)') + ';color:' + (on?'#fff':'var(--txt)') + '">' + (on?'<i class="fa-solid fa-check mr-1"></i>':'') + g.short + '</button>';
+  }).join('');
 }
 
 function renderBodySvg(){
@@ -2959,9 +2993,9 @@ function renderBodySvg(){
     const g = m.dataset.bgroup;
     m.addEventListener('mouseenter', () => svg.querySelectorAll('.muscle[data-bgroup="' + g + '"]').forEach(p => p.classList.add('hl')));
     m.addEventListener('mouseleave', () => svg.querySelectorAll('.muscle[data-bgroup="' + g + '"]').forEach(p => p.classList.remove('hl')));
-    m.addEventListener('click', () => selectBodyGroup(g));
+    m.addEventListener('click', () => toggleBodyGroup(g));
   });
-  if (bodyGroup) svg.querySelectorAll('.muscle[data-bgroup="' + bodyGroup + '"]').forEach(p => p.classList.add('active'));
+  bodySel.forEach(g => svg.querySelectorAll('.muscle[data-bgroup="' + g + '"]').forEach(p => p.classList.add('active')));
 }
 
 function setBodySide(s){
@@ -2973,27 +3007,6 @@ function setBodySide(s){
 }
 
 function shuffleArr(a){ const x = a.slice(); for (let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=x[i]; x[i]=x[j]; x[j]=t; } return x; }
-
-// Junta ejercicios reales de la categoria que apuntan a ese grupo muscular
-// Cada ejercicio hereda el NIVEL de la rutina de la que proviene.
-function collectGroupExercises(catId, group){
-  const cat = TRAIN_CATS.find(c => c.id === catId);
-  const routines = getCatRoutines(cat);
-  const seen = {}, pool = [];
-  routines.forEach(r => (r.exercises||[]).forEach(ex => {
-    if (inferMuscleGroup({ name: ex.name, exercises: [ex] }) === group){
-      const key = (ex.name||'').toLowerCase();
-      if (!seen[key]){ seen[key] = 1; pool.push({ name: ex.name, reps: ex.reps || 12, level: r.level || 'básico' }); }
-    }
-  }));
-  if (pool.length < 6){ // fallback: cualquier ejercicio de la categoria
-    routines.forEach(r => (r.exercises||[]).forEach(ex => {
-      const key = (ex.name||'').toLowerCase();
-      if (!seen[key]){ seen[key] = 1; pool.push({ name: ex.name, reps: ex.reps || 12, level: r.level || 'básico' }); }
-    }));
-  }
-  return pool;
-}
 
 // Etiqueta visual de nivel del ejercicio
 function exLevelBadge(level){
@@ -3007,61 +3020,190 @@ function exLevelBadge(level){
   return '<span class="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0" style="background:' + lv.bg + ';color:' + lv.fg + '">' + lv.t + '</span>';
 }
 
-function selectBodyGroup(group){
-  bodyGroup = group;
-  const svg = document.getElementById('body-svg');
-  if (svg) svg.querySelectorAll('.muscle').forEach(p => p.classList.toggle('active', p.dataset.bgroup === group));
-  document.querySelectorAll('[data-bchip]').forEach(c => {
-    const on = c.dataset.bchip === group;
-    c.style.background = on ? BODY_GROUPS[group].color : 'var(--surface2)';
-    c.style.color = on ? '#fff' : 'var(--txt)';
-  });
-  buildAndShowAssembled(group);
+// El nivel elegido (principiante/intermedio/avanzado) coincide con el nivel del ejercicio?
+function levelMatch(exLevel){
+  if (bodyLevel === 'todos') return true;
+  if (bodyLevel === 'principiante') return exLevel === 'básico';
+  if (bodyLevel === 'intermedio') return exLevel === 'intermedio';
+  if (bodyLevel === 'avanzado') return exLevel === 'avanzado' || exLevel === 'espartano';
+  return true;
 }
 
-function buildAndShowAssembled(group){
-  const g = BODY_GROUPS[group];
-  const catObj = TRAIN_CATS.find(c => c.id === bodyCat);
-  const pool = collectGroupExercises(bodyCat, group);
-  const picked = shuffleArr(pool).slice(0, 6).map(ex => ({ name: ex.name, reps: ex.reps || 12, level: ex.level || 'básico' }));
-  const rounds = bodyCat === 'crossfit' ? 4 : 3;
-  const points = Math.min(50, 12 + picked.length*3 + (bodyCat === 'crossfit' ? 8 : 0));
-  window.FM_ASSEMBLED = {
-    id: 'armada_' + bodyCat + '_' + group,
-    name: 'Rutina de ' + g.label,
-    category: bodyCat,
-    level: 'personalizada',
-    points: points, rounds: rounds,
-    description: 'Rutina armada para trabajar ' + g.label + ' con lo mejor de ' + catObj.name + '.',
-    exercises: picked,
-    _assembled: true
-  };
-  const rt = window.FM_ASSEMBLED;
-  document.getElementById('body-empty').classList.add('hide');
-  const list = document.getElementById('body-list');
-  list.classList.remove('hide');
-  list.innerHTML = ''
+// Junta ejercicios reales de la categoria para VARIOS grupos, filtrando por nivel.
+function collectExercises(catId, groups, applyLevel){
+  const cat = TRAIN_CATS.find(c => c.id === catId);
+  const routines = getCatRoutines(cat);
+  const seen = {}, pool = [];
+  routines.forEach(r => (r.exercises||[]).forEach(ex => {
+    const grp = inferMuscleGroup({ name: ex.name, exercises: [ex] });
+    if (groups.includes(grp)){
+      const key = (ex.name||'').toLowerCase();
+      const lvl = r.level || 'básico';
+      if (!seen[key] && (!applyLevel || levelMatch(lvl))){ seen[key] = 1; pool.push({ name: ex.name, reps: ex.reps || 12, level: lvl, group: grp }); }
+    }
+  }));
+  // Fallback: si el nivel dejo muy pocos, relaja el nivel (mismo grupo)
+  if (applyLevel && pool.length < 4){
+    routines.forEach(r => (r.exercises||[]).forEach(ex => {
+      const grp = inferMuscleGroup({ name: ex.name, exercises: [ex] });
+      if (groups.includes(grp)){
+        const key = (ex.name||'').toLowerCase();
+        if (!seen[key]){ seen[key] = 1; pool.push({ name: ex.name, reps: ex.reps || 12, level: r.level || 'básico', group: grp }); }
+      }
+    }));
+  }
+  return pool;
+}
+
+function toggleBodyGroup(group){
+  const i = bodySel.indexOf(group);
+  if (i >= 0) bodySel.splice(i, 1); else bodySel.push(group);
+  bodyManualPicks = {};
+  const svg = document.getElementById('body-svg');
+  if (svg) svg.querySelectorAll('.muscle').forEach(p => p.classList.toggle('active', bodySel.includes(p.dataset.bgroup)));
+  renderBodyChips();
+  refreshBodyPanel();
+}
+
+function setBodyLevel(lv){
+  bodyLevel = lv; bodyManualPicks = {};
+  document.querySelectorAll('[data-blvl]').forEach(b => {
+    const on = b.dataset.blvl === lv;
+    b.style.background = on ? 'var(--accent)' : 'var(--surface2)';
+    b.style.color = on ? '#fff' : 'var(--txt)';
+  });
+  refreshBodyPanel();
+}
+
+function setBodyMode(m){
+  bodyMode = m; bodyManualPicks = {};
+  document.querySelectorAll('[data-bmode]').forEach(b => {
+    const on = b.dataset.bmode === m;
+    b.style.background = on ? 'var(--brand)' : 'var(--surface2)';
+    b.style.color = on ? '#fff' : 'var(--txt)';
+  });
+  refreshBodyPanel();
+}
+
+// Nombre y color de la rutina segun los grupos elegidos
+function routineMeta(){
+  const labels = bodySel.map(g => BODY_GROUPS[g].short);
+  const name = 'Rutina de ' + labels.join(' + ');
+  const color = bodySel.length === 1 ? BODY_GROUPS[bodySel[0]].color : 'var(--brand)';
+  return { name, color };
+}
+
+function refreshBodyPanel(){
+  // reactiva estilos de nivel/modo
+  document.querySelectorAll('[data-blvl]').forEach(b => { const on = b.dataset.blvl === bodyLevel; b.style.background = on ? 'var(--accent)' : 'var(--surface2)'; b.style.color = on ? '#fff' : 'var(--txt)'; });
+  document.querySelectorAll('[data-bmode]').forEach(b => { const on = b.dataset.bmode === bodyMode; b.style.background = on ? 'var(--brand)' : 'var(--surface2)'; b.style.color = on ? '#fff' : 'var(--txt)'; });
+  const box = document.getElementById('body-content'); if (!box) return;
+  if (!bodySel.length){
+    box.innerHTML = '<div class="text-center py-10 px-4 rounded-2xl" style="background:var(--surface);border:1px dashed var(--border)"><i class="fa-solid fa-hand-pointer text-3xl mb-2" style="color:var(--txt-mut)"></i><p class="fun font-bold" style="color:var(--txt)">Marca un musculo</p><p class="text-sm mt-1" style="color:var(--txt-soft)">Toca el cuerpo o los chips. Puedes elegir varios.</p></div>';
+    return;
+  }
+  if (bodyMode === 'auto') buildAuto(); else buildManual();
+}
+
+function buildAuto(){
+  const meta = routineMeta();
+  const pool = collectExercises(bodyCat, bodySel, true);
+  const target = bodySel.length > 1 ? 8 : 6;
+  const picked = shuffleArr(pool).slice(0, target);
+  renderAssembledCard(meta, picked, true);
+}
+
+function buildManual(){
+  const meta = routineMeta();
+  const pool = collectExercises(bodyCat, bodySel, true);
+  window.__bodyPool = {}; pool.forEach(e => window.__bodyPool[e.name] = e);
+  const box = document.getElementById('body-content');
+  const n = Object.keys(bodyManualPicks).length;
+  box.innerHTML = ''
     + '<div class="rounded-2xl overflow-hidden cat-fade" style="background:var(--surface);border:1px solid var(--border)">'
-    +   '<div class="p-4" style="background:linear-gradient(120deg,' + g.color + ',' + g.color + '99)">'
-    +     '<div class="flex items-center gap-3">'
-    +       '<div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl text-white" style="background:rgba(255,255,255,.2)"><i class="fa-solid ' + g.icon + '"></i></div>'
-    +       '<div><div class="fun text-xl font-extrabold text-white">' + rt.name + '</div><div class="text-xs font-semibold text-white/90">' + rt.exercises.length + ' ejercicios - ' + rt.rounds + ' rondas - +' + rt.points + ' PX</div></div>'
-    +     '</div>'
+    +   '<div class="p-3" style="background:linear-gradient(120deg,' + meta.color + ',' + meta.color + '99)">'
+    +     '<div class="fun text-lg font-extrabold text-white">Elige tus ejercicios</div>'
+    +     '<div class="text-xs font-semibold text-white/90">' + pool.length + ' disponibles para ' + meta.name.replace('Rutina de ','') + '</div>'
     +   '</div>'
-    +   '<div class="p-3 space-y-2">'
-    +   rt.exercises.map((e,i) => ''
+    +   '<div class="p-3 space-y-2 max-h-72 overflow-y-auto">'
+    +   (pool.length ? pool.map(e => {
+          const on = !!bodyManualPicks[e.name];
+          const safe = e.name.replace(/'/g, "\\'");
+          return '<button onclick="toggleManualPick(\'' + safe + '\')" class="w-full flex items-center gap-3 p-2.5 rounded-xl text-left" style="background:var(--surface2);border:1px solid ' + (on ? meta.color : 'var(--border)') + '">'
+            + '<span class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background:' + (on ? meta.color : 'var(--bg)') + ';color:#fff">' + (on ? '<i class="fa-solid fa-check text-xs"></i>' : '') + '</span>'
+            + '<span class="flex-1 min-w-0 fun font-bold text-sm" style="color:var(--txt)">' + e.name + '</span>'
+            + exLevelBadge(e.level)
+            + '<span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style="background:var(--bg);color:var(--txt-soft)">x' + e.reps + '</span>'
+            + '</button>';
+        }).join('') : '<p class="text-center py-6 text-sm" style="color:var(--txt-mut)">No hay ejercicios para ese nivel. Prueba con \'Todos\'.</p>')
+    +   '</div>'
+    +   '<div class="p-3 pt-0">'
+    +     '<button onclick="startManualRoutine()" ' + (n ? '' : 'disabled') + ' class="w-full py-3 rounded-xl fun font-extrabold text-white" style="background:' + (n ? 'linear-gradient(120deg,' + meta.color + ',' + meta.color + 'cc)' : 'var(--surface2)') + (n ? '' : ';opacity:.5;cursor:not-allowed') + '"><i class="fa-solid fa-play mr-1"></i>Empezar (' + n + ' ejercicios)</button>'
+    +   '</div>'
+    + '</div>';
+}
+
+function toggleManualPick(name){
+  if (bodyManualPicks[name]) delete bodyManualPicks[name];
+  else if (window.__bodyPool && window.__bodyPool[name]) bodyManualPicks[name] = window.__bodyPool[name];
+  buildManual();
+}
+
+function startManualRoutine(){
+  const picked = Object.values(bodyManualPicks);
+  if (!picked.length) return;
+  startAssembled(routineMeta(), picked);
+}
+
+// Tarjeta de rutina armada (modo automatico) con shuffle + empezar
+function renderAssembledCard(meta, picked, showShuffle){
+  const box = document.getElementById('body-content');
+  const rt = buildAssembledObj(meta, picked);
+  box.innerHTML = ''
+    + '<div class="rounded-2xl overflow-hidden cat-fade" style="background:var(--surface);border:1px solid var(--border)">'
+    +   '<div class="p-4" style="background:linear-gradient(120deg,' + meta.color + ',' + meta.color + '99)">'
+    +     '<div class="fun text-xl font-extrabold text-white">' + rt.name + '</div>'
+    +     '<div class="text-xs font-semibold text-white/90">' + rt.exercises.length + ' ejercicios - ' + rt.rounds + ' rondas - +' + rt.points + ' PX</div>'
+    +   '</div>'
+    +   '<div class="p-3 space-y-2 max-h-72 overflow-y-auto">'
+    +   (rt.exercises.length ? rt.exercises.map((e,i) => ''
         + '<div class="flex items-center gap-3 p-2.5 rounded-xl" style="background:var(--surface2);border:1px solid var(--border)">'
-        +   '<div class="w-7 h-7 rounded-lg flex items-center justify-center fun font-extrabold text-sm shrink-0" style="background:' + g.color + '33;color:' + g.color + '">' + (i+1) + '</div>'
+        +   '<div class="w-7 h-7 rounded-lg flex items-center justify-center fun font-extrabold text-sm shrink-0" style="background:' + meta.color + '33;color:' + meta.color + '">' + (i+1) + '</div>'
         +   '<div class="flex-1 min-w-0 fun font-bold text-sm" style="color:var(--txt)">' + e.name + '</div>'
         +   exLevelBadge(e.level)
         +   '<span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style="background:var(--bg);color:var(--txt-soft)">x' + e.reps + '</span>'
-        + '</div>').join('')
+        + '</div>').join('') : '<p class="text-center py-6 text-sm" style="color:var(--txt-mut)">No hay ejercicios para ese nivel. Prueba con \'Todos\'.</p>')
     +   '</div>'
     +   '<div class="p-3 pt-0 flex gap-2">'
-    +     '<button onclick="buildAndShowAssembled(\'' + group + '\')" class="px-3 py-3 rounded-xl fun font-bold" style="background:var(--surface2);color:var(--txt)" title="Otra variante"><i class="fa-solid fa-shuffle"></i></button>'
-    +     '<button onclick="openRoutineDetail(\'' + rt.id + '\',\'specialized\')" class="flex-1 py-3 rounded-xl fun font-extrabold text-white" style="background:linear-gradient(120deg,' + g.color + ',' + g.color + 'cc)"><i class="fa-solid fa-play mr-1"></i>Empezar esta rutina</button>'
+    +     (showShuffle ? '<button onclick="buildAuto()" class="px-3 py-3 rounded-xl fun font-bold" style="background:var(--surface2);color:var(--txt)" title="Otra variante"><i class="fa-solid fa-shuffle"></i></button>' : '')
+    +     '<button onclick="startAssembledCurrent()" ' + (rt.exercises.length ? '' : 'disabled') + ' class="flex-1 py-3 rounded-xl fun font-extrabold text-white" style="background:linear-gradient(120deg,' + meta.color + ',' + meta.color + 'cc)' + (rt.exercises.length ? '' : ';opacity:.5;cursor:not-allowed') + '"><i class="fa-solid fa-play mr-1"></i>Empezar esta rutina</button>'
     +   '</div>'
     + '</div>';
+}
+
+function buildAssembledObj(meta, picked){
+  const catObj = TRAIN_CATS.find(c => c.id === bodyCat);
+  const rounds = bodyCat === 'crossfit' ? 4 : 3;
+  const points = Math.min(60, 12 + picked.length*3 + (bodyCat === 'crossfit' ? 8 : 0));
+  window.FM_ASSEMBLED = {
+    id: 'armada_' + bodyCat + '_' + bodySel.join('-'),
+    name: meta.name,
+    category: bodyCat,
+    level: 'personalizada',
+    points: points, rounds: rounds,
+    description: meta.name + ' con lo mejor de ' + catObj.name + '.',
+    exercises: picked.map(e => ({ name: e.name, reps: e.reps || 12, level: e.level || 'básico' })),
+    _assembled: true
+  };
+  return window.FM_ASSEMBLED;
+}
+
+function startAssembled(meta, picked){
+  const rt = buildAssembledObj(meta, picked);
+  openRoutineDetail(rt.id, 'specialized');
+}
+function startAssembledCurrent(){
+  if (window.FM_ASSEMBLED) openRoutineDetail(window.FM_ASSEMBLED.id, 'specialized');
 }
 
 function renderRoutinePicker() {
