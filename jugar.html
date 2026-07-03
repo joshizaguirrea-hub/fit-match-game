@@ -3899,6 +3899,9 @@ function moveStation(i, dir){
   const r = selectedRoutine;
   const j = i + dir;
   if (j < 0 || j >= r.exercises.length) return;
+  // guardar el scroll para que la vista NO brinque al inicio tras redibujar
+  const modal = document.getElementById('routine-active-modal');
+  const keepScroll = modal ? modal.scrollTop : 0;
   // intercambia ejercicios y su progreso
   const tmpEx = r.exercises[i]; r.exercises[i] = r.exercises[j]; r.exercises[j] = tmpEx;
   const tmpP = stationProgress[i]; stationProgress[i] = stationProgress[j]; stationProgress[j] = tmpP;
@@ -3907,6 +3910,8 @@ function moveStation(i, dir){
   // recordar el nuevo orden para la proxima vez
   if (window.FMMem && r.id) FMMem.orderSet(r.id, r.exercises.map(function(e){ return e.name; }));
   renderStation();
+  // restaurar el scroll donde estabas
+  if (modal) modal.scrollTop = keepScroll;
 }
 
 // Marca/desmarca una rutina como favorita (la IA la recuerda)
