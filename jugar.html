@@ -151,7 +151,7 @@
 <script src="fm-specialized-routines.js?v=36"></script>
 <script src="fm-bodymap-data.js?v=2"></script>
 <script src="fm-exercise-photos.js?v=2"></script>
-<script src="fm-memory.js?v=3"></script>
+<script src="fm-memory.js?v=4"></script>
 <script src="fm-safety.js?v=1"></script>
 <script src="fm-badges.js?v=33"></script>
 <script src="fm-videos.js?v=2"></script>
@@ -206,6 +206,28 @@
     <button class="fm-foot-btn" onclick="openClanTab()" title="Tu Clan"><i class="fa-solid fa-shield-halved" style="color:#a855f7"></i>Clan</button>
   </div>
 </nav>
+
+<!-- ===== TIENDA (FitCoins) ===== -->
+<style>
+  /* Blindaje: el modal de Tienda es tarjeta blanca; forzamos texto legible
+     con mayor especificidad para que NINGUN tema (que reescribe .text-gray-*)
+     lo deje invisible. */
+  #tienda-modal .text-gray-900{color:#111827 !important;}
+  #tienda-modal .text-gray-700{color:#374151 !important;}
+  #tienda-modal .text-gray-500{color:#6b7280 !important;}
+  #tienda-modal .bg-white{background:#ffffff !important;}
+</style>
+<div id="tienda-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100085] p-4 overflow-y-auto" onclick="if(event.target===this)closeTienda()">
+  <div class="bg-white border-4 border-gray-900 rounded-3xl p-5 max-w-lg w-full relative shadow-[8px_8px_0_#111827] text-gray-900 mx-auto my-8">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="fun text-2xl font-bold flex items-center gap-2"><i class="fa-solid fa-store text-amber-500"></i>Tienda</h3>
+      <span class="inline-flex items-center gap-1.5 bg-yellow-400 border-2 border-gray-900 px-3 py-1 rounded-full text-sm font-extrabold"><i class="fa-solid fa-coins"></i><span id="tienda-coins">0</span></span>
+    </div>
+    <p class="text-gray-500 text-xs mb-3">Gana FitCoins entrenando y gasta aquí. Lo comprado se guarda en tu cuenta y se sincroniza entre dispositivos.</p>
+    <div id="tienda-body" class="space-y-5 max-h-[65vh] overflow-y-auto pr-1"></div>
+    <button onclick="closeTienda()" class="w-full mt-4 fun font-bold text-gray-700 py-2.5 rounded-full border-2 border-gray-900 bg-white hover:bg-gray-100 transition">Cerrar</button>
+  </div>
+</div>
 
 <!-- Botón Flotante para abrir Chat/Social -->
 <button onclick="toggleSocialSidebar()" class="social-toggle-btn">
@@ -328,8 +350,9 @@
 
     <!-- DERECHA: racha + monedas + salir -->
     <div class="flex items-center justify-end gap-2">
+      <span id="play-title-chip" class="hidden inline-flex items-center gap-1 bg-purple-100 border-2 border-gray-900 px-2.5 py-1.5 rounded-full text-[11px] font-extrabold text-purple-800" title="Tu título"><i class="fa-solid fa-crown text-purple-500"></i><span id="play-title"></span></span>
       <span id="play-streak-chip" class="hidden inline-flex items-center gap-1 bg-orange-100 border-2 border-gray-900 px-2.5 py-1.5 rounded-full text-xs font-extrabold text-orange-700" title="Tu racha de días"><i class="fa-solid fa-fire text-orange-500"></i><span id="play-streak">0</span></span>
-      <span id="play-coins-chip" class="hidden inline-flex items-center gap-1.5 bg-yellow-400 border-2 border-gray-900 px-3 py-1.5 rounded-full text-xs font-extrabold text-gray-900" title="Tus FitCoins"><i class="fa-solid fa-coins"></i><span id="play-coins">0</span></span>
+      <span id="play-coins-chip" onclick="openTienda()" class="hidden cursor-pointer hover:brightness-95 inline-flex items-center gap-1.5 bg-yellow-400 border-2 border-gray-900 px-3 py-1.5 rounded-full text-xs font-extrabold text-gray-900" title="Abrir la Tienda"><i class="fa-solid fa-coins"></i><span id="play-coins">0</span><i class="fa-solid fa-store ml-1 text-[10px] opacity-70"></i></span>
       <button id="play-btn-logout" onclick="handlePlayLogout()" title="Cerrar sesión" class="hidden inline-flex items-center gap-1 text-gray-500 hover:text-red-500 font-bold text-sm transition">
         <i class="fa-solid fa-sign-out-alt"></i><span class="hidden md:inline">Salir</span>
       </button>
@@ -1504,9 +1527,17 @@ async function mcGetStreak(){
       if(dias[0] !== fmt(cursor)) return 0;
     }
     let streak = 0;
-    for(const dia of dias){
-      if(dia === fmt(cursor)){ streak++; cursor.setDate(cursor.getDate()-1); }
-      else break;
+    let i = 0, guard = 0;
+    while(i < dias.length && guard < 400){
+      guard++;
+      const dia = dias[i];
+      if(dia === fmt(cursor)){ streak++; cursor.setDate(cursor.getDate()-1); i++; continue; }
+      // Hueco: el dia esperado no se entreno. ¿Lo salva "Congelar Racha"?
+      const missing = fmt(cursor);
+      const canFreeze = !!(window.FMMem && (FMMem.shopIsFrozen(missing) ||
+        (FMMem.shopTokens('freeze') > 0 && FMMem.shopUseToken('freeze') && FMMem.shopFreeze(missing))));
+      if(canFreeze){ cursor.setDate(cursor.getDate()-1); continue; } // saltamos el dia congelado, sin sumar
+      break;
     }
     return streak;
   }catch(e){ return 0; }
@@ -2564,16 +2595,166 @@ function getMilitaryRank(points) {
 }
 
 // Cerrar sesión limpio desde la pantalla de juego (re-ingreso sin fantasmas)
-function openTiendaSoon(){
-  // La Tienda aun no existe; mostramos un aviso honesto de "proximamente".
-  const msg = 'Aqui podras gastar tus FitCoins en power-ups, temas y mas. ¡Sigue entrenando para juntar monedas!';
-  if (window.FMNotify && window.FMNotify.toast) {
-    window.FMNotify.toast({ title: 'Tienda (proximamente)', message: msg, icon: 'fa-store', color: '#f59e0b' });
-  } else {
-    alert('Tienda (proximamente)\n\n' + msg);
-  }
+/* ============ TIENDA (FitCoins) ============ */
+const FM_SHOP = {
+  themes: [
+    { id:'theme_default', name:'Cl\u00e1sico', price:0, desc:'El look original', vars:{ '--bg':'#0f1117','--surface':'#181c2a','--surface2':'#222842','--border':'#2c3350','--txt':'#eceefb','--txt-soft':'#b2b9d4','--txt-mut':'#8b92b0' } },
+    { id:'theme_neon', name:'Noche Ne\u00f3n', price:200, desc:'Morado y cian vibrantes', vars:{ '--bg':'#0a0a16','--surface':'#141433','--surface2':'#1f1f4d','--border':'#3a2f6b','--txt':'#f0eaff','--txt-soft':'#c3b8ee','--txt-mut':'#8f86c9' } },
+    { id:'theme_gold', name:'Dios Griego', price:300, desc:'Oro sobre m\u00e1rmol oscuro', vars:{ '--bg':'#12100a','--surface':'#211d12','--surface2':'#302915','--border':'#4d3f1f','--txt':'#fff4d6','--txt-soft':'#e8d4a0','--txt-mut':'#b89a5e' } },
+    { id:'theme_ocean', name:'Oc\u00e9ano', price:200, desc:'Azules profundos', vars:{ '--bg':'#081420','--surface':'#0f2333','--surface2':'#163348','--border':'#1f4a63','--txt':'#e0f2ff','--txt-soft':'#a8d3ea','--txt-mut':'#6fa3bf' } },
+    { id:'theme_forest', name:'Bosque', price:200, desc:'Verdes de la selva', vars:{ '--bg':'#0a140d','--surface':'#122318','--surface2':'#1a3323','--border':'#274a33','--txt':'#e6f5ea','--txt-soft':'#aed6bb','--txt-mut':'#71a082' } },
+    { id:'theme_sakura', name:'Sakura', price:250, desc:'Rosa suave', vars:{ '--bg':'#1a0e14','--surface':'#2b1620','--surface2':'#3d1f2e','--border':'#5c2f45','--txt':'#ffe6f0','--txt-soft':'#eeb8ce','--txt-mut':'#c47f9d' } }
+  ],
+  titles: [
+    { id:'title_bestia', name:'La Bestia', price:100 },
+    { id:'title_imparable', name:'El Imparable', price:100 },
+    { id:'title_maquina', name:'La M\u00e1quina', price:120 },
+    { id:'title_reygym', name:'Rey del Gym', price:150 },
+    { id:'title_espartano', name:'Espartano', price:200 },
+    { id:'title_leyenda', name:'Leyenda Viva', price:300 }
+  ],
+  consumables: [
+    { id:'boost_x2', token:'boost', name:'Boost x2 PX', price:150, icon:'fa-bolt', color:'#f59e0b', desc:'Duplica los puntos de tu PR\u00d3XIMO entreno.' },
+    { id:'freeze', token:'freeze', name:'Congelar Racha', price:200, icon:'fa-snowflake', color:'#38bdf8', desc:'Si faltas un d\u00eda, tu racha no se rompe. Se usa autom\u00e1ticamente.' }
+  ]
+};
+
+function _shopTheme(id){ return FM_SHOP.themes.find(function(t){ return t.id === id; }) || FM_SHOP.themes[0]; }
+function _shopTitle(id){ return FM_SHOP.titles.find(function(t){ return t.id === id; }) || null; }
+
+// Aplica un tema poniendo las variables CSS en :root.
+function applyTheme(themeId){
+  const t = _shopTheme(themeId);
+  const root = document.documentElement;
+  Object.keys(t.vars).forEach(function(k){ root.style.setProperty(k, t.vars[k]); });
 }
-window.openTiendaSoon = openTiendaSoon;
+
+// Muestra el titulo equipado en el chip del header.
+function updateTitleChip(){
+  const chip = document.getElementById('play-title-chip');
+  const span = document.getElementById('play-title');
+  if(!chip || !span) return;
+  const id = (window.FMMem && cloudUser) ? FMMem.shopActive('title') : null;
+  const t = id ? _shopTitle(id) : null;
+  if(t && window.FMMem && FMMem.shopOwns(t.id)){ span.textContent = t.name; chip.classList.remove('hidden'); }
+  else { chip.classList.add('hidden'); }
+}
+
+// Aplica tema + titulo guardados (al cargar la sesion).
+function applyActiveCosmetics(){
+  if(!window.FMMem) return;
+  const themeId = FMMem.shopActive('theme');
+  if(themeId) applyTheme(themeId);
+  updateTitleChip();
+}
+window.applyActiveCosmetics = applyActiveCosmetics;
+
+function openTienda(){
+  if(!cloudUser){
+    if(window.FMNotify) FMNotify.toast({ title:'Con\u00e9ctate', message:'Inicia sesi\u00f3n para usar la Tienda y guardar tus compras.', icon:'fa-store', color:'#f59e0b' });
+    else alert('Con\u00e9ctate para usar la Tienda.');
+    return;
+  }
+  renderTienda();
+  document.getElementById('tienda-modal').classList.remove('hidden');
+}
+window.openTienda = openTienda;
+function closeTienda(){ document.getElementById('tienda-modal').classList.add('hidden'); }
+window.closeTienda = closeTienda;
+
+function renderTienda(){
+  const body = document.getElementById('tienda-body');
+  const coinsEl = document.getElementById('tienda-coins');
+  if(coinsEl) coinsEl.textContent = cloudCoins || 0;
+  if(!body || !window.FMMem) return;
+  const owns = function(id){ return FMMem.shopOwns(id); };
+  const activeTheme = FMMem.shopActive('theme') || 'theme_default';
+  const activeTitle = FMMem.shopActive('title');
+
+  // --- POWER-UPS (consumibles) ---
+  const powerRows = FM_SHOP.consumables.map(function(c){
+    const have = FMMem.shopTokens(c.token);
+    return '<div class="border-2 border-gray-900 rounded-2xl p-3 flex items-center gap-3 bg-white">' +
+      '<div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg shrink-0" style="background:' + c.color + '"><i class="fa-solid ' + c.icon + '"></i></div>' +
+      '<div class="flex-1 min-w-0"><p class="font-bold text-sm">' + c.name + (have ? ' <span class="text-emerald-600">x' + have + '</span>' : '') + '</p><p class="text-gray-500 text-[11px] leading-tight">' + c.desc + '</p></div>' +
+      '<button onclick="buyConsumable(\'' + c.id + '\')" class="shrink-0 bg-amber-400 hover:bg-amber-500 border-2 border-gray-900 rounded-full px-3 py-1.5 text-xs font-extrabold"><i class="fa-solid fa-coins mr-1"></i>' + c.price + '</button>' +
+    '</div>';
+  }).join('');
+
+  // --- TEMAS ---
+  const themeRows = FM_SHOP.themes.map(function(t){
+    const owned = t.price === 0 || owns(t.id);
+    const isActive = activeTheme === t.id;
+    const swatch = '<span class="inline-flex gap-0.5 shrink-0">' +
+      '<span style="width:12px;height:22px;border-radius:4px 0 0 4px;background:' + t.vars['--bg'] + '"></span>' +
+      '<span style="width:12px;height:22px;background:' + t.vars['--surface2'] + '"></span>' +
+      '<span style="width:12px;height:22px;border-radius:0 4px 4px 0;background:' + t.vars['--txt'] + '"></span></span>';
+    let btn;
+    if(isActive) btn = '<span class="shrink-0 text-emerald-600 text-xs font-extrabold"><i class="fa-solid fa-check mr-1"></i>En uso</span>';
+    else if(owned) btn = '<button onclick="equipCosmetic(\'theme\',\'' + t.id + '\')" class="shrink-0 bg-purple-600 hover:bg-purple-700 text-white rounded-full px-3 py-1.5 text-xs font-bold">Equipar</button>';
+    else btn = '<button onclick="buyCosmetic(\'theme\',\'' + t.id + '\')" class="shrink-0 bg-amber-400 hover:bg-amber-500 border-2 border-gray-900 rounded-full px-3 py-1.5 text-xs font-extrabold"><i class="fa-solid fa-coins mr-1"></i>' + t.price + '</button>';
+    return '<div class="border-2 border-gray-900 rounded-2xl p-3 flex items-center gap-3 bg-white">' + swatch +
+      '<div class="flex-1 min-w-0"><p class="font-bold text-sm">' + t.name + '</p><p class="text-gray-500 text-[11px]">' + t.desc + '</p></div>' + btn + '</div>';
+  }).join('');
+
+  // --- TITULOS ---
+  const titleRows = FM_SHOP.titles.map(function(t){
+    const owned = owns(t.id);
+    const isActive = activeTitle === t.id;
+    let btn;
+    if(isActive) btn = '<button onclick="equipCosmetic(\'title\',null)" class="shrink-0 text-red-500 text-xs font-bold">Quitar</button>';
+    else if(owned) btn = '<button onclick="equipCosmetic(\'title\',\'' + t.id + '\')" class="shrink-0 bg-purple-600 hover:bg-purple-700 text-white rounded-full px-3 py-1.5 text-xs font-bold">Equipar</button>';
+    else btn = '<button onclick="buyCosmetic(\'title\',\'' + t.id + '\')" class="shrink-0 bg-amber-400 hover:bg-amber-500 border-2 border-gray-900 rounded-full px-3 py-1.5 text-xs font-extrabold"><i class="fa-solid fa-coins mr-1"></i>' + t.price + '</button>';
+    return '<div class="border-2 border-gray-900 rounded-2xl p-3 flex items-center gap-3 bg-white">' +
+      '<i class="fa-solid fa-crown text-purple-500 text-lg shrink-0"></i>' +
+      '<div class="flex-1 min-w-0"><p class="font-bold text-sm">\u201c' + t.name + '\u201d</p>' + (isActive ? '<p class="text-emerald-600 text-[11px] font-bold">Equipado</p>' : '') + '</div>' + btn + '</div>';
+  }).join('');
+
+  body.innerHTML =
+    '<div><p class="fun font-bold text-sm mb-2 flex items-center gap-1"><i class="fa-solid fa-bolt text-amber-500"></i>Power-ups</p><div class="space-y-2">' + powerRows + '</div></div>' +
+    '<div><p class="fun font-bold text-sm mb-2 flex items-center gap-1"><i class="fa-solid fa-palette text-purple-500"></i>Temas</p><div class="space-y-2">' + themeRows + '</div></div>' +
+    '<div><p class="fun font-bold text-sm mb-2 flex items-center gap-1"><i class="fa-solid fa-crown text-purple-500"></i>T\u00edtulos</p><div class="space-y-2">' + titleRows + '</div></div>';
+}
+
+// Compra un cosmetico (kind: 'theme'|'title').
+async function buyCosmetic(kind, id){
+  const item = kind === 'theme' ? _shopTheme(id) : _shopTitle(id);
+  if(!item) return;
+  if((cloudCoins||0) < item.price){
+    if(window.FMNotify) FMNotify.toast({ title:'Te faltan FitCoins', message:'Necesitas ' + item.price + '. Sigue entrenando \ud83d\udcaa', icon:'fa-coins', color:'#ef4444' });
+    return;
+  }
+  const paid = await addFitCoins(-item.price);
+  if(paid === 0){ alert('No se pudo completar la compra.'); return; }
+  FMMem.shopBuy(id);
+  if(window.FMNotify) FMNotify.toast({ title:'\u00a1Comprado!', message:item.name, icon:'fa-bag-shopping', color:'#a855f7' });
+  renderTienda();
+}
+window.buyCosmetic = buyCosmetic;
+
+// Equipa (o quita, con id=null) un cosmetico.
+function equipCosmetic(kind, id){
+  FMMem.shopSetActive(kind, id);
+  applyActiveCosmetics();
+  renderTienda();
+}
+window.equipCosmetic = equipCosmetic;
+
+// Compra un consumible (power-up).
+async function buyConsumable(id){
+  const c = FM_SHOP.consumables.find(function(x){ return x.id === id; });
+  if(!c) return;
+  if((cloudCoins||0) < c.price){
+    if(window.FMNotify) FMNotify.toast({ title:'Te faltan FitCoins', message:'Necesitas ' + c.price + '. Sigue entrenando \ud83d\udcaa', icon:'fa-coins', color:'#ef4444' });
+    return;
+  }
+  const paid = await addFitCoins(-c.price);
+  if(paid === 0){ alert('No se pudo completar la compra.'); return; }
+  FMMem.shopAddToken(c.token, 1);
+  if(window.FMNotify) FMNotify.toast({ title:'\u00a1' + c.name + ' comprado!', message:'Tienes x' + FMMem.shopTokens(c.token), icon:c.icon, color:c.color });
+  renderTienda();
+}
+window.buyConsumable = buyConsumable;
 
 async function handlePlayLogout() {  const supabase = window.FMAuth && window.FMAuth.getClient ? window.FMAuth.getClient() : null;
   if (!supabase) { window.location.href = 'index.html'; return; }
@@ -2594,6 +2775,8 @@ cloudUser = user;
     window.cloudUser = user; // accesible para modulos externos (Salas, etc.)
     // Memoria en la nube: conectar y traer/fusionar lo guardado en otros dispositivos
     if (window.FMMem) { try { FMMem.configCloud(supabase, user.id); await FMMem.cloudPull(); } catch (e) {} }
+    // Tienda: aplicar tema y titulo comprados (ya sincronizados desde la nube)
+    try { applyActiveCosmetics(); } catch (e) {}
     const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (profile) {
       cloudProfile = profile;
@@ -4447,15 +4630,23 @@ async function finalizeWorkout() {
   document.getElementById('routine-active-modal').classList.add('hidden');
   document.body.classList.remove('workout-active');
 
+  // Boost x2 PX: si tienes un token activo, duplica los puntos de ESTE entreno (y lo consume).
+  let earnedPoints = r.points;
+  let boostUsed = false;
+  if (cloudUser && window.FMMem && FMMem.shopTokens('boost') > 0 && FMMem.shopUseToken('boost')) {
+    earnedPoints = r.points * 2;
+    boostUsed = true;
+  }
+
   // Actualizar puntos locales del jugador
-  G.players[0].pts += r.points;
+  G.players[0].pts += earnedPoints;
 
   // ¿Se completó dentro de una Sala de Entrenamiento grupal?
   const inRoom = !!window.FM_CURRENT_ROOM;
 
   // Registrar en la nube si está conectado
   if (cloudUser) {
-    await syncWorkoutToCloud(true, r.points, r.level, r.name, inRoom);
+    await syncWorkoutToCloud(true, earnedPoints, r.level, r.name, inRoom);
   }
 
   // === ECONOMIA: calcular y otorgar FitCoins ===
@@ -4476,7 +4667,8 @@ async function finalizeWorkout() {
   }
 
   // Pantalla de Mision Cumplida (retencion + dopamina)
-  showMissionComplete({ points: r.points, routineName: r.name, timeSec: routineSecondsElapsed, coins: coinsEarned, streak, team: inRoom });
+  if (boostUsed && window.FMNotify) FMNotify.toast({ title: '\u00a1Boost x2 activado!', message: 'Ganaste ' + earnedPoints + ' puntos (doble).', icon: 'fa-bolt', color: '#f59e0b' });
+  showMissionComplete({ points: earnedPoints, routineName: r.name, timeSec: routineSecondsElapsed, coins: coinsEarned, streak, team: inRoom });
 
   // Limpiar el marcador de sala (ya se conto este entreno)
   window.FM_CURRENT_ROOM = null;

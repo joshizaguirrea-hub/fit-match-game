@@ -27,6 +27,11 @@
     if (!m.favorites) m.favorites = {};
     if (!m.recent) m.recent = [];
     if (!m.orders) m.orders = {};
+    if (!m.shop) m.shop = { owned: {}, active: {}, tokens: {} };
+    if (!m.shop.owned) m.shop.owned = {};
+    if (!m.shop.active) m.shop.active = {};
+    if (!m.shop.tokens) m.shop.tokens = {};
+    if (!m.shop.frozen) m.shop.frozen = {};
     return m;
   }
 
@@ -99,6 +104,36 @@
     save(m);
   }
 
+  // ---- TIENDA (skins, titulos, tokens) ----
+  // owned: {itemId:true} lo que compraste. active: {theme:'id', title:'id'} lo equipado.
+  // tokens: {boost:n, freeze:n} consumibles.
+  function shopOwns(itemId) { return !!ensure(load()).shop.owned[itemId]; }
+  function shopBuy(itemId) {
+    var m = ensure(load());
+    m.shop.owned[itemId] = true; save(m); return true;
+  }
+  function shopActive(kind) { return ensure(load()).shop.active[kind] || null; }
+  function shopSetActive(kind, itemId) {
+    var m = ensure(load());
+    if (itemId === null) delete m.shop.active[kind];
+    else m.shop.active[kind] = itemId;
+    save(m); return itemId;
+  }
+  function shopTokens(name) { return ensure(load()).shop.tokens[name] || 0; }
+  function shopAddToken(name, n) {
+    var m = ensure(load());
+    m.shop.tokens[name] = Math.max(0, (m.shop.tokens[name] || 0) + (n || 0));
+    save(m); return m.shop.tokens[name];
+  }
+  function shopUseToken(name) {
+    var m = ensure(load());
+    if ((m.shop.tokens[name] || 0) <= 0) return false;
+    m.shop.tokens[name] -= 1; save(m); return true;
+  }
+  // Dias de racha protegidos con "Congelar Racha" (idempotente: no cobra 2 veces).
+  function shopIsFrozen(day) { return !!ensure(load()).shop.frozen[day]; }
+  function shopFreeze(day) { var m = ensure(load()); m.shop.frozen[day] = true; save(m); return true; }
+
   // ---- RESUMEN (para el Entrenador IA) ----
   function summary() {
     var m = ensure(load());
@@ -152,6 +187,17 @@
     Object.keys(remote.orders).forEach(function (k) {
       if (!m.orders[k]) m.orders[k] = remote.orders[k];
     });
+    // Tienda: comprados = union; activos = rellena lo que falte; tokens = maximo.
+    if (remote.shop) {
+      Object.keys(remote.shop.owned || {}).forEach(function (k) { m.shop.owned[k] = true; });
+      Object.keys(remote.shop.active || {}).forEach(function (k) {
+        if (!m.shop.active[k]) m.shop.active[k] = remote.shop.active[k];
+      });
+      Object.keys(remote.shop.tokens || {}).forEach(function (k) {
+        m.shop.tokens[k] = Math.max(m.shop.tokens[k] || 0, remote.shop.tokens[k] || 0);
+      });
+      Object.keys(remote.shop.frozen || {}).forEach(function (k) { m.shop.frozen[k] = true; });
+    }
     save(m);
     return m;
   }
@@ -185,6 +231,9 @@
     favIs: favIs, favToggle: favToggle, favList: favList,
     recordRoutine: recordRoutine, recentList: recentList, summary: summary,
     orderGet: orderGet, orderSet: orderSet,
+    shopOwns: shopOwns, shopBuy: shopBuy, shopActive: shopActive, shopSetActive: shopSetActive,
+    shopTokens: shopTokens, shopAddToken: shopAddToken, shopUseToken: shopUseToken,
+    shopIsFrozen: shopIsFrozen, shopFreeze: shopFreeze,
     configCloud: configCloud, cloudPull: cloudPull, cloudPush: cloudPush
   };
 })();
