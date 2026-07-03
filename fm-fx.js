@@ -13,6 +13,10 @@
 
   // ---------- AUDIO ----------
   let actx = null;
+  let master = 1;      // volumen maestro 0..1 (barra de calibracion)
+  let muted = false;   // timbre de alarma ON/OFF
+  function setVolume(v) { master = Math.max(0, Math.min(1, (typeof v === 'number' ? v : 1))); }
+  function setMuted(m) { muted = !!m; }
   function ctx() {
     if (!actx) {
       try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -23,6 +27,7 @@
   }
 
   function tone(freq, dur, type, gain) {
+    if (muted || master <= 0) return;
     const c = ctx(); if (!c) return;
     const o = c.createOscillator();
     const g = c.createGain();
@@ -30,8 +35,9 @@
     o.frequency.value = freq;
     o.connect(g); g.connect(c.destination);
     const t = c.currentTime;
+    const peak = (gain || 0.2) * master;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain || 0.2, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.012);
     g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.2));
     o.start(t);
     o.stop(t + (dur || 0.2) + 0.03);
@@ -146,6 +152,7 @@
   window.FMFX = {
     beep: beep, click: click, check: check, bell: bell,
     success: success, roundDone: roundDone, tick: tick,
-    vibrate: vibrate, restTimer: restTimer
+    vibrate: vibrate, restTimer: restTimer,
+    setVolume: setVolume, setMuted: setMuted
   };
 })();

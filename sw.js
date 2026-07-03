@@ -8,11 +8,12 @@
  * - Externos (CDN): network-first con respaldo en cache.
  * Sube CACHE_VERSION cuando quieras forzar limpieza de cache.
  * ============================================================ */
-const CACHE_VERSION = 'fitmatch-v31';
+const CACHE_VERSION = 'fitmatch-v32';
 const CORE = [
   './',
   'index.html',
   'jugar.html',
+  'privacy.html',
   'offline.html',
   'manifest.json',
   'icon-192.png',

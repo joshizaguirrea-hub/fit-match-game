@@ -164,7 +164,8 @@
 <script src="fm-call.js?v=2"></script>
 <script src="fm-group-call.js?v=3"></script>
 <script src="fm-music.js?v=2"></script>
-<script src="fm-fx.js?v=1"></script>
+<script src="fm-fx.js?v=2"></script>
+<script src="fm-settings.js?v=1"></script>
 <script src="fm-rooms.js?v=4"></script>
 <script src="fm-install.js?v=2"></script>
 <script src="fm-trainer.js?v=3"></script>
@@ -201,7 +202,7 @@
     <button class="fm-foot-btn" onclick="if(window.FMTrainer)FMTrainer.toggle()" title="Entrenador IA"><i class="fa-solid fa-dumbbell" style="color:#7c5cff"></i>Coach IA</button>
     <button class="fm-foot-btn" onclick="toggleSocialSidebar()" title="Chat &amp; Fit Bros"><i class="fa-solid fa-comments" style="color:#8b5cf6"></i>Chat</button>
     <button class="fm-foot-btn" onclick="if(window.FMRooms)FMRooms.open()" title="Salas de entrenamiento"><i class="fa-solid fa-people-roof" style="color:#22d3ee"></i>Salas</button>
-    <button class="fm-foot-btn" onclick="if(window.FMMusic)FMMusic.toggle()" title="Música para entrenar"><i class="fa-brands fa-spotify" style="color:#1db954"></i>Música</button>
+    <button class="fm-foot-btn" onclick="if(window.FMSettings)FMSettings.open()" title="Ajustes"><i class="fa-solid fa-gear" style="color:#64748b"></i>Ajustes</button>
     <button class="fm-foot-btn" onclick="if(window.FMMonthly)FMMonthly.open()" title="Plan del mes"><i class="fa-solid fa-calendar-check" style="color:#0ea5a4"></i>Plan</button>
     <button class="fm-foot-btn" onclick="openClanTab()" title="Tu Clan"><i class="fa-solid fa-shield-halved" style="color:#a855f7"></i>Clan</button>
   </div>
@@ -2619,6 +2620,7 @@ function getMilitaryRank(points) {
 const FM_SHOP = {
   themes: [
     { id:'theme_default', name:'Cl\u00e1sico', price:0, desc:'El look original', vars:{ '--bg':'#0f1117','--surface':'#181c2a','--surface2':'#222842','--border':'#2c3350','--txt':'#eceefb','--txt-soft':'#b2b9d4','--txt-mut':'#8b92b0' } },
+    { id:'theme_light', name:'Claro', price:0, desc:'Fondo claro, letras oscuras', vars:{ '--bg':'#f4f5fb','--surface':'#ffffff','--surface2':'#e9ecf6','--border':'#d3d8ea','--txt':'#1a1d2b','--txt-soft':'#4a5069','--txt-mut':'#6b7290' } },
     { id:'theme_neon', name:'Noche Ne\u00f3n', price:200, desc:'Morado y cian vibrantes', vars:{ '--bg':'#0a0a16','--surface':'#141433','--surface2':'#1f1f4d','--border':'#3a2f6b','--txt':'#f0eaff','--txt-soft':'#c3b8ee','--txt-mut':'#8f86c9' } },
     { id:'theme_gold', name:'Dios Griego', price:300, desc:'Oro sobre m\u00e1rmol oscuro', vars:{ '--bg':'#12100a','--surface':'#211d12','--surface2':'#302915','--border':'#4d3f1f','--txt':'#fff4d6','--txt-soft':'#e8d4a0','--txt-mut':'#b89a5e' } },
     { id:'theme_ocean', name:'Oc\u00e9ano', price:200, desc:'Azules profundos', vars:{ '--bg':'#081420','--surface':'#0f2333','--surface2':'#163348','--border':'#1f4a63','--txt':'#e0f2ff','--txt-soft':'#a8d3ea','--txt-mut':'#6fa3bf' } },
@@ -2915,6 +2917,8 @@ window.addEventListener('DOMContentLoaded', () => {
   initCloudProfile();
   // Entrar directo a los filtros de rutina (Modo Juego queda en pausa hasta desarrollarlo)
   startTraining();
+  // Musica del lobby (si el usuario lo activo en Ajustes)
+  if (window.FMSettings && FMSettings.maybeAutoMusic) setTimeout(function(){ FMSettings.maybeAutoMusic(); }, 800);
 });
 
 /* ============ LÓGICA DE RUTINAS DE ENTRENAMIENTO ============ */
