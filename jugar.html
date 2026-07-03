@@ -151,7 +151,7 @@
 <script src="fm-specialized-routines.js?v=36"></script>
 <script src="fm-bodymap-data.js?v=2"></script>
 <script src="fm-exercise-photos.js?v=2"></script>
-<script src="fm-memory.js?v=1"></script>
+<script src="fm-memory.js?v=2"></script>
 <script src="fm-safety.js?v=1"></script>
 <script src="fm-badges.js?v=33"></script>
 <script src="fm-videos.js?v=2"></script>
@@ -2491,6 +2491,8 @@ async function initCloudProfile() {
   if (user) {
 cloudUser = user;
     window.cloudUser = user; // accesible para modulos externos (Salas, etc.)
+    // Memoria en la nube: conectar y traer/fusionar lo guardado en otros dispositivos
+    if (window.FMMem) { try { FMMem.configCloud(supabase, user.id); await FMMem.cloudPull(); } catch (e) {} }
     const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (profile) {
       cloudProfile = profile;
@@ -3786,7 +3788,7 @@ function renderStation(){
     +       '<p class="text-[10px] font-bold uppercase text-gray-500 mb-1 text-center">Repeticiones</p>'
     +       '<div class="flex items-center justify-center gap-2">'
     +         '<button onclick="setStationReps(-1)" class="w-8 h-8 rounded-lg border-2 border-gray-900 bg-white font-bold text-lg leading-none">-</button>'
-    +         '<span class="fun font-extrabold text-2xl text-gray-900 w-10 text-center">' + reps + '</span>'
+    +         '<input id="station-reps" type="number" inputmode="numeric" min="1" value="' + reps + '" onchange="setStationRepsAbs(this.value)" onfocus="this.select()" class="w-12 text-center fun font-extrabold text-2xl text-gray-900 bg-white border-2 border-gray-900 rounded-lg py-0.5">'
     +         '<button onclick="setStationReps(1)" class="w-8 h-8 rounded-lg border-2 border-gray-900 bg-white font-bold text-lg leading-none">+</button>'
     +       '</div>'
     +     '</div>'
@@ -3814,6 +3816,18 @@ function setStationReps(delta){
   cur = Math.max(1, (cur || 0) + delta);
   stationCfg[ex.name] = Object.assign({}, stationCfg[ex.name], { reps: cur });
   ex.reps = cur; // refleja en la rutina activa
+  if (window.FMMem) FMMem.exSetReps(ex.name, cur);
+  renderStation();
+}
+
+// Fija las repeticiones a un valor exacto (tecleado en el teclado numerico)
+function setStationRepsAbs(val){
+  const ex = selectedRoutine.exercises[stationIdx];
+  let cur = parseInt(val, 10);
+  if (isNaN(cur) || cur < 1) cur = 1;
+  if (cur > 999) cur = 999;
+  stationCfg[ex.name] = Object.assign({}, stationCfg[ex.name], { reps: cur });
+  ex.reps = cur;
   if (window.FMMem) FMMem.exSetReps(ex.name, cur);
   renderStation();
 }

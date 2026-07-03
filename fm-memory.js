@@ -18,6 +18,7 @@
   }
   function save(m) {
     try { localStorage.setItem(KEY, JSON.stringify(m)); } catch (e) {}
+    try { cloudPush(); } catch (e) {} // sube a la nube si hay sesion (con debounce)
   }
   function norm(name) { return (name || '').toString().trim().toLowerCase(); }
 
@@ -96,9 +97,74 @@
     };
   }
 
+  // ============================================================
+  // NUBE (Supabase): sincroniza el mismo blob entre dispositivos.
+  // Tabla: user_memory (user_id PK, data jsonb). Ver sql-memoria-ejercicios.sql
+  // ============================================================
+  var _client = null;   // cliente supabase
+  var _uid = null;      // id del usuario logueado
+  var _pushTimer = null;
+
+  // Une la memoria remota con la local (sin perder datos): gana el dato mas nuevo.
+  function mergeInto(remote) {
+    var m = ensure(load());
+    remote = ensure(remote || {});
+    // Ejercicios: peso/reps del que tenga lastAt mas nuevo; count = maximo.
+    Object.keys(remote.exercises).forEach(function (k) {
+      var re = remote.exercises[k], le = m.exercises[k];
+      if (!le) { m.exercises[k] = re; return; }
+      var remoteNewer = (re.lastAt || 0) > (le.lastAt || 0);
+      m.exercises[k] = {
+        weight: remoteNewer ? re.weight : le.weight,
+        reps: remoteNewer ? re.reps : le.reps,
+        count: Math.max(re.count || 0, le.count || 0),
+        lastAt: Math.max(re.lastAt || 0, le.lastAt || 0)
+      };
+    });
+    // Favoritas: union (se queda la marca mas reciente).
+    Object.keys(remote.favorites).forEach(function (k) {
+      if (!m.favorites[k] || (remote.favorites[k].at || 0) > (m.favorites[k].at || 0))
+        m.favorites[k] = remote.favorites[k];
+    });
+    // Recientes: mezcla y quita duplicados por id (deja el mas nuevo).
+    var byId = {};
+    (m.recent || []).concat(remote.recent || []).forEach(function (r) {
+      if (r && r.id && (!byId[r.id] || (r.at || 0) > (byId[r.id].at || 0))) byId[r.id] = r;
+    });
+    m.recent = Object.keys(byId).map(function (k) { return byId[k]; })
+      .sort(function (a, b) { return (b.at || 0) - (a.at || 0); }).slice(0, 12);
+    save(m);
+    return m;
+  }
+
+  function configCloud(client, uid) { _client = client || null; _uid = uid || null; }
+
+  // Trae la memoria de la nube y la fusiona con la local. Llamar al iniciar sesion.
+  function cloudPull() {
+    if (!_client || !_uid) return Promise.resolve(false);
+    return _client.from('user_memory').select('data').eq('user_id', _uid).maybeSingle()
+      .then(function (res) {
+        if (res && res.data && res.data.data) mergeInto(res.data.data);
+        return true;
+      })
+      .catch(function () { return false; });
+  }
+
+  // Sube la memoria completa a la nube (con debounce para no spamear).
+  function cloudPush() {
+    if (!_client || !_uid) return;
+    if (_pushTimer) clearTimeout(_pushTimer);
+    _pushTimer = setTimeout(function () {
+      _client.from('user_memory')
+        .upsert({ user_id: _uid, data: load(), updated_at: new Date().toISOString() })
+        .then(function () {}, function () {});
+    }, 1500);
+  }
+
   window.FMMem = {
     exGet: exGet, exSetWeight: exSetWeight, exSetReps: exSetReps, exBumpDone: exBumpDone,
     favIs: favIs, favToggle: favToggle, favList: favList,
-    recordRoutine: recordRoutine, recentList: recentList, summary: summary
+    recordRoutine: recordRoutine, recentList: recentList, summary: summary,
+    configCloud: configCloud, cloudPull: cloudPull, cloudPush: cloudPush
   };
 })();
