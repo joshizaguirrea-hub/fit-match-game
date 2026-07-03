@@ -2957,12 +2957,14 @@ function renderBodyInteractive(cat){
   grid.innerHTML = buildCatHero(cat, 'Marca uno o varios musculos y arma tu rutina')
     + '<div class="grid md:grid-cols-2 gap-5 items-start">'
     +   '<div class="flex flex-col items-center">'
-    +     '<div id="body-sex-toggle" class="flex gap-2 mb-2"></div>'
     +     '<div class="flex gap-2 mb-2">'
     +       '<button id="body-front-btn" onclick="setBodySide(\'front\')" class="fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:var(--accent);color:#fff"><i class="fa-solid fa-user mr-1"></i>Frente</button>'
     +       '<button id="body-back-btn" onclick="setBodySide(\'back\')" class="fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:var(--surface2);color:var(--txt-soft)"><i class="fa-solid fa-user mr-1"></i>Espalda</button>'
     +     '</div>'
-    +     '<svg id="body-svg" class="w-full" style="max-width:260px;height:auto"></svg>'
+    +     '<div class="flex items-center gap-2 w-full justify-center">'
+    +       '<div id="body-sex-toggle" class="flex flex-col gap-2 shrink-0"></div>'
+    +       '<svg id="body-svg" class="w-full" style="max-width:260px;height:auto"></svg>'
+    +     '</div>'
     +     '<p class="text-[11px] text-center mt-1" style="color:var(--txt-mut)">Puedes marcar varios (ej. Espalda + Piernas)</p>'
     +     '<div id="body-chips" class="flex flex-wrap justify-center gap-2 mt-2"></div>'
     +   '</div>'
@@ -2983,7 +2985,7 @@ function renderBodySexToggle(){
   const opts = [['hombre','Hombre','fa-mars'],['mujer','Mujer','fa-venus']];
   box.innerHTML = opts.map(([id,lbl,ic]) => {
     const on = bodyViewSex === id;
-    return '<button onclick="setBodyViewSex(\'' + id + '\')" class="fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:' + (on ? 'var(--accent)' : 'var(--surface2)') + ';color:' + (on ? '#fff' : 'var(--txt-soft)') + '"><i class="fa-solid ' + ic + ' mr-1"></i>' + lbl + '</button>';
+    return '<button onclick="setBodyViewSex(\'' + id + '\')" title="Ver cuerpo ' + lbl + '" class="fun font-bold text-[10px] w-14 py-2 rounded-xl flex flex-col items-center gap-1" style="background:' + (on ? 'var(--accent)' : 'var(--surface2)') + ';color:' + (on ? '#fff' : 'var(--txt-soft)') + ';border:1px solid var(--border)"><i class="fa-solid ' + ic + '" style="font-size:15px"></i>' + lbl + '</button>';
   }).join('');
 }
 function setBodyViewSex(s){ bodyViewSex = s; renderBodySexToggle(); renderBodySvg(); }
