@@ -41,10 +41,12 @@
     opts = (typeof opts === 'string') ? { message: opts } : (opts || {});
     const host = document.getElementById('fm-toasts');
     if (!host) { return; }
+    // El contenedor NO debe bloquear clics (solo los toasts, que llevan pointer-events:auto).
+    host.style.pointerEvents = 'none';
     const color = opts.color || '#34d399';
     const icon = opts.icon || 'fa-bell';
     const el = document.createElement('div');
-    el.style.cssText = 'background:#181c2a;border:1px solid ' + color + '66;border-left:4px solid ' + color +
+    el.style.cssText = 'pointer-events:auto;background:#181c2a;border:1px solid ' + color + '66;border-left:4px solid ' + color +
       ';border-radius:14px;padding:12px 14px;color:#eceefb;box-shadow:0 10px 30px rgba(0,0,0,.45);' +
       'font-family:\'Space Grotesk\',sans-serif;opacity:0;transform:translateX(20px);transition:all .25s ease;';
     el.innerHTML =
