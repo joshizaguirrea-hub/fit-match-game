@@ -1462,6 +1462,45 @@
   }
 
   /* ============ LÓGICA DE GREMIOS / CLANES ============ */
+  // ===== RANKING DE CLANES (suma de puntos de los miembros) + INVITAR FIT BROS =====
+  async function buildClanRankingHTML(supabase, guilds, myGuildId){
+    try{
+      if (!guilds || !guilds.length) return '';
+      const { data: profs } = await supabase.from('profiles').select('guild_id, total_points').not('guild_id','is',null);
+      if (!profs || !profs.length) return '';
+      const gName = {}; guilds.forEach(function(g){ gName[g.id] = g.name; });
+      const agg = {};
+      profs.forEach(function(p){ if(!p.guild_id || !gName[p.guild_id]) return; if(!agg[p.guild_id]) agg[p.guild_id]={pts:0,mem:0}; agg[p.guild_id].pts += (p.total_points||0); agg[p.guild_id].mem++; });
+      const rows = Object.keys(agg).map(function(id){ return { id:id, name:gName[id], pts:agg[id].pts, mem:agg[id].mem }; }).sort(function(a,b){ return b.pts-a.pts; }).slice(0,10);
+      if (!rows.length) return '';
+      const medals = ['#fbbf24','#cbd5e1','#f59e0b'];
+      const list = rows.map(function(r,i){
+        const mine = r.id === myGuildId;
+        const badge = i<3 ? '<i class="fa-solid fa-trophy" style="color:'+medals[i]+'"></i>' : '<span class="text-gray-500 font-bold">'+(i+1)+'</span>';
+        return '<div class="flex items-center gap-3 px-3 py-2 rounded-xl" style="background:'+(mine?'rgba(124,92,255,.18)':'rgba(255,255,255,.03)')+';border:1px solid '+(mine?'rgba(124,92,255,.5)':'transparent')+'">'
+          + '<div class="w-6 text-center">'+badge+'</div>'
+          + '<div class="flex-1 min-w-0"><span class="font-bold text-sm text-white">'+r.name+'</span>'+(mine?' <span class="bg-purple-600 text-white text-[8px] px-1.5 py-0.5 rounded-full uppercase">Tu clan</span>':'')+'<div class="text-[10px] text-gray-500">'+r.mem+' miembro'+(r.mem!==1?'s':'')+'</div></div>'
+          + '<div class="text-right font-extrabold text-yellow-400 text-sm">'+r.pts+' <span class="text-[9px] text-gray-500">pts</span></div>'
+          + '</div>';
+      }).join('');
+      return '<div class="mb-4 p-3 rounded-2xl" style="background:linear-gradient(160deg,rgba(124,92,255,.12),rgba(15,23,42,.4));border:1px solid rgba(124,92,255,.3)">'
+        + '<p class="text-left text-[11px] font-extrabold uppercase tracking-wider mb-2" style="color:#c4b5fd"><i class="fa-solid fa-ranking-star mr-1"></i>Ranking de Clanes</p>'
+        + '<div class="space-y-1.5">'+list+'</div></div>';
+    }catch(e){ console.warn('clan ranking', e); return ''; }
+  }
+
+  function inviteFitBros(guildName){
+    const url = location.origin + location.pathname;
+    const text = 'Unete a mi clan "' + guildName + '" en Fit Match y entrenemos juntos! ' + url;
+    if (navigator.share){
+      navigator.share({ title:'Fit Match', text:text, url:url }).catch(function(){});
+    } else if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ alert('\u00a1Invitacion copiada! Pegasela a tus Fit Bros por WhatsApp o donde quieras.'); }).catch(function(){ prompt('Copia esta invitacion:', text); });
+    } else {
+      prompt('Copia esta invitacion:', text);
+    }
+  }
+
   async function loadGuilds() {
     const cont = document.getElementById('guilds-container');
     const supabase = window.FMAuth.getClient();
@@ -1486,6 +1525,8 @@
         }
       }
 
+      const clanRankHTML = await buildClanRankingHTML(supabase, guilds, userGuildId);
+
       if (userGuildId) {
         // El usuario ya pertenece a un gremio, mostrar su gremio y sus miembros
         const myGuild = guilds.find(g => g.id === userGuildId);
@@ -1509,6 +1550,7 @@
         let membersList = members ? members.map(m => m.apodo).join(', ') : 'Tú';
 
         cont.innerHTML = `
+          ${clanRankHTML}
           <div class="space-y-4 text-left p-4 bg-purple-950/10 border-2 border-purple-900/50 rounded-2xl">
             <div class="flex justify-between items-start">
               <div>
@@ -1524,6 +1566,7 @@
               <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Miembros del Clan:</span>
               <p class="text-xs text-purple-200 font-semibold">${membersList}</p>
             </div>
+            <button onclick="inviteFitBros('${(myGuild.name||'').replace(/'/g, "\\'")}')" class="w-full py-2.5 rounded-xl font-extrabold text-white text-sm flex items-center justify-center gap-2" style="background:linear-gradient(90deg,#7c3aed,#22d3ee)"><i class="fa-solid fa-user-plus"></i>Invitar Fit Bros</button>
           </div>
         `;
 
@@ -1541,6 +1584,7 @@
           `;
         } else {
           cont.innerHTML = `
+            ${clanRankHTML}
             <p class="text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Gremios de Fit Bros en la Nube:</p>
             <div class="space-y-2.5">
               ${guilds.map(g => `
