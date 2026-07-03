@@ -14,7 +14,7 @@
   'use strict';
 
   var KEY = 'fm_settings_v1';
-  var CONTACT_EMAIL = 'fitmatchstudio@gmail.com'; // TODO: cambiar por el correo real
+  var CONTACT_EMAIL = 'fit.match.studio@gmail.com';
   var APP_URL = (function () {
     try { return location.origin + location.pathname.replace(/jugar\.html.*$/, 'jugar.html'); }
     catch (e) { return 'https://fit-match-game.netlify.app'; }
