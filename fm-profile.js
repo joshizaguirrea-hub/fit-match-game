@@ -830,7 +830,7 @@ window.setPrimaryColor = setPrimaryColor;
 if (typeof window !== "undefined") {
   // ===== PERFIL FITNESS (datos físicos + IMC + edición) =====
 const FM_FIT_LABELS = {
-  sexo: { hombre:'Hombre', mujer:'Mujer', otro:'Sin especificar' },
+  sexo: { hombre:'Masculino (M)', mujer:'Femenino (F)', otro:'Sin especificar' },
   experiencia: { principiante:'Principiante', intermedio:'Intermedio', avanzado:'Avanzado' },
   objetivo: { bajar_grasa:'Bajar grasa', musculo:'Ganar músculo', salud:'Salud general', movilidad:'Movilidad', resistencia:'Resistencia' },
   equipo: { casa_sin:'Casa sin equipo', casa_basico:'Casa básico', gimnasio:'Gimnasio' }
