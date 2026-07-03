@@ -4118,6 +4118,14 @@ function renderStation(){
   const doneSets = stationDoneSets(stationIdx);
   const curSet = stationCurSet(stationIdx);
   const exDone = stationIsDone(stationIdx);
+  // Coach IA: sugiere subir de peso (sobrecarga progresiva)
+  const prog = (window.FMMem && FMMem.suggestProgress) ? FMMem.suggestProgress(ex.name, reps) : { suggest:false };
+  const coachTip = prog.suggest
+    ? '<div class="mb-3 flex items-start gap-2 p-3 rounded-2xl" style="background:linear-gradient(120deg,#7c3aed,#22d3ee);color:#fff;border:2px solid #111827;box-shadow:3px 3px 0 #111827">'
+        + '<i class="fa-solid fa-robot mt-0.5"></i>'
+        + '<div class="text-xs leading-snug"><b>Coach IA:</b> llevas ' + prog.sessions + ' sesiones en <b>' + prog.from + ' kg</b> y completas tus reps. ¡Hora de subir a <b>' + prog.to + ' kg</b>! <button onclick="applyCoachWeight(' + prog.to + ')" class="underline font-bold ml-1">Aplicar</button></div>'
+      + '</div>'
+    : '';
   // Puntos de progreso de series (segun lo YA hecho en ESTA maquina)
   let dots = '';
   for (let i = 1; i <= rounds; i++){
@@ -4154,6 +4162,7 @@ function renderStation(){
 
   listCont.innerHTML = ''
     + '<div class="text-center mb-2"><span class="inline-block bg-blue-100 text-blue-800 border-2 border-gray-900 text-xs font-bold px-3 py-1 rounded-full">Maquina ' + (stationIdx+1) + ' de ' + total + '</span></div>'
+    + coachTip
     + '<div class="bg-white border-2 border-gray-900 rounded-2xl p-4 mb-3 shadow-[4px_4px_0_#111827]">'
     +   photo
     +   '<div class="flex items-center justify-between mt-3">'
@@ -4220,6 +4229,15 @@ function saveStationWeight(val){
   if (window.FMFX) FMFX.check();
   const hint = document.getElementById('station-weight-hint');
   if (hint) hint.textContent = 'Guardado: ' + w + ' kg';
+}
+
+// Coach IA: aplica el peso sugerido (sobrecarga progresiva) y re-dibuja
+function applyCoachWeight(w){
+  const inp = document.getElementById('station-weight');
+  if (inp) inp.value = w;
+  saveStationWeight(w);
+  if (window.FMFX) FMFX.success && FMFX.success();
+  renderStation();
 }
 
 // Salta a cualquier maquina (elegir con cual empezar/seguir segun cual este libre).

@@ -44,6 +44,7 @@
     var m = ensure(load());
     var k = norm(name);
     var e = m.exercises[k] || {};
+    if (e.weight != null && +e.weight !== +weight) e.sinceBump = 0; // cambio de peso: reinicia contador de progresion
     e.weight = weight; e.lastAt = Date.now();
     m.exercises[k] = e; save(m);
     return e;
@@ -60,9 +61,32 @@
     var m = ensure(load());
     var k = norm(name);
     var e = m.exercises[k] || {};
-    e.count = (e.count || 0) + 1; e.lastAt = Date.now();
+    e.count = (e.count || 0) + 1;
+    e.sinceBump = (e.sinceBump || 0) + 1; // sesiones completadas con el peso actual
+    e.lastAt = Date.now();
     m.exercises[k] = e; save(m);
     return e;
+  }
+
+  // ---- COACH IA: sobrecarga progresiva ----
+  // Siguiente peso "razonable": +2.5kg si es ligero, +5kg medio, +10kg pesado.
+  function nextWeight(w){
+    w = +w || 0;
+    var inc = w < 20 ? 2.5 : (w < 60 ? 5 : 10);
+    return Math.round((w + inc) * 2) / 2; // redondeo a 0.5
+  }
+  // Sugiere subir de peso si: hay peso registrado, completaste >=3 sesiones con
+  // ese mismo peso, y tus reps alcanzan la meta del ejercicio.
+  function suggestProgress(name, targetReps){
+    var e = exGet(name);
+    if (!e || e.weight == null || +e.weight <= 0) return { suggest:false };
+    var sessions = e.sinceBump || 0;
+    var reps = e.reps || 0;
+    var meta = targetReps || 0;
+    if (sessions >= 3 && (!meta || reps >= meta)) {
+      return { suggest:true, from:+e.weight, to:nextWeight(e.weight), sessions:sessions, reps:reps };
+    }
+    return { suggest:false, sessions:sessions };
   }
 
   // ---- FAVORITAS ----
@@ -168,6 +192,7 @@
         weight: remoteNewer ? re.weight : le.weight,
         reps: remoteNewer ? re.reps : le.reps,
         count: Math.max(re.count || 0, le.count || 0),
+        sinceBump: remoteNewer ? (re.sinceBump || 0) : (le.sinceBump || 0),
         lastAt: Math.max(re.lastAt || 0, le.lastAt || 0)
       };
     });
@@ -228,6 +253,7 @@
 
   window.FMMem = {
     exGet: exGet, exSetWeight: exSetWeight, exSetReps: exSetReps, exBumpDone: exBumpDone,
+    suggestProgress: suggestProgress,
     favIs: favIs, favToggle: favToggle, favList: favList,
     recordRoutine: recordRoutine, recentList: recentList, summary: summary,
     orderGet: orderGet, orderSet: orderSet,
