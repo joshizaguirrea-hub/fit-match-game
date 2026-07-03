@@ -27,8 +27,8 @@
       '.fm-demo{position:relative !important;overflow:hidden;background:#eef0f6}' +
       '.fm-demo img{position:absolute !important;top:0 !important;left:0 !important;' +
       'width:100% !important;height:100% !important;object-fit:cover;display:block;max-width:none !important}' +
-      '.fm-demo .fm-demo-b{opacity:0;animation:fmDemoCross 1.8s ease-in-out infinite alternate}' +
-      '@keyframes fmDemoCross{0%{opacity:0}100%{opacity:1}}' +
+      '.fm-demo .fm-demo-b{opacity:0;animation:fmDemoCross 4s ease-in-out infinite}' +
+      '@keyframes fmDemoCross{0%,30%{opacity:0}48%,78%{opacity:1}100%{opacity:0}}' +
       '.fm-demo-badge{position:absolute;bottom:6px;right:6px;z-index:5;background:rgba(17,24,39,.82);' +
       'color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:999px;letter-spacing:.04em;' +
       "display:flex;align-items:center;gap:4px;font-family:'Space Grotesk',sans-serif}" +
