@@ -3890,8 +3890,11 @@ function saveStationWeight(val){
 function jumpToStation(i){
   if (i < 0 || i >= selectedRoutine.exercises.length) return;
   stationIdx = i;
+  // guardar y restaurar el scroll para que la vista NO brinque al inicio al elegir maquina
+  const m = document.getElementById('routine-active-modal');
+  const keepScroll = m ? m.scrollTop : 0;
   renderStation();
-  const m = document.getElementById('routine-active-modal'); if (m) m.scrollTop = 0;
+  if (m) m.scrollTop = keepScroll;
 }
 
 // Reordena las maquinas (flechas) para reflejar el layout de TU gym. Se recuerda por rutina.
