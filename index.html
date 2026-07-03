@@ -817,12 +817,63 @@
       const { error } = await supabase.from('profiles').update(payload).eq('id', currentUser.id);
       if(error) throw error;
       document.getElementById('onboarding-modal').classList.add('hidden');
-      await checkProfile(currentUser);
+      // Momento WOW: confeti + resumen del plan, luego entra a la app
+      showOnboardingCelebration(function(){ checkProfile(currentUser); });
     } catch(err){
       console.error(err);
       onbError('No se pudo guardar: ' + (err.message || err) + '. ¿Corriste el SQL en Supabase?');
       btn.disabled = false; btn.innerHTML = old;
     }
+  }
+
+  // ===== CELEBRACION WOW AL TERMINAR EL ONBOARDING =====
+  function fmConfettiBurst(){
+    var c = document.createElement('canvas');
+    c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:90';
+    document.body.appendChild(c);
+    var ctx = c.getContext('2d'); c.width = innerWidth; c.height = innerHeight;
+    var colors = ['#7c3aed','#a855f7','#34d399','#fbbf24','#ef4444','#22d3ee','#ec4899'];
+    var P = [];
+    for (var i=0;i<150;i++){ P.push({ x:Math.random()*c.width, y:-20-Math.random()*c.height*0.35, r:4+Math.random()*6, col:colors[i%colors.length], vy:2+Math.random()*4, vx:-2.5+Math.random()*5, rot:Math.random()*6.28, vr:-0.25+Math.random()*0.5 }); }
+    var t0 = performance.now();
+    (function frame(now){
+      var el = now - t0; ctx.clearRect(0,0,c.width,c.height);
+      for (var k=0;k<P.length;k++){ var p=P[k]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.rot+=p.vr; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.col; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6); ctx.restore(); }
+      if (el < 3400) requestAnimationFrame(frame); else c.remove();
+    })(t0);
+  }
+  function showOnboardingCelebration(cb){
+    var expMap = { principiante:'Principiante', intermedio:'Intermedio', avanzado:'Avanzado' };
+    var diasMap = { '2':'2-3 dias/sem', '4':'4-5 dias/sem', '6':'6+ dias/sem' };
+    var equipoMap = { casa_sin:'En casa - sin equipo', casa_basico:'En casa - equipo basico', gimnasio:'Gimnasio completo' };
+    var objMap = { bajar_grasa:'Bajar grasa', musculo:'Ganar musculo', salud:'Salud general', movilidad:'Movilidad', resistencia:'Resistencia' };
+    var nombre = (window.currentProfile && currentProfile.apodo) ? currentProfile.apodo : 'Atleta';
+    var objs = (onbData.objetivos || []).map(function(o){ return objMap[o] || o; });
+    var chips = [ expMap[onbData.experiencia] || 'Atleta', diasMap[onbData.dias_semana] || (onbData.dias_semana + ' dias'), equipoMap[onbData.equipo] || onbData.equipo ]
+      .filter(Boolean)
+      .map(function(t){ return '<span class="inline-block px-3 py-1 rounded-full text-xs font-bold" style="background:rgba(124,92,255,.18);color:#c4b5fd;border:1px solid rgba(124,92,255,.4)">' + t + '</span>'; }).join(' ');
+    var objChips = objs.map(function(t){ return '<span class="inline-block px-3 py-1 rounded-full text-xs font-bold" style="background:rgba(52,211,153,.15);color:#6ee7b7;border:1px solid rgba(52,211,153,.4)">' + t + '</span>'; }).join(' ');
+    var ov = document.createElement('div');
+    ov.id = 'onb-celebrate';
+    ov.className = 'fixed inset-0 flex items-center justify-center z-[85] p-4';
+    ov.style.cssText += ';background:rgba(0,0,0,.85);backdrop-filter:blur(6px)';
+    ov.innerHTML = ''
+      + '<div style="max-width:420px;width:100%;animation:onbPop .5s cubic-bezier(.18,1.25,.4,1)">'
+      +   '<div class="rounded-3xl p-6 text-center" style="background:linear-gradient(160deg,#1e1b3a,#0f172a);border:1px solid rgba(124,92,255,.5);box-shadow:0 20px 60px rgba(124,92,255,.35)">'
+      +     '<div style="font-size:56px;line-height:1" class="mb-2">&#127881;</div>'
+      +     '<h3 class="athletic text-2xl font-extrabold uppercase text-white mb-1">Tu plan esta listo</h3>'
+      +     '<p class="text-sm text-gray-300 mb-4">Bienvenido, <b class="text-white">' + nombre + '</b>. Tu entrenador IA ya tiene todo para armar tus rutinas ideales.</p>'
+      +     '<div class="flex flex-wrap gap-2 justify-center mb-3">' + chips + '</div>'
+      +     (objChips ? '<p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Tus objetivos</p><div class="flex flex-wrap gap-2 justify-center mb-4">' + objChips + '</div>' : '')
+      +     '<button id="onb-celebrate-go" class="w-full py-3.5 rounded-xl font-extrabold text-white text-sm" style="background:linear-gradient(90deg,#7c3aed,#a855f7)"><i class="fa-solid fa-rocket mr-1"></i>Empezar a entrenar</button>'
+      +   '</div>'
+      + '</div>';
+    document.body.appendChild(ov);
+    if (!document.getElementById('onb-pop-kf')){ var st=document.createElement('style'); st.id='onb-pop-kf'; st.textContent='@keyframes onbPop{0%{opacity:0;transform:scale(.85) translateY(20px)}100%{opacity:1;transform:none}}'; document.head.appendChild(st); }
+    fmConfettiBurst();
+    var done = function(){ if (ov.parentNode) ov.remove(); if (typeof cb === 'function') cb(); };
+    document.getElementById('onb-celebrate-go').addEventListener('click', done);
+    setTimeout(done, 5000); // auto-continua por si no tocan el boton
   }
 
   async function checkProfile(user) {
