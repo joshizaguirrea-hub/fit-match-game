@@ -3768,8 +3768,9 @@ function renderStation(){
   const mini = r.exercises.map((e, i) => {
     const st = i < stationIdx ? 'done' : i === stationIdx ? 'cur' : 'pend';
     const ic = st==='done' ? '<i class="fa-solid fa-circle-check text-green-500"></i>' : st==='cur' ? '<i class="fa-solid fa-location-arrow text-purple-600"></i>' : '<i class="fa-regular fa-circle text-gray-300"></i>';
-    const w = (window.FMMem && FMMem.exGet(e.name) && FMMem.exGet(e.name).weight != null) ? '<span class="ml-auto text-[10px] font-bold text-gray-500">' + FMMem.exGet(e.name).weight + ' kg</span>' : '';
-    return '<div onclick="jumpToStation(' + i + ')" class="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-purple-100" style="background:' + (st==='cur' ? '#f5f3ff' : 'transparent') + '">' + ic + '<span class="text-xs font-bold ' + (st==='pend' ? 'text-gray-500' : 'text-gray-800') + '">' + e.name + '</span>' + w + '</div>';
+    const w = (window.FMMem && FMMem.exGet(e.name) && FMMem.exGet(e.name).weight != null) ? '<span class="ml-auto text-[10px] font-bold" style="color:' + (st==='cur' ? 'rgba(255,255,255,.85)' : 'var(--txt-mut)') + '">' + FMMem.exGet(e.name).weight + ' kg</span>' : '';
+    const nameColor = st==='cur' ? '#ffffff' : (st==='pend' ? 'var(--txt-mut)' : 'var(--txt)');
+    return '<div onclick="jumpToStation(' + i + ')" class="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer" style="background:' + (st==='cur' ? '#7c3aed' : 'transparent') + '">' + ic + '<span class="text-xs font-bold" style="color:' + nameColor + '">' + e.name + '</span>' + w + '</div>';
   }).join('');
 
   listCont.innerHTML = ''
