@@ -547,7 +547,7 @@
         <p class="text-gray-500 text-xs mt-1" id="active-routine-desc">Realiza las repeticiones a tu propio ritmo con buena técnica. Presiona cada ejercicio al completarlo.</p>
       </div>
 
-      <div class="bg-gray-100 border-2 border-gray-900 rounded-2xl p-4 mb-5 flex items-center justify-between">
+      <div class="bg-gray-100 border-2 border-gray-900 rounded-2xl p-4 mb-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-stopwatch text-2xl text-purple-600 animate-pulse"></i>
           <div>
@@ -559,6 +559,14 @@
           <span class="block text-[10px] font-bold uppercase text-gray-500">Recompensa</span>
           <span class="font-bold text-lg text-yellow-500 flex items-center justify-end gap-1"><i class="fa-solid fa-bolt"></i> +<span id="active-routine-points">50</span> PX</span>
         </div>
+      </div>
+
+      <div class="bg-purple-50 border-2 border-gray-900 rounded-2xl p-3 mb-5">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="fa-solid fa-hourglass-half text-purple-600"></i>
+          <span class="text-[11px] font-bold uppercase text-gray-600">Descanso al terminar cada ejercicio</span>
+        </div>
+        <div id="rest-selector" class="flex flex-wrap gap-2"></div>
       </div>
 
       <div class="space-y-2.5 mb-6" id="active-routine-list">
@@ -3554,8 +3562,18 @@ function closeRoutineModal() {
 
 let currentRound = 1;
 let workoutPhase = 'round'; // 'warmup' | 'round'
-const REST_BETWEEN_ROUNDS = 90; // 1:30 de descanso entre rondas
+let restSeconds = 90;      // descanso configurable (0 = sin timer). Default 1:30
 const WARMUP_PREP = 20;         // pequena preparacion antes de la ronda 1
+// Opciones de descanso pedidas por los usuarios
+const REST_OPTIONS = [ [0,'Sin timer'], [90,'1:30'], [120,'2:00'], [150,'2:30'], [180,'3:00'] ];
+function renderRestSelector(){
+  const box = document.getElementById('rest-selector'); if (!box) return;
+  box.innerHTML = REST_OPTIONS.map(([s,lbl]) => {
+    const on = restSeconds === s;
+    return '<button onclick="setRestSeconds(' + s + ')" class="fun font-bold text-xs px-3 py-1.5 rounded-full border-2 border-gray-900 transition-all" style="background:' + (on ? '#7c3aed' : '#fff') + ';color:' + (on ? '#fff' : '#374151') + '">' + lbl + '</button>';
+  }).join('');
+}
+function setRestSeconds(s){ restSeconds = s; renderRestSelector(); }
 // Calentamiento universal (sin equipo, apto para todos)
 const WARMUP_EXERCISES = [
   { name: 'Marcha en el sitio', detail: '40 seg' },
@@ -3580,6 +3598,7 @@ function startRoutineWorkout() {
   
   // Generar checklist
   generateActiveChecklist();
+  renderRestSelector();
 
   // Reiniciar y arrancar cronómetro
   routineSecondsElapsed = 0;
@@ -3607,7 +3626,7 @@ function updateRoutineNameUI() {
     if (descEl) descEl.textContent = 'Prepara tu cuerpo (2-3 min). Marca cada movimiento al terminarlo y pulsa “Empezar Ronda 1”.';
   } else {
     nameEl.innerHTML = r.name + ' <span class="text-purple-600 block sm:inline text-lg sm:text-xl font-bold ml-1">(Ronda ' + currentRound + ' de ' + r.rounds + ')</span>';
-    if (descEl) descEl.textContent = 'Realiza las repeticiones a tu ritmo con buena técnica. Al terminar la ronda hay 1:30 de descanso con aviso.';
+    if (descEl) descEl.textContent = 'Elige el ejercicio que quieras (en cualquier orden), haz sus repeticiones y m\u00e1rcalo. Al marcarlo arranca tu descanso.';
   }
 }
 
@@ -3728,8 +3747,9 @@ function toggleExerciseCheck(el) {
   const box = el.querySelector('.check-box-marker');
   el.classList.toggle('bg-purple-50');
   el.classList.toggle('border-purple-600');
-  
-  if (el.classList.contains('bg-purple-50')) {
+  const justChecked = el.classList.contains('bg-purple-50');
+
+  if (justChecked) {
     box.className = "w-7 h-7 rounded-lg border-2 border-purple-600 flex items-center justify-center bg-purple-600 text-white transition-all check-box-marker";
     if (window.FMFX) window.FMFX.check();
   } else {
@@ -3741,13 +3761,20 @@ function toggleExerciseCheck(el) {
   const total = (workoutPhase === 'warmup') ? WARMUP_EXERCISES.length : selectedRoutine.exercises.length;
   const checked = document.querySelectorAll('#active-routine-list .bg-purple-50').length;
   const btn = document.getElementById('btn-complete-routine');
-  
+
   if (checked === total) {
     btn.disabled = false;
     btn.style.opacity = "1";
   } else {
     btn.disabled = true;
     btn.style.opacity = "0.5";
+  }
+
+  // Descanso automatico al terminar un ejercicio (flujo gym: haces reps -> descansas -> siguiente).
+  // Solo en ronda real, si hay timer configurado, y si aun quedan ejercicios por hacer.
+  if (justChecked && workoutPhase === 'round' && restSeconds > 0 && checked < total
+      && window.FMFX && window.FMFX.restTimer) {
+    window.FMFX.restTimer({ seconds: restSeconds, label: 'Descanso', next: 'Siguiente ejercicio', onDone: function(){} });
   }
 }
 
@@ -3790,9 +3817,9 @@ async function finishRoutineWorkout() {
       updateRoutineButtonUI();
       document.getElementById('routine-active-modal').scrollTop = 0;
     };
-    if (window.FMFX && window.FMFX.restTimer) {
+    if (window.FMFX && window.FMFX.restTimer && restSeconds > 0) {
       window.FMFX.restTimer({
-        seconds: REST_BETWEEN_ROUNDS,
+        seconds: restSeconds,
         label: 'Descanso',
         next: 'Ronda ' + (currentRound + 1) + ' de ' + r.rounds,
         onDone: goNextRound
