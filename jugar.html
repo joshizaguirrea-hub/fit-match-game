@@ -2469,6 +2469,7 @@ async function loadSideGuild() {
             '<h4 class="fun text-xl font-bold text-white">' + _clanEsc(myGuild.name) + '</h4>' +
             '<p class="text-[11px] text-gray-400 italic mt-1">"' + _clanEsc(myGuild.description || 'Sin descripci\u00f3n') + '"</p>' +
           '</div>' +
+          '<button onclick="inviteToGuild(\'' + _clanEsc(myGuild.name).replace(/'/g, "\\'") + '\')" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl text-xs transition"><i class="fa-solid fa-user-plus mr-1"></i>Invitar amigos a mi clan</button>' +
           '<p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Miembros (' + mem.length + '/30):</p>' +
           '<div class="grid grid-cols-2 gap-1.5">' + membersList + '</div>' +
           '<button onclick="leaveGuildFromGame()" class="w-full mt-2 text-red-400 border border-red-900/50 rounded-xl py-2 text-xs font-bold hover:bg-red-950/30 transition"><i class="fa-solid fa-right-from-bracket mr-1"></i>Salir del clan</button>' +
@@ -2572,6 +2573,25 @@ async function leaveGuildFromGame() {
     loadSideGuild();
   } catch(e) { console.error(e); alert('Error al salir: ' + e.message); }
 }
+
+// Comparte una invitacion a tu clan (link nativo o copia al portapapeles).
+function inviteToGuild(guildName) {
+  const url = window.location.origin + window.location.pathname.replace(/jugar\.html.*$/, 'jugar.html');
+  const apodo = (cloudProfile && cloudProfile.apodo) ? cloudProfile.apodo : 'Tu amigo';
+  const texto = '\u00a1' + apodo + ' te invita a unirte al clan "' + guildName + '" en Fit Match! \ud83d\udcaa\n' +
+    'Entra al juego, toca "Clan" en la barra de abajo y busca "' + guildName + '" para unirte.\n' + url;
+  if (navigator.share) {
+    navigator.share({ title: 'Fit Match \u00b7 ' + guildName, text: texto, url: url }).catch(function(){});
+  } else if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(function(){
+      if (window.FMNotify) FMNotify.toast({ title: '\u00a1Invitaci\u00f3n copiada!', message: 'P\u00e9gala en WhatsApp o donde quieras.', icon: 'fa-copy', color: '#a855f7' });
+      else alert('Invitaci\u00f3n copiada al portapapeles.');
+    }).catch(function(){ alert(texto); });
+  } else {
+    alert(texto);
+  }
+}
+window.inviteToGuild = inviteToGuild;
 
 // Enlazar enter en el chat del sidebar
 document.getElementById('side-chat-input').addEventListener('keypress', e => {
