@@ -618,6 +618,21 @@
       loadGuilds();
     });
 
+    // RESTAURACION EXPLICITA de la sesion (igual que jugar.html con getUser()).
+    // No dependemos solo del evento onAuthStateChange, que a veces no dispara la
+    // sesion inicial a tiempo y nos dejaba en "Modo Invitado" aunque SI hubiera login.
+    try {
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      if (existingSession && existingSession.user) {
+        currentUser = existingSession.user;
+        await checkProfile(existingSession.user);
+        enableChatUI(true);
+        loadRanking();
+        loadChat();
+        loadGuilds();
+      }
+    } catch (e) { console.warn('[FitMatch] getSession fallo:', e); }
+
     // Panel "En linea ahora": refrescar para todos (invitados y conectados)
     if (window.FMPresence) window.FMPresence.startPanelAutoRefresh(supabase);
 
