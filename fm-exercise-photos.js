@@ -79,20 +79,31 @@
   }
 
   var cache = {};
-  function get(name) {
+  function folderFor(name) {
     if (name in cache) return cache[name];
     var n = norm(name);
-    var url = '';
+    var folder = '';
     for (var i = 0; i < MAP.length; i++) {
       var kws = MAP[i][0];
       for (var j = 0; j < kws.length; j++) {
-        if (n.indexOf(kws[j]) !== -1) { url = BASE + MAP[i][1] + '/0.jpg'; break; }
+        if (n.indexOf(kws[j]) !== -1) { folder = MAP[i][1]; break; }
       }
-      if (url) break;
+      if (folder) break;
     }
-    cache[name] = url;
-    return url;
+    cache[name] = folder;
+    return folder;
   }
 
-  window.FMPhotos = { get: get };
+  function get(name) {
+    var f = folderFor(name);
+    return f ? (BASE + f + '/0.jpg') : '';
+  }
+
+  // Las 2 imagenes (inicio y fin del movimiento). [] si no hay match.
+  function getPair(name) {
+    var f = folderFor(name);
+    return f ? [BASE + f + '/0.jpg', BASE + f + '/1.jpg'] : [];
+  }
+
+  window.FMPhotos = { get: get, getPair: getPair };
 })();

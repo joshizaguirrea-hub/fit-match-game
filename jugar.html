@@ -496,6 +496,17 @@
       </div>
       
       <h3 class="fun text-2xl font-bold text-gray-900" id="help-ex-name">Nombre del Ejercicio</h3>
+
+      <div id="help-ex-photos" class="grid grid-cols-2 gap-2 hidden">
+        <div class="rounded-2xl overflow-hidden border-2 border-gray-900 bg-gray-100 relative" style="aspect-ratio:1/1">
+          <span class="absolute top-1 left-1 z-10 text-[9px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded">Inicio</span>
+          <img id="help-ex-img0" src="" alt="Posición inicial" style="width:100%;height:100%;object-fit:cover">
+        </div>
+        <div class="rounded-2xl overflow-hidden border-2 border-gray-900 bg-gray-100 relative" style="aspect-ratio:1/1">
+          <span class="absolute top-1 left-1 z-10 text-[9px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded">Final</span>
+          <img id="help-ex-img1" src="" alt="Posición final" style="width:100%;height:100%;object-fit:cover">
+        </div>
+      </div>
       
       <div class="bg-gray-50 border-2 border-gray-900 rounded-2xl p-4 text-left space-y-3">
         <div>
@@ -2567,6 +2578,8 @@ async function syncWorkoutToCloud(ok, points, level, exercise, isRoom) {
 // Inicializar cabecera de perfil en la nube al cargar
 window.addEventListener('DOMContentLoaded', () => {
   initCloudProfile();
+  // Entrar directo a los filtros de rutina (Modo Juego queda en pausa hasta desarrollarlo)
+  startTraining();
 });
 
 /* ============ LÓGICA DE RUTINAS DE ENTRENAMIENTO ============ */
@@ -3140,13 +3153,16 @@ function buildManual(){
     +   (pool.length ? pool.map(e => {
           const on = !!bodyManualPicks[e.name];
           const safe = e.name.replace(/'/g, "\\'");
-          return '<button onclick="toggleManualPick(\'' + safe + '\')" class="w-full flex items-center gap-3 p-2.5 rounded-xl text-left" style="background:var(--surface2);border:1px solid ' + (on ? meta.color : 'var(--border)') + '">'
-            + '<span class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background:' + (on ? meta.color : 'var(--bg)') + ';color:#fff">' + (on ? '<i class="fa-solid fa-check text-xs"></i>' : '') + '</span>'
-            + exPhotoThumb(e.name, 40)
-            + '<span class="flex-1 min-w-0 fun font-bold text-sm" style="color:var(--txt)">' + e.name + '</span>'
+          return '<div class="w-full flex items-center gap-3 p-2.5 rounded-xl text-left" style="background:var(--surface2);border:1px solid ' + (on ? meta.color : 'var(--border)') + '">'
+            + '<button onclick="toggleManualPick(\'' + safe + '\')" class="flex items-center gap-3 flex-1 min-w-0 text-left">'
+            +   '<span class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background:' + (on ? meta.color : 'var(--bg)') + ';color:#fff">' + (on ? '<i class="fa-solid fa-check text-xs"></i>' : '') + '</span>'
+            +   exPhotoThumb(e.name, 40)
+            +   '<span class="flex-1 min-w-0 fun font-bold text-sm" style="color:var(--txt)">' + e.name + '</span>'
+            + '</button>'
+            + '<button onclick="showExerciseHelp(\'' + safe + '\', event)" class="shrink-0 text-sm" style="color:var(--accent)" title="Ver como se hace"><i class="fa-solid fa-circle-info"></i></button>'
             + exLevelBadge(e.level)
             + '<span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style="background:var(--bg);color:var(--txt-soft)">x' + e.reps + '</span>'
-            + '</button>';
+            + '</div>';
         }).join('') : '<p class="text-center py-6 text-sm" style="color:var(--txt-mut)">No hay ejercicios para ese nivel. Prueba con \'Todos\'.</p>')
     +   '</div>'
     +   '<div class="p-3 pt-0">'
@@ -3182,6 +3198,7 @@ function renderAssembledCard(meta, picked, showShuffle){
         + '<div class="flex items-center gap-3 p-2.5 rounded-xl" style="background:var(--surface2);border:1px solid var(--border)">'
         +   exPhotoThumb(e.name, 44)
         +   '<div class="flex-1 min-w-0 fun font-bold text-sm" style="color:var(--txt)">' + e.name + '</div>'
+        +   '<button onclick="showExerciseHelp(\'' + e.name.replace(/'/g, "\\'") + '\', event)" class="shrink-0 text-sm" style="color:var(--accent)" title="Ver como se hace"><i class="fa-solid fa-circle-info"></i></button>'
         +   exLevelBadge(e.level)
         +   '<span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style="background:var(--bg);color:var(--txt-soft)">x' + e.reps + '</span>'
         + '</div>').join('') : '<p class="text-center py-6 text-sm" style="color:var(--txt-mut)">No hay ejercicios para ese nivel. Prueba con \'Todos\'.</p>')
@@ -3941,6 +3958,19 @@ function showExerciseHelp(name, event) {
   helpExDesc.textContent = info.desc;
   helpExMuscles.textContent = info.muscles;
   helpExVideo.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent('como hacer ' + name + ' ejercicio tecnica calistenia');
+
+  // Fotos reales del movimiento (inicio y fin), si hay coincidencia
+  var photos = (window.FMPhotos && FMPhotos.getPair) ? FMPhotos.getPair(name) : [];
+  var pbox = document.getElementById('help-ex-photos');
+  if (pbox) {
+    if (photos.length === 2) {
+      var i0 = document.getElementById('help-ex-img0'), i1 = document.getElementById('help-ex-img1');
+      i0.src = photos[0]; i1.src = photos[1];
+      pbox.classList.remove('hidden');
+    } else {
+      pbox.classList.add('hidden');
+    }
+  }
 
   document.getElementById('exercise-help-modal').classList.remove('hidden');
 }
