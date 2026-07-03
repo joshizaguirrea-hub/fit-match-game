@@ -26,6 +26,7 @@
     if (!m.exercises) m.exercises = {};
     if (!m.favorites) m.favorites = {};
     if (!m.recent) m.recent = [];
+    if (!m.orders) m.orders = {};
     return m;
   }
 
@@ -84,6 +85,20 @@
   }
   function recentList() { return ensure(load()).recent || []; }
 
+  // ---- ORDEN DE MAQUINAS por rutina (para reflejar el layout del gym) ----
+  // Guardamos el orden como lista de nombres de ejercicio para esa rutina.
+  function orderGet(routineId) {
+    if (!routineId) return null;
+    var m = ensure(load());
+    return m.orders[routineId] || null;
+  }
+  function orderSet(routineId, names) {
+    if (!routineId || !Array.isArray(names)) return;
+    var m = ensure(load());
+    m.orders[routineId] = names;
+    save(m);
+  }
+
   // ---- RESUMEN (para el Entrenador IA) ----
   function summary() {
     var m = ensure(load());
@@ -133,6 +148,10 @@
     });
     m.recent = Object.keys(byId).map(function (k) { return byId[k]; })
       .sort(function (a, b) { return (b.at || 0) - (a.at || 0); }).slice(0, 12);
+    // Ordenes de maquinas: los remotos rellenan los que no existan localmente.
+    Object.keys(remote.orders).forEach(function (k) {
+      if (!m.orders[k]) m.orders[k] = remote.orders[k];
+    });
     save(m);
     return m;
   }
@@ -165,6 +184,7 @@
     exGet: exGet, exSetWeight: exSetWeight, exSetReps: exSetReps, exBumpDone: exBumpDone,
     favIs: favIs, favToggle: favToggle, favList: favList,
     recordRoutine: recordRoutine, recentList: recentList, summary: summary,
+    orderGet: orderGet, orderSet: orderSet,
     configCloud: configCloud, cloudPull: cloudPull, cloudPush: cloudPush
   };
 })();
