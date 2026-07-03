@@ -28,7 +28,7 @@ IGNORE = (
 
 def serve():
     handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=ROOT)
-    httpd = socketserver.TCPServer(("127.0.0.1", PORT), handler)
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), handler)
     httpd.log_message = lambda *a, **k: None
     # Silenciar ConnectionReset ruidoso cuando el navegador cierra sockets.
     httpd.handle_error = lambda *a, **k: None
@@ -107,6 +107,23 @@ def run():
             # Abrir Clan
             page.click("button[title='Tu Clan']", timeout=6000)
             page.wait_for_timeout(800)
+            # Verificar el sistema de DEMOS animadas de ejercicios
+            res = page.evaluate("""() => {
+              if (!window.FMDemo) return {ok:false};
+              const known = FMDemo.html('flexiones');
+              const unknown = FMDemo.html('zzz-ejercicio-inexistente-999');
+              return {
+                ok:true,
+                animKnown: known.includes('fm-demo') && (known.match(/<img/g)||[]).length===2 && known.includes('fmDemoCross')===false && known.includes('fm-demo-b'),
+                fallbackUnknown: unknown.includes('fa-dumbbell') && !unknown.includes('fm-demo-b')
+              };
+            }""")
+            if not res.get("ok"):
+                raise AssertionError("FMDemo no esta cargado")
+            if not res.get("animKnown"):
+                raise AssertionError("FMDemo no genera demo animada (2 frames) para ejercicio conocido")
+            if not res.get("fallbackUnknown"):
+                raise AssertionError("FMDemo no cae a icono de respaldo para ejercicio desconocido")
 
         check_page("jugar.html", actions=jugar_actions, name="jugar.html (ajustes+temas+clan)")
 
