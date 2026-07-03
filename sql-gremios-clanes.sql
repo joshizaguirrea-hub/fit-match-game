@@ -48,8 +48,13 @@ alter table public.profiles
 create index if not exists idx_profiles_guild on public.profiles (guild_id);
 
 -- ---------- REALTIME (para ver clanes/miembros en vivo) ----------
--- Si ya esta en la publicacion, ignora el error que salga.
-alter publication supabase_realtime add table public.guilds;
+-- Idempotente: no falla si la tabla YA estaba en la publicacion.
+do $$
+begin
+  alter publication supabase_realtime add table public.guilds;
+exception
+  when duplicate_object then null;  -- ya estaba agregada, ignorar
+end $$;
 
 -- ---------- Verificacion ----------
 -- select id, name, leader_id, created_at from public.guilds;
