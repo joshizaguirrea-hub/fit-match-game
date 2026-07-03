@@ -150,7 +150,7 @@
 <script src="fm-routines.js?v=32"></script>
 <script src="fm-specialized-routines.js?v=36"></script>
 <script src="fm-bodymap-data.js?v=2"></script>
-<script src="fm-exercise-photos.js?v=1"></script>
+<script src="fm-exercise-photos.js?v=2"></script>
 <script src="fm-safety.js?v=1"></script>
 <script src="fm-badges.js?v=33"></script>
 <script src="fm-videos.js?v=2"></script>
@@ -2925,6 +2925,12 @@ function renderCategoryLanes(id){
 
   const routines = getCatRoutines(cat);
   let html = buildCatHero(cat, routines.length + ' rutinas - ' + cat.desc);
+  // Armar tu propia rutina: disponible para TODAS las categorias (aqui, version manual por ejercicios)
+  html += '<div onclick="openCustomBuilder(\'' + id + '\')" class="cursor-pointer rounded-2xl p-4 mb-4 flex items-center gap-3 cat-fade" style="background:linear-gradient(120deg,' + cat.c1 + '22,' + cat.c2 + '11);border:1px dashed ' + cat.c1 + '">'
+    +   '<div class="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0" style="background:linear-gradient(135deg,' + cat.c1 + ',' + cat.c2 + ')"><i class="fa-solid fa-wand-magic-sparkles"></i></div>'
+    +   '<div class="flex-1 min-w-0"><div class="fun font-extrabold" style="color:var(--txt)">Arma tu propia rutina</div><div class="text-xs" style="color:var(--txt-soft)">Elige los ejercicios de ' + cat.name + ' que quieras y crea tu rutina o una sala.</div></div>'
+    +   '<i class="fa-solid fa-chevron-right" style="color:var(--txt-mut)"></i>'
+    + '</div>';
   let lanes = '';
   MUSCLE_LANES.forEach(lane => {
     const items = routines.filter(r => inferMuscleGroup(r) === lane.id);
@@ -3295,6 +3301,108 @@ function createSalaFromAssembled(){
   }
 }
 window.createSalaFromAssembled = createSalaFromAssembled;
+
+// ============================================================
+// ARMADOR MANUAL UNIVERSAL (para cualquier categoria: yoga, pilates, etc.)
+// Lista los ejercicios reales de la categoria y dejas elegir cuales quieres.
+// ============================================================
+let customCat = null;
+let customPicks = {}; // nombre -> {name, reps, level}
+
+function customPool(catId){
+  const cat = TRAIN_CATS.find(c => c.id === catId);
+  const routines = cat ? getCatRoutines(cat) : [];
+  const seen = {}, pool = [];
+  routines.forEach(r => (r.exercises||[]).forEach(ex => {
+    const key = (ex.name||'').toLowerCase();
+    if (key && !seen[key]) { seen[key] = 1; pool.push({ name: ex.name, reps: ex.reps || 12, level: r.level || 'basico' }); }
+  }));
+  return pool.sort((a,b) => a.name.localeCompare(b.name));
+}
+
+function openCustomBuilder(id){
+  customCat = id; customPicks = {};
+  renderCustomBuilder();
+  const el = document.getElementById('screen-routine'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderCustomBuilder(){
+  const cat = TRAIN_CATS.find(c => c.id === customCat);
+  const grid = document.getElementById('routines-grid'); if (!grid || !cat) return;
+  const q = (document.getElementById('custom-search') ? document.getElementById('custom-search').value : '').toLowerCase().trim();
+  const pool = customPool(customCat);
+  const list = pool.filter(e => !q || e.name.toLowerCase().includes(q));
+  const nPicked = Object.keys(customPicks).length;
+  let rows = list.map(e => {
+    const on = !!customPicks[e.name];
+    const safe = e.name.replace(/'/g, "\\'");
+    return '<div onclick="toggleCustomPick(\'' + safe + '\')" class="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer" style="background:' + (on ? cat.c1 + '22' : 'var(--surface2)') + ';border:1px solid ' + (on ? cat.c1 : 'var(--border)') + '">'
+      +   '<div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background:' + (on ? cat.c1 : 'var(--bg)') + ';color:#fff;border:1px solid ' + (on ? cat.c1 : 'var(--border)') + '">' + (on ? '<i class="fa-solid fa-check text-xs"></i>' : '') + '</div>'
+      +   exPhotoThumb(e.name, 40)
+      +   '<div class="flex-1 min-w-0 fun font-bold text-sm" style="color:var(--txt)">' + e.name + '</div>'
+      +   '<button onclick="showExerciseHelp(\'' + safe + '\', event)" class="shrink-0 text-sm" style="color:var(--accent)" title="Ver como se hace"><i class="fa-solid fa-circle-info"></i></button>'
+      + '</div>';
+  }).join('');
+  if (!list.length) rows = '<p class="text-center py-8 text-sm" style="color:var(--txt-mut)">Sin ejercicios que coincidan.</p>';
+
+  grid.className = 'space-y-2';
+  grid.innerHTML = buildCatHero(cat, 'Arma tu propia rutina - elige los ejercicios')
+    + '<div class="rounded-2xl p-3 mb-3" style="background:var(--surface);border:1px solid var(--border)">'
+    +   '<div class="relative mb-3"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--txt-mut)"></i>'
+    +     '<input id="custom-search" oninput="renderCustomBuilder()" value="' + q.replace(/"/g,'&quot;') + '" placeholder="Buscar ejercicio..." class="w-full pl-9 pr-3 py-2 rounded-xl text-sm" style="background:var(--surface2);color:var(--txt);border:1px solid var(--border)"></div>'
+    +   '<div class="space-y-2 max-h-96 overflow-y-auto">' + rows + '</div>'
+    + '</div>'
+    + '<div class="sticky bottom-2 rounded-2xl p-3" style="background:var(--surface);border:1px solid var(--border);box-shadow:0 6px 24px rgba(0,0,0,.25)">'
+    +   '<div class="flex items-center justify-between mb-2"><span class="fun font-bold text-sm" style="color:var(--txt)">' + nPicked + ' ejercicio' + (nPicked===1?'':'s') + ' elegido' + (nPicked===1?'':'s') + '</span>'
+    +     (nPicked ? '<button onclick="customPicks={};renderCustomBuilder()" class="text-xs font-bold" style="color:var(--txt-mut)">Limpiar</button>' : '') + '</div>'
+    +   '<div class="flex gap-2">'
+    +     '<button onclick="startCustomRoutine()" ' + (nPicked ? '' : 'disabled') + ' class="flex-1 py-3 rounded-xl fun font-extrabold text-white" style="background:linear-gradient(120deg,' + cat.c1 + ',' + cat.c2 + ')' + (nPicked ? '' : ';opacity:.5;cursor:not-allowed') + '"><i class="fa-solid fa-play mr-1"></i>Empezar</button>'
+    +     '<button onclick="createSalaFromCustom()" ' + (nPicked ? '' : 'disabled') + ' class="flex-1 py-3 rounded-xl fun font-extrabold text-white" style="background:linear-gradient(150deg,#7c3aed,#22d3ee)' + (nPicked ? '' : ';opacity:.5;cursor:not-allowed') + '"><i class="fa-solid fa-people-roof mr-1"></i>Crear Sala</button>'
+    +   '</div>'
+    + '</div>';
+}
+
+function toggleCustomPick(name){
+  if (customPicks[name]) { delete customPicks[name]; }
+  else {
+    const found = customPool(customCat).find(e => e.name === name);
+    customPicks[name] = found || { name: name, reps: 12, level: 'basico' };
+  }
+  renderCustomBuilder();
+}
+
+function buildCustomObj(){
+  const cat = TRAIN_CATS.find(c => c.id === customCat);
+  const picked = Object.values(customPicks);
+  window.FM_ASSEMBLED = {
+    id: 'armada_' + customCat + '_manual',
+    name: 'Mi rutina de ' + cat.name,
+    category: customCat,
+    culture: cat.name,
+    level: 'personalizada',
+    points: Math.min(60, 12 + picked.length*3),
+    rounds: 3,
+    description: 'Rutina personalizada de ' + cat.name + '.',
+    exercises: picked.map(e => ({ name: e.name, reps: e.reps || 12, level: e.level || 'basico' })),
+    _assembled: true
+  };
+  registerCustomRoutine(window.FM_ASSEMBLED);
+  return window.FM_ASSEMBLED;
+}
+
+function startCustomRoutine(){
+  if (!Object.keys(customPicks).length) return;
+  const rt = buildCustomObj();
+  openRoutineDetail(rt.id, 'specialized');
+}
+
+function createSalaFromCustom(){
+  if (!Object.keys(customPicks).length) return;
+  const rt = buildCustomObj();
+  if (window.FMRooms && window.FMRooms.showCreateWith) window.FMRooms.showCreateWith(rt);
+  else if (window.createRoomCodeSession) window.createRoomCodeSession(rt.id);
+}
+window.openCustomBuilder = openCustomBuilder;
 
 function renderRoutinePicker() {
   const grid = document.getElementById('routines-grid');

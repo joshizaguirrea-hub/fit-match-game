@@ -37,14 +37,23 @@
     [['talon', 'talones', 'pantorrilla', 'gemelo', 'calf'], 'Calf_Press'],
     [['abduccion', 'abductor'], 'Barbell_Glute_Bridge'],
     [['sentadilla', 'squat'], 'Bodyweight_Squat'],
-    // ----- PECHO / BRAZOS -----
-    [['diamante', 'diamond', 'flexion cerrada', 'close-grip push'], 'Pushups_Close_and_Wide_Hand_Positions'],
-    [['flexion inclinada', 'incline push'], 'Incline_Push-Up'],
-    [['flexion declinada', 'decline push'], 'Decline_Push-Up'],
-    [['flexion', 'flexiones', 'lagartija', 'pushup', 'push-up', 'push up'], 'Pushups'],
+    // ----- PECHO / BRAZOS (flexiones: variantes primero, generica al final) -----
+    // Nota: los burpees deben resolverse ANTES que 'flexion' (su nombre suele incluir 'flexion explosiva')
+    [['burpee', 'burpees'], 'Rocket_Jump'],
+    [['spiderman', 'spider-man', 'spider man'], 'Spider_Crawl'],
+    [['archer', 'arquero'], 'Push-Up_Wide'],
+    [['handstand', 'pica', 'picas', 'pike', 'el pino', 'al pino', 'de pino', 'pino contra', 'pino asistido'], 'Handstand_Push-Ups'],
+    [['planche'], 'Push-Up_Wide'],
+    [['diamante', 'diamond', 'flexion cerrada', 'flexiones cerrada', 'close-grip push', 'codos pegados'], 'Push-Ups_-_Close_Triceps_Position'],
+    [['declinada', 'declinadas', 'decline push', 'pies elevados', 'pies en silla', 'pies en sofa'], 'Decline_Push-Up'],
+    [['inclinada', 'inclinadas', 'incline push', 'de pared', 'en pared', 'en mesa', 'wall push'], 'Incline_Push-Up'],
+    [['palmada', 'clap', 'explosiva', 'explosivas', 'despegue', 'plyo', 'pliometric'], 'Plyo_Push-up'],
+    [['flexion', 'flexiones', 'lagartija', 'lagartijas', 'pushup', 'push-up', 'push up'], 'Pushups'],
     [['fondo', 'fondos', 'paralelas', 'dip'], 'Bench_Dips'],
     [['press inclinado', 'incline press', 'incline bench'], 'Barbell_Incline_Bench_Press_-_Medium_Grip'],
-    [['press de banca', 'press pecho', 'bench press'], 'Barbell_Bench_Press_-_Medium_Grip'],
+    [['press de banca', 'press pecho', 'press de pecho', 'bench press'], 'Barbell_Bench_Press_-_Medium_Grip'],
+    [['pullover'], 'Bent-Arm_Dumbbell_Pullover'],
+    [['press frances', 'skullcrusher', 'skull crusher'], 'EZ-Bar_Skullcrusher'],
     [['apertura', 'aperturas', 'fly', 'flye', 'cruce', 'cruces'], 'Dumbbell_Flyes'],
     [['curl martillo', 'martillo', 'hammer'], 'Hammer_Curls'],
     [['curl', 'biceps'], 'Barbell_Curl'],
@@ -66,7 +75,15 @@
     [['cargada', 'clean'], 'Clean'],
     [['arrancada', 'snatch'], 'Muscle_Snatch'],
     [['mountain climber', 'escalador', 'escaladores'], 'Mountain_Climbers'],
-    [['renegade', 'man maker'], 'Alternating_Renegade_Row']
+    [['renegade', 'man maker'], 'Alternating_Renegade_Row'],
+    // ----- CARDIO / SALTOS -----
+    [['tuck jump', 'rodillas al pecho', 'salto de rodillas'], 'Knee_Tuck_Jump'],
+    [['jumping jack', 'saltos de tijera', 'saltos de estrella', 'star jump', 'jack'], 'Star_Jump'],
+    [['patinador', 'skater', 'esquiador'], 'Side_Hop-Sprint'],
+    [['comba', 'cuerda', 'jump rope', 'saltar la cuerda'], 'Rope_Jumping'],
+    [['sprint'], 'Wind_Sprints'],
+    [['trote', 'correr', 'running', 'jog', 'skipping'], 'Trail_Running_Walking'],
+    [['salto', 'saltos', 'jump'], 'Freehand_Jump_Squat']
   ];
 
   function norm(s) {
