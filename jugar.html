@@ -151,6 +151,7 @@
 <script src="fm-specialized-routines.js?v=36"></script>
 <script src="fm-bodymap-data.js?v=2"></script>
 <script src="fm-exercise-photos.js?v=2"></script>
+<script src="fm-memory.js?v=1"></script>
 <script src="fm-safety.js?v=1"></script>
 <script src="fm-badges.js?v=33"></script>
 <script src="fm-videos.js?v=2"></script>
@@ -3574,6 +3575,9 @@ function openRoutineDetail(id, category = 'gods') {
     <div class="text-center pb-1">
       <span class="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase mb-2 tracking-wide" style="background:${levelColor}22;color:${levelColor};border:1px solid ${levelColor}55">${r.culture || r.category} · ${r.level}</span>
       <h3 class="fun text-2xl sm:text-3xl font-bold" style="color:var(--txt)">${r.name}</h3>
+      <button id="fav-btn-detail" onclick="toggleFavRoutine('${r.id}')" class="mt-1 text-xs font-bold px-3 py-1 rounded-full" style="border:1px solid #ef444455;background:#ef444411">
+        <i class="fa-${(window.FMMem&&FMMem.favIs(r.id))?'solid':'regular'} fa-heart" style="color:#ef4444"></i> <span style="color:var(--txt-soft)">${(window.FMMem&&FMMem.favIs(r.id))?'En favoritas':'Guardar en favoritas'}</span>
+      </button>
       <p class="text-xs italic mt-1.5" style="color:var(--txt-soft)">"${r.description}"</p>
     </div>
 
@@ -3685,6 +3689,7 @@ let restSeconds = 90;      // descanso configurable (0 = sin timer). Default 1:3
 let workoutStyle = 'circuito';
 let stationIdx = 0;   // ejercicio actual en modo estacion
 let stationSet = 1;   // serie actual del ejercicio en modo estacion
+let stationCfg = {};  // config de la sesion por ejercicio: nombre -> {reps, weight}
 const WARMUP_PREP = 20;         // pequena preparacion antes de la ronda 1
 // Opciones de descanso pedidas por los usuarios
 const REST_OPTIONS = [ [0,'Sin timer'], [90,'1:30'], [120,'2:00'], [150,'2:30'], [180,'3:00'] ];
@@ -3724,6 +3729,16 @@ function setWorkoutStyle(s){
 }
 
 // --- MODO ESTACION: renderiza el ejercicio actual + sus series + mini-lista ---
+function stationReps(ex){
+  const mem = (window.FMMem && FMMem.exGet(ex.name)) || {};
+  const cfg = stationCfg[ex.name] || {};
+  return (cfg.reps != null) ? cfg.reps : (mem.reps != null ? mem.reps : (ex.reps || 12));
+}
+function stationWeight(ex){
+  const mem = (window.FMMem && FMMem.exGet(ex.name)) || {};
+  const cfg = stationCfg[ex.name] || {};
+  return (cfg.weight != null) ? cfg.weight : (mem.weight != null ? mem.weight : '');
+}
 function renderStation(){
   const r = selectedRoutine;
   const listCont = document.getElementById('active-routine-list');
@@ -3733,6 +3748,9 @@ function renderStation(){
   const ex = r.exercises[stationIdx];
   const rounds = r.rounds;
   const safe = (ex.name||'').replace(/'/g, "\\'");
+  const reps = stationReps(ex);
+  const weight = stationWeight(ex);
+  const mem = (window.FMMem && FMMem.exGet(ex.name)) || {};
   // Puntos de progreso de series
   let dots = '';
   for (let i = 1; i <= rounds; i++){
@@ -3742,13 +3760,14 @@ function renderStation(){
   // Foto grande del ejercicio
   const pair = (window.FMPhotos && FMPhotos.getPair) ? FMPhotos.getPair(ex.name) : [];
   const photo = pair.length
-    ? '<img src="' + pair[0] + '" alt="' + safe + '" class="w-full h-44 object-cover rounded-xl border-2 border-gray-900" onerror="this.style.display=\'none\'">'
-    : '<div class="w-full h-44 rounded-xl border-2 border-gray-900 flex items-center justify-center bg-gray-100"><i class="fa-solid fa-dumbbell text-4xl text-gray-400"></i></div>';
-  // Mini lista de todos los ejercicios (estado)
+    ? '<img src="' + pair[0] + '" alt="' + safe + '" class="w-full h-40 object-cover rounded-xl border-2 border-gray-900" onerror="this.style.display=\'none\'">'
+    : '<div class="w-full h-40 rounded-xl border-2 border-gray-900 flex items-center justify-center bg-gray-100"><i class="fa-solid fa-dumbbell text-4xl text-gray-400"></i></div>';
+  // Mini lista de todos los ejercicios (estado) - CLICKEABLE para elegir con cual empezar / saltar
   const mini = r.exercises.map((e, i) => {
     const st = i < stationIdx ? 'done' : i === stationIdx ? 'cur' : 'pend';
     const ic = st==='done' ? '<i class="fa-solid fa-circle-check text-green-500"></i>' : st==='cur' ? '<i class="fa-solid fa-location-arrow text-purple-600"></i>' : '<i class="fa-regular fa-circle text-gray-300"></i>';
-    return '<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg" style="background:' + (st==='cur' ? '#f5f3ff' : 'transparent') + '">' + ic + '<span class="text-xs font-bold ' + (st==='pend' ? 'text-gray-400' : 'text-gray-800') + '">' + e.name + '</span></div>';
+    const w = (window.FMMem && FMMem.exGet(e.name) && FMMem.exGet(e.name).weight != null) ? '<span class="ml-auto text-[10px] font-bold text-gray-500">' + FMMem.exGet(e.name).weight + ' kg</span>' : '';
+    return '<div onclick="jumpToStation(' + i + ')" class="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-purple-100" style="background:' + (st==='cur' ? '#f5f3ff' : 'transparent') + '">' + ic + '<span class="text-xs font-bold ' + (st==='pend' ? 'text-gray-500' : 'text-gray-800') + '">' + e.name + '</span>' + w + '</div>';
   }).join('');
 
   listCont.innerHTML = ''
@@ -3760,12 +3779,72 @@ function renderStation(){
     +       '<button onclick="showExerciseHelp(\'' + safe + '\', event)" class="text-blue-500 text-sm" title="Ver tecnica"><i class="fa-solid fa-circle-info"></i></button>'
     +       '<button onclick="openExerciseSwap(' + stationIdx + ', event)" class="text-orange-500 text-sm" title="Cambiar"><i class="fa-solid fa-arrows-rotate"></i></button>'
     +     '</h3>'
-    +     '<span class="bg-purple-100 text-purple-800 text-sm px-3 py-1 rounded-lg border-2 border-gray-900 font-bold font-mono shrink-0">' + ex.reps + ' rep' + (ex.reps>1?'s':'') + '</span>'
+    +   '</div>'
+    +   '<div class="mt-3 grid grid-cols-2 gap-2">'
+    // --- REPETICIONES (elegibles) ---
+    +     '<div class="bg-purple-50 border-2 border-gray-900 rounded-xl p-2">'
+    +       '<p class="text-[10px] font-bold uppercase text-gray-500 mb-1 text-center">Repeticiones</p>'
+    +       '<div class="flex items-center justify-center gap-2">'
+    +         '<button onclick="setStationReps(-1)" class="w-8 h-8 rounded-lg border-2 border-gray-900 bg-white font-bold text-lg leading-none">-</button>'
+    +         '<span class="fun font-extrabold text-2xl text-gray-900 w-10 text-center">' + reps + '</span>'
+    +         '<button onclick="setStationReps(1)" class="w-8 h-8 rounded-lg border-2 border-gray-900 bg-white font-bold text-lg leading-none">+</button>'
+    +       '</div>'
+    +     '</div>'
+    // --- PESO (guardable por maquina) ---
+    +     '<div class="bg-amber-50 border-2 border-gray-900 rounded-xl p-2">'
+    +       '<p class="text-[10px] font-bold uppercase text-gray-500 mb-1 text-center">Peso (kg)</p>'
+    +       '<div class="flex items-center justify-center gap-1">'
+    +         '<input id="station-weight" type="number" inputmode="decimal" value="' + weight + '" placeholder="0" onchange="saveStationWeight(this.value)" class="w-16 text-center fun font-extrabold text-xl text-gray-900 bg-white border-2 border-gray-900 rounded-lg py-0.5">'
+    +         '<button onclick="saveStationWeight(document.getElementById(\'station-weight\').value)" class="w-8 h-8 rounded-lg border-2 border-gray-900 bg-green-500 text-white" title="Guardar peso"><i class="fa-solid fa-floppy-disk text-xs"></i></button>'
+    +       '</div>'
+    +       '<p id="station-weight-hint" class="text-[10px] text-center text-gray-500 mt-1">' + (mem.weight != null ? 'Ultima vez: ' + mem.weight + ' kg' : 'Sin registro') + '</p>'
+    +     '</div>'
     +   '</div>'
     +   '<div class="mt-3"><p class="text-[10px] font-bold uppercase text-gray-500 mb-1">Serie ' + stationSet + ' de ' + rounds + '</p><div class="flex gap-2">' + dots + '</div></div>'
     + '</div>'
+    + '<p class="text-[11px] text-center text-gray-400 mb-1"><i class="fa-solid fa-hand-pointer mr-1"></i>Toca cualquier ejercicio de abajo para empezar por ese</p>'
     + '<div class="bg-gray-50 border-2 border-gray-900 rounded-2xl p-2">' + mini + '</div>';
   updateRoutineButtonUI();
+}
+
+// Cambia las repeticiones del ejercicio actual (y las recuerda)
+function setStationReps(delta){
+  const ex = selectedRoutine.exercises[stationIdx];
+  let cur = stationReps(ex);
+  cur = Math.max(1, (cur || 0) + delta);
+  stationCfg[ex.name] = Object.assign({}, stationCfg[ex.name], { reps: cur });
+  ex.reps = cur; // refleja en la rutina activa
+  if (window.FMMem) FMMem.exSetReps(ex.name, cur);
+  renderStation();
+}
+
+// Guarda el peso usado en esta maquina/ejercicio (memoria de la IA)
+function saveStationWeight(val){
+  const ex = selectedRoutine.exercises[stationIdx];
+  const w = parseFloat(val);
+  if (isNaN(w) || w < 0) return;
+  stationCfg[ex.name] = Object.assign({}, stationCfg[ex.name], { weight: w });
+  if (window.FMMem) FMMem.exSetWeight(ex.name, w);
+  if (window.FMFX) FMFX.check();
+  const hint = document.getElementById('station-weight-hint');
+  if (hint) hint.textContent = 'Guardado: ' + w + ' kg';
+}
+
+// Salta a cualquier ejercicio (elegir con cual empezar o cambiar de estacion)
+function jumpToStation(i){
+  if (i < 0 || i >= selectedRoutine.exercises.length) return;
+  stationIdx = i; stationSet = 1;
+  renderStation();
+  const m = document.getElementById('routine-active-modal'); if (m) m.scrollTop = 0;
+}
+
+// Marca/desmarca una rutina como favorita (la IA la recuerda)
+function toggleFavRoutine(id){
+  const rt = (typeof findRoutineById === 'function' && findRoutineById(id)) || selectedRoutine || { id: id, name: '' };
+  const now = window.FMMem ? FMMem.favToggle(id, rt.name) : false;
+  const btn = document.getElementById('fav-btn-detail');
+  if (btn) btn.innerHTML = '<i class="fa-' + (now ? 'solid' : 'regular') + ' fa-heart" style="color:#ef4444"></i> <span style="color:var(--txt-soft)">' + (now ? 'En favoritas' : 'Guardar en favoritas') + '</span>';
+  if (window.FMNotify) window.FMNotify.toast({ title: now ? 'Agregada a favoritas' : 'Quitada de favoritas', message: rt.name || '', icon: 'fa-heart', color: '#ef4444', duration: 2500 });
 }
 
 // Avanza una serie o pasa al siguiente ejercicio (con descanso). Al final, finaliza.
@@ -3779,6 +3858,8 @@ function stationAdvance(){
     else fn();
   };
   if (stationSet < rounds) { restThen(() => { stationSet++; proceed(); }); return; }
+  // Termino TODAS las series de este ejercicio -> la IA lo recuerda
+  if (window.FMMem) FMMem.exBumpDone(r.exercises[stationIdx].name);
   if (stationIdx < r.exercises.length - 1) { restThen(() => { stationIdx++; stationSet = 1; proceed(); }); return; }
   finalizeWorkout();
 }
@@ -3801,7 +3882,7 @@ function startRoutineWorkout() {
   // Estilo por defecto: en gimnasio, modo estacion (todas las series de un ejercicio).
   // En salas grupales forzamos circuito (para que todos vayan igual/sincronizados).
   const inRoom = !!(activeCoopChannel || window.FM_CURRENT_ROOM);
-  stationIdx = 0; stationSet = 1;
+  stationIdx = 0; stationSet = 1; stationCfg = {};
   workoutStyle = (!inRoom && r.category === 'gimnasio') ? 'estacion' : 'circuito';
   
   // Rellenar datos
@@ -3813,6 +3894,7 @@ function startRoutineWorkout() {
   generateActiveChecklist();
   renderRestSelector();
   renderStyleToggle();
+  if (window.FMMem) FMMem.recordRoutine(r); // la IA recuerda lo que entrenas
 
   // Reiniciar y arrancar cronómetro
   routineSecondsElapsed = 0;

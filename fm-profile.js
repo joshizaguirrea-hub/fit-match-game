@@ -925,7 +925,7 @@ function buildHealthForm(p){
   const form = document.getElementById('health-edit-form');
   if(!form) return;
   p = p || {};
-  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px';
+  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px;color-scheme:dark';
   const lb = (t)=>`<label class="text-[10px] uppercase" style="color:#8b92b0">${t}</label>`;
   const yn = (id, val)=>`<select id="${id}" style="${inS}"><option value="no" ${!val?'selected':''}>No</option><option value="si" ${val?'selected':''}>S\u00ed</option></select>`;
   const lesiones = (p.med_lesiones||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -1033,7 +1033,7 @@ function selOpts(map, current){
 function buildFitnessForm(p){
   const form = document.getElementById('fitness-edit-form');
   if(!form) return;
-  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px';
+  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px;color-scheme:dark';
   const trainDays = String(p.train_days||'').split(',').map(s=>s.trim()).filter(s=>s!=='').map(Number);
   const dayChip = (val,lbl)=>{
     const on = trainDays.includes(val);
@@ -1298,7 +1298,7 @@ function buildNutritionForm(p){
   const form = document.getElementById('nutrition-edit-form');
   if(!form) return;
   const L = FM_NUT_LABELS;
-  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px';
+  const inS = 'width:100%;background:#0f1117;border:1px solid #2c3350;border-radius:10px;padding:8px 10px;color:#eceefb;font-size:13px;color-scheme:dark';
   const lb = (t)=>`<label class="text-[10px] uppercase" style="color:#8b92b0">${t}</label>`;
   const noneOpt = (cur)=>`<option value="" ${!cur?'selected':''}>-</option>`;
   const sel = (id, map, cur)=>`<select id="${id}" style="${inS}">${noneOpt(cur)}${selOpts(map, cur)}</select>`;
