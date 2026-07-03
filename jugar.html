@@ -561,6 +561,15 @@
         </div>
       </div>
 
+      <div id="style-selector-box" class="bg-blue-50 border-2 border-gray-900 rounded-2xl p-3 mb-3 hidden">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="fa-solid fa-list-check text-blue-600"></i>
+          <span class="text-[11px] font-bold uppercase text-gray-600">Como entrenar</span>
+        </div>
+        <div id="style-selector" class="flex gap-2"></div>
+        <p id="style-hint" class="text-[11px] text-gray-500 mt-2"></p>
+      </div>
+
       <div class="bg-purple-50 border-2 border-gray-900 rounded-2xl p-3 mb-5">
         <div class="flex items-center gap-2 mb-2">
           <i class="fa-solid fa-hourglass-half text-purple-600"></i>
@@ -3671,6 +3680,11 @@ function closeRoutineModal() {
 let currentRound = 1;
 let workoutPhase = 'round'; // 'warmup' | 'round'
 let restSeconds = 90;      // descanso configurable (0 = sin timer). Default 1:30
+// Estilo de entreno: 'circuito' (una ronda de todos, luego otra) o 'estacion'
+// (todas las series de un ejercicio, luego el siguiente). 'estacion' es el flujo de gym.
+let workoutStyle = 'circuito';
+let stationIdx = 0;   // ejercicio actual en modo estacion
+let stationSet = 1;   // serie actual del ejercicio en modo estacion
 const WARMUP_PREP = 20;         // pequena preparacion antes de la ronda 1
 // Opciones de descanso pedidas por los usuarios
 const REST_OPTIONS = [ [0,'Sin timer'], [90,'1:30'], [120,'2:00'], [150,'2:30'], [180,'3:00'] ];
@@ -3682,6 +3696,92 @@ function renderRestSelector(){
   }).join('');
 }
 function setRestSeconds(s){ restSeconds = s; renderRestSelector(); }
+
+// --- Selector de estilo de entreno (Circuito vs Estacion) ---
+function renderStyleToggle(){
+  const box = document.getElementById('style-selector-box');
+  const sel = document.getElementById('style-selector');
+  const hint = document.getElementById('style-hint');
+  if (!box || !sel) return;
+  const inRoom = !!(activeCoopChannel || window.FM_CURRENT_ROOM);
+  if (inRoom) { box.classList.add('hidden'); return; } // en salas: siempre circuito, sin opcion
+  box.classList.remove('hidden');
+  const opts = [['circuito','Circuito','fa-repeat'],['estacion','Por estacion (gym)','fa-dumbbell']];
+  sel.innerHTML = opts.map(([id,lbl,ic]) => {
+    const on = workoutStyle === id;
+    return '<button onclick="setWorkoutStyle(\'' + id + '\')" class="fun font-bold text-xs px-3 py-2 rounded-xl border-2 border-gray-900 flex-1 transition-all" style="background:' + (on ? '#2563eb' : '#fff') + ';color:' + (on ? '#fff' : '#374151') + '"><i class="fa-solid ' + ic + ' mr-1"></i>' + lbl + '</button>';
+  }).join('');
+  if (hint) hint.textContent = workoutStyle === 'estacion'
+    ? 'Haces TODAS las series de un ejercicio (con descanso entre serie), y luego pasas al siguiente.'
+    : 'Haces una ronda de todos los ejercicios y luego repites la ronda.';
+}
+function setWorkoutStyle(s){
+  if (workoutStyle === s) return;
+  workoutStyle = s;
+  stationIdx = 0; stationSet = 1; // reiniciar puntero al cambiar
+  renderStyleToggle();
+  if (workoutPhase === 'round') { updateRoutineNameUI(); generateActiveChecklist(); updateRoutineButtonUI(); }
+}
+
+// --- MODO ESTACION: renderiza el ejercicio actual + sus series + mini-lista ---
+function renderStation(){
+  const r = selectedRoutine;
+  const listCont = document.getElementById('active-routine-list');
+  if (!r || !listCont) return;
+  const total = r.exercises.length;
+  if (stationIdx >= total) { finalizeWorkout(); return; }
+  const ex = r.exercises[stationIdx];
+  const rounds = r.rounds;
+  const safe = (ex.name||'').replace(/'/g, "\\'");
+  // Puntos de progreso de series
+  let dots = '';
+  for (let i = 1; i <= rounds; i++){
+    const done = i < stationSet, cur = i === stationSet;
+    dots += '<div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 border-gray-900" style="background:' + (done ? '#22c55e' : cur ? '#7c3aed' : '#fff') + ';color:' + (done||cur ? '#fff' : '#9ca3af') + '">' + (done ? '<i class="fa-solid fa-check"></i>' : i) + '</div>';
+  }
+  // Foto grande del ejercicio
+  const pair = (window.FMPhotos && FMPhotos.getPair) ? FMPhotos.getPair(ex.name) : [];
+  const photo = pair.length
+    ? '<img src="' + pair[0] + '" alt="' + safe + '" class="w-full h-44 object-cover rounded-xl border-2 border-gray-900" onerror="this.style.display=\'none\'">'
+    : '<div class="w-full h-44 rounded-xl border-2 border-gray-900 flex items-center justify-center bg-gray-100"><i class="fa-solid fa-dumbbell text-4xl text-gray-400"></i></div>';
+  // Mini lista de todos los ejercicios (estado)
+  const mini = r.exercises.map((e, i) => {
+    const st = i < stationIdx ? 'done' : i === stationIdx ? 'cur' : 'pend';
+    const ic = st==='done' ? '<i class="fa-solid fa-circle-check text-green-500"></i>' : st==='cur' ? '<i class="fa-solid fa-location-arrow text-purple-600"></i>' : '<i class="fa-regular fa-circle text-gray-300"></i>';
+    return '<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg" style="background:' + (st==='cur' ? '#f5f3ff' : 'transparent') + '">' + ic + '<span class="text-xs font-bold ' + (st==='pend' ? 'text-gray-400' : 'text-gray-800') + '">' + e.name + '</span></div>';
+  }).join('');
+
+  listCont.innerHTML = ''
+    + '<div class="text-center mb-2"><span class="inline-block bg-blue-100 text-blue-800 border-2 border-gray-900 text-xs font-bold px-3 py-1 rounded-full">Ejercicio ' + (stationIdx+1) + ' de ' + total + '</span></div>'
+    + '<div class="bg-white border-2 border-gray-900 rounded-2xl p-4 mb-3 shadow-[4px_4px_0_#111827]">'
+    +   photo
+    +   '<div class="flex items-center justify-between mt-3">'
+    +     '<h3 class="fun text-xl font-extrabold text-gray-900 flex items-center gap-2">' + ex.name
+    +       '<button onclick="showExerciseHelp(\'' + safe + '\', event)" class="text-blue-500 text-sm" title="Ver tecnica"><i class="fa-solid fa-circle-info"></i></button>'
+    +       '<button onclick="openExerciseSwap(' + stationIdx + ', event)" class="text-orange-500 text-sm" title="Cambiar"><i class="fa-solid fa-arrows-rotate"></i></button>'
+    +     '</h3>'
+    +     '<span class="bg-purple-100 text-purple-800 text-sm px-3 py-1 rounded-lg border-2 border-gray-900 font-bold font-mono shrink-0">' + ex.reps + ' rep' + (ex.reps>1?'s':'') + '</span>'
+    +   '</div>'
+    +   '<div class="mt-3"><p class="text-[10px] font-bold uppercase text-gray-500 mb-1">Serie ' + stationSet + ' de ' + rounds + '</p><div class="flex gap-2">' + dots + '</div></div>'
+    + '</div>'
+    + '<div class="bg-gray-50 border-2 border-gray-900 rounded-2xl p-2">' + mini + '</div>';
+  updateRoutineButtonUI();
+}
+
+// Avanza una serie o pasa al siguiente ejercicio (con descanso). Al final, finaliza.
+function stationAdvance(){
+  const r = selectedRoutine; const rounds = r.rounds;
+  if (window.FMFX) window.FMFX.roundDone();
+  const proceed = () => { renderStation(); const m = document.getElementById('routine-active-modal'); if (m) m.scrollTop = 0; };
+  const restThen = (fn) => {
+    if (window.FMFX && window.FMFX.restTimer && restSeconds > 0)
+      window.FMFX.restTimer({ seconds: restSeconds, label: 'Descanso', next: 'Continua', onDone: fn });
+    else fn();
+  };
+  if (stationSet < rounds) { restThen(() => { stationSet++; proceed(); }); return; }
+  if (stationIdx < r.exercises.length - 1) { restThen(() => { stationIdx++; stationSet = 1; proceed(); }); return; }
+  finalizeWorkout();
+}
 // Calentamiento universal (sin equipo, apto para todos)
 const WARMUP_EXERCISES = [
   { name: 'Marcha en el sitio', detail: '40 seg' },
@@ -3698,6 +3798,11 @@ function startRoutineWorkout() {
   const r = selectedRoutine;
   currentRound = 1;
   workoutPhase = 'warmup'; // siempre empezamos con calentamiento
+  // Estilo por defecto: en gimnasio, modo estacion (todas las series de un ejercicio).
+  // En salas grupales forzamos circuito (para que todos vayan igual/sincronizados).
+  const inRoom = !!(activeCoopChannel || window.FM_CURRENT_ROOM);
+  stationIdx = 0; stationSet = 1;
+  workoutStyle = (!inRoom && r.category === 'gimnasio') ? 'estacion' : 'circuito';
   
   // Rellenar datos
   document.getElementById('active-routine-culture').textContent = r.culture;
@@ -3707,6 +3812,7 @@ function startRoutineWorkout() {
   // Generar checklist
   generateActiveChecklist();
   renderRestSelector();
+  renderStyleToggle();
 
   // Reiniciar y arrancar cronómetro
   routineSecondsElapsed = 0;
@@ -3732,6 +3838,9 @@ function updateRoutineNameUI() {
   if (workoutPhase === 'warmup') {
     nameEl.innerHTML = r.name + ' <span class="text-orange-500 block sm:inline text-lg sm:text-xl font-bold ml-1"><i class="fa-solid fa-fire-flame-curved mr-1"></i>Calentamiento</span>';
     if (descEl) descEl.textContent = 'Prepara tu cuerpo (2-3 min). Marca cada movimiento al terminarlo y pulsa “Empezar Ronda 1”.';
+  } else if (workoutStyle === 'estacion') {
+    nameEl.innerHTML = r.name + ' <span class="text-blue-600 block sm:inline text-lg sm:text-xl font-bold ml-1"><i class="fa-solid fa-dumbbell mr-1"></i>Por estaci\u00f3n</span>';
+    if (descEl) descEl.textContent = 'Haz todas las series de este ejercicio (descansando entre serie). Al terminarlas, pasas al siguiente.';
   } else {
     nameEl.innerHTML = r.name + ' <span class="text-purple-600 block sm:inline text-lg sm:text-xl font-bold ml-1">(Ronda ' + currentRound + ' de ' + r.rounds + ')</span>';
     if (descEl) descEl.textContent = 'Elige el ejercicio que quieras (en cualquier orden), haz sus repeticiones y m\u00e1rcalo. Al marcarlo arranca tu descanso.';
@@ -3757,6 +3866,9 @@ function generateActiveChecklist() {
     `).join('');
     return;
   }
+
+  // --- MODO ESTACION (gym): un ejercicio a la vez, todas sus series ---
+  if (workoutStyle === 'estacion') { renderStation(); return; }
 
   // --- RONDA NORMAL ---
   listCont.innerHTML = r.exercises.map((ex, idx) => {
@@ -3842,6 +3954,18 @@ function updateRoutineButtonUI() {
   btn.disabled = true;
   btn.style.opacity = "0.5";
 
+  // MODO ESTACION: el boton siempre esta activo (es "Termine la serie")
+  if (workoutPhase === 'round' && workoutStyle === 'estacion') {
+    btn.disabled = false; btn.style.opacity = "1";
+    const rounds = r.rounds;
+    const lastSet = stationSet >= rounds;
+    const lastEx = stationIdx >= r.exercises.length - 1;
+    if (lastSet && lastEx) btn.innerHTML = '<span>\u00a1Completar Entrenamiento!</span> <i class="fa-solid fa-trophy text-yellow-300"></i>';
+    else if (lastSet) btn.innerHTML = '<span>Siguiente ejercicio</span> <i class="fa-solid fa-forward-step"></i>';
+    else btn.innerHTML = '<span>Termin\u00e9 la serie ' + stationSet + '/' + rounds + '</span> <i class="fa-solid fa-check"></i>';
+    return;
+  }
+
   if (workoutPhase === 'warmup') {
     btn.innerHTML = `<span>Empezar Ronda 1</span> <i class="fa-solid fa-fire"></i>`;
   } else if (currentRound < r.rounds) {
@@ -3915,6 +4039,9 @@ async function finishRoutineWorkout() {
     return;
   }
 
+  // MODO ESTACION (gym): el boton avanza serie -> descanso -> siguiente serie/ejercicio
+  if (workoutStyle === 'estacion') { stationAdvance(); return; }
+
   // FIN DE RONDA (aun faltan) -> DESCANSO 1:30 con campanita -> siguiente ronda
   if (currentRound < r.rounds) {
     if (window.FMFX) window.FMFX.roundDone();
@@ -3936,7 +4063,15 @@ async function finishRoutineWorkout() {
     return;
   }
 
-  // Si completó la última ronda, finalizar de verdad
+  // Completó la última ronda -> finalizar de verdad
+  await finalizeWorkout();
+}
+
+// Cierra el entreno, guarda en la nube, otorga monedas y muestra Mision Cumplida.
+// Reutilizable por el modo circuito Y el modo estacion (gym).
+async function finalizeWorkout() {
+  const r = selectedRoutine;
+  if (!r) return;
   if (routineTimerInterval) clearInterval(routineTimerInterval);
   document.getElementById('routine-active-modal').classList.add('hidden');
   document.body.classList.remove('workout-active');
