@@ -93,6 +93,11 @@
   .g-espalda.hl,.g-espalda.active{ fill:#f59e0b; color:#f59e0b; }
   .g-core.hl,.g-core.active{ fill:#a855f7; color:#a855f7; }
   .g-piernas.hl,.g-piernas.active{ fill:#22c55e; color:#22c55e; }
+  .g-hombros.hl,.g-hombros.active{ fill:#06b6d4; color:#06b6d4; }
+  .g-biceps.hl,.g-biceps.active{ fill:#ec4899; color:#ec4899; }
+  .g-triceps.hl,.g-triceps.active{ fill:#ef4444; color:#ef4444; }
+  .g-gluteos.hl,.g-gluteos.active{ fill:#14b8a6; color:#14b8a6; }
+  .g-pantorrillas.hl,.g-pantorrillas.active{ fill:#84cc16; color:#84cc16; }
   /* seleccion de ejercicio en la carta */
   .exsel{cursor:pointer;transition:transform .12s, box-shadow .12s;}
   .exsel:hover{transform:translateX(2px);}
@@ -3162,6 +3167,28 @@ function inferMuscleGroup(r){
   return bestScore === 0 ? 'fullbody' : best;
 }
 
+// Clasificador FINO por ejercicio individual (para el armador por musculo).
+// Orden = prioridad: lo mas especifico primero (triceps/biceps antes que pecho/espalda).
+const _FINE_MG = [
+  ['triceps',      ['triceps','tríceps','press frances','press francés','press cerrado','patada de codo','patada de tr','extension de codo','extensión de codo','rompecraneos','rompecráneos','copa','jalon de triceps','pushdown','fondos en banco']],
+  ['biceps',       ['biceps','bíceps','curl','martillo','predicador','concentrado','antebrazo','muñeca']],
+  ['hombros',      ['hombro','deltoide','press militar','press de hombro','press hombro','elevacion lateral','elevación lateral','elevacion frontal','elevación frontal','pajaro','pájaro','arnold','face pull','vuelo']],
+  ['pecho',        ['pecho','pectoral','press de banca','press banca','press inclinado','press declinado','flexion','flexión','apertura','pec deck','crossover','pullover','fondos en paralelas','fondos de pecho']],
+  ['gluteos',      ['gluteo','glúteo','hip thrust','puente de gluteo','puente de cadera','patada de gluteo','abduccion','abducción','patada de burro']],
+  ['pantorrillas', ['pantorrilla','gemelo','talon','talón','soleo','elevacion de talones','elevación de talones']],
+  ['piernas',      ['pierna','sentadilla','zancada','cuadriceps','cuádriceps','femoral','desplante','peso muerto','pistol','prensa','extension de pierna','extensión de pierna','tijera','step-up','step up','subida al cajon','subida al cajón','hack','bulgara','búlgara','tren inferior']],
+  ['espalda',      ['espalda','dominada','remo','jalon','jalón','pull-up','pullup','pull up','encogimiento','trapecio','superman','buenos dias','buenos días','face','pull','tren superior']],
+  ['core',         ['abdomen','abdominal','core','plancha','oblicuo','crunch','sit-up','situp','v-up','vup','russian','plank','elevacion de piernas','elevación de piernas','powerhouse','hollow','toes to bar','rueda abdominal']],
+];
+function inferFineMuscle(name){
+  const n = (name||'').toLowerCase();
+  for (let i=0;i<_FINE_MG.length;i++){
+    const [grp, kws] = _FINE_MG[i];
+    for (let j=0;j<kws.length;j++){ if (n.includes(kws[j])) return grp; }
+  }
+  return null; // sin clasificar (ej. cardio puro) -> no aparece en ningun musculo
+}
+
 // NIVEL 0: pinta el selector de categorias a pantalla completa
 function renderTrainCategories(all){
   let html = '';
@@ -3258,16 +3285,26 @@ function renderCategoryLanes(id){
 // ============================================================
 const BODY_CATS = ['gimnasio','casa','crossfit'];
 const BODY_SLUG_GROUP = {
-  chest:'pecho', biceps:'pecho', forearm:'pecho',
+  chest:'pecho',
+  biceps:'biceps', forearm:'biceps',
+  triceps:'triceps',
+  deltoids:'hombros',
+  trapezius:'espalda', 'upper-back':'espalda', 'lower-back':'espalda',
   abs:'core', obliques:'core',
-  deltoids:'espalda', trapezius:'espalda', triceps:'espalda', 'upper-back':'espalda', 'lower-back':'espalda',
-  quadriceps:'piernas', calves:'piernas', adductors:'piernas', tibialis:'piernas', gluteal:'piernas', hamstring:'piernas', knees:'piernas',
+  quadriceps:'piernas', adductors:'piernas', knees:'piernas', hamstring:'piernas',
+  gluteal:'gluteos', glutes:'gluteos',
+  calves:'pantorrillas', tibialis:'pantorrillas',
 };
 const BODY_GROUPS = {
-  pecho:{ label:'Brazos & Pecho', short:'Pecho', color:'#2563eb', icon:'fa-hand-fist' },
-  espalda:{ label:'Espalda, Hombros & Triceps', short:'Espalda', color:'#f59e0b', icon:'fa-child-reaching' },
+  pecho:{ label:'Pecho', short:'Pecho', color:'#2563eb', icon:'fa-hand-fist' },
+  espalda:{ label:'Espalda', short:'Espalda', color:'#f59e0b', icon:'fa-child-reaching' },
+  hombros:{ label:'Hombros', short:'Hombros', color:'#06b6d4', icon:'fa-dumbbell' },
+  biceps:{ label:'Biceps', short:'Biceps', color:'#ec4899', icon:'fa-hand-fist' },
+  triceps:{ label:'Triceps', short:'Triceps', color:'#ef4444', icon:'fa-hand-back-fist' },
+  piernas:{ label:'Piernas', short:'Piernas', color:'#22c55e', icon:'fa-person-walking' },
+  gluteos:{ label:'Gluteos', short:'Gluteos', color:'#14b8a6', icon:'fa-person-walking' },
   core:{ label:'Abdomen / Core', short:'Core', color:'#a855f7', icon:'fa-fire-flame-curved' },
-  piernas:{ label:'Piernas & Gluteos', short:'Piernas', color:'#22c55e', icon:'fa-person-walking' },
+  pantorrillas:{ label:'Pantorrillas', short:'Pantorrillas', color:'#84cc16', icon:'fa-shoe-prints' },
 };
 let bodySide = 'front', bodyCat = null, bodyLevel = 'todos', bodyMode = 'auto';
 let bodySel = [];          // grupos musculares seleccionados (multi)
@@ -3418,29 +3455,28 @@ function levelMatch(exLevel){
   return true;
 }
 
-// Junta ejercicios reales de la categoria para VARIOS grupos, filtrando por nivel.
+// Junta ejercicios reales para VARIOS grupos musculares (finos), filtrando por nivel.
 function collectExercises(catId, groups, applyLevel){
   const cat = TRAIN_CATS.find(c => c.id === catId);
-  const routines = getCatRoutines(cat);
   const seen = {}, pool = [];
-  routines.forEach(r => (r.exercises||[]).forEach(ex => {
-    const grp = inferMuscleGroup({ name: ex.name, exercises: [ex] });
-    if (groups.includes(grp)){
+  function scan(routines, respectLevel){
+    routines.forEach(r => (r.exercises||[]).forEach(ex => {
+      const grp = inferFineMuscle(ex.name);
+      if (!grp || !groups.includes(grp)) return;
       const key = (ex.name||'').toLowerCase();
       const lvl = r.level || 'básico';
-      if (!seen[key] && (!applyLevel || levelMatch(lvl))){ seen[key] = 1; pool.push({ name: ex.name, reps: ex.reps || 12, level: lvl, group: grp }); }
-    }
-  }));
-  // Fallback: si el nivel dejo muy pocos, relaja el nivel (mismo grupo)
-  if (applyLevel && pool.length < 4){
-    routines.forEach(r => (r.exercises||[]).forEach(ex => {
-      const grp = inferMuscleGroup({ name: ex.name, exercises: [ex] });
-      if (groups.includes(grp)){
-        const key = (ex.name||'').toLowerCase();
-        if (!seen[key]){ seen[key] = 1; pool.push({ name: ex.name, reps: ex.reps || 12, level: r.level || 'básico', group: grp }); }
-      }
+      if (seen[key]) return;
+      if (respectLevel && !levelMatch(lvl)) return;
+      seen[key] = 1;
+      pool.push({ name: ex.name, reps: ex.reps || 12, level: lvl, group: grp });
     }));
   }
+  // 1) Ejercicios de la categoria elegida, respetando el nivel
+  scan(getCatRoutines(cat), applyLevel);
+  // 2) Si el nivel dejo muy pocos, relaja el nivel (misma categoria)
+  if (applyLevel && pool.length < 4) scan(getCatRoutines(cat), false);
+  // 3) Si aun asi hay pocos (ej. biceps/triceps aislados), busca en TODAS las rutinas
+  if (pool.length < 5) scan([...(window.FMRoutines||[]), ...(window.FMSpecializedRoutines||[])], false);
   return pool;
 }
 
