@@ -618,23 +618,28 @@
       loadGuilds();
     });
 
-    // RESTAURACION EXPLICITA de la sesion (igual que jugar.html con getUser()).
-    // No dependemos solo del evento onAuthStateChange, que a veces no dispara la
-    // sesion inicial a tiempo y nos dejaba en "Modo Invitado" aunque SI hubiera login.
-    try {
-      const { data: { session: existingSession } } = await supabase.auth.getSession();
-      if (existingSession && existingSession.user) {
-        currentUser = existingSession.user;
-        await checkProfile(existingSession.user);
+    // Panel "En linea ahora": refrescar para todos (invitados y conectados)
+    if (window.FMPresence) window.FMPresence.startPanelAutoRefresh(supabase);
+
+    // Cargar contenido PUBLICO de inmediato (no depende de la sesion).
+    loadRanking();
+    loadChat();
+    loadGuilds();
+
+    // RESTAURACION EXPLICITA de la sesion SIN BLOQUEAR el resto de la carga.
+    // OJO: getSession() a veces se CUELGA por el candado interno de Supabase y
+    // dejaba la UI atascada en "Cargando...". getUser() (como en jugar.html) si
+    // responde. Ademas lo hacemos con .then (no await) para no frenar nada mas.
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data && data.user) {
+        currentUser = data.user;
+        await checkProfile(data.user);
         enableChatUI(true);
         loadRanking();
         loadChat();
         loadGuilds();
       }
-    } catch (e) { console.warn('[FitMatch] getSession fallo:', e); }
-
-    // Panel "En linea ahora": refrescar para todos (invitados y conectados)
-    if (window.FMPresence) window.FMPresence.startPanelAutoRefresh(supabase);
+    }).catch(function (e) { console.warn('[FitMatch] getUser fallo:', e); });
 
     // BLINDAJE: si Supabase no responde en 4s, no dejamos la UI colgada en "Cargando..."
     setTimeout(() => {
