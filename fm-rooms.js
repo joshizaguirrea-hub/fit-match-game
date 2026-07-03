@@ -117,20 +117,22 @@
   }
 
   // ---------- CREAR SALA ----------
-  function showCreate() {
-    const rs = allRoutines();
-    const opts = rs.map(r => '<option value="' + r.id + '">' + esc(r.name) + ' (' + esc(r.level || '') + ')</option>').join('');
-    // valor por defecto de fecha/hora: dentro de 1 hora
+  let lockedRoutine = null;   // rutina fija (armada con el cuerpo) para la sala
+
+  function defWhenValue() {
     const d = new Date(Date.now() + 60 * 60000);
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    const defWhen = d.toISOString().slice(0, 16);
-    const c = card();
-    c.innerHTML = header('Crear sala') +
+    return d.toISOString().slice(0, 16);
+  }
+
+  // Cuerpo comun del formulario (DRY): recibe el campo de rutina + una nota opcional
+  function createFormHtml(routineFieldHtml, noteHtml) {
+    return header('Crear sala') +
       '<div style="padding:16px 18px">' +
-        '<label style="font-size:11px;text-transform:uppercase;color:#8b92b0;font-weight:700">Rutina</label>' +
-        '<select id="fm-room-routine" style="' + inS + ';margin:4px 0 14px">' + opts + '</select>' +
+        (noteHtml || '') +
+        routineFieldHtml +
         '<label style="font-size:11px;text-transform:uppercase;color:#8b92b0;font-weight:700">D\u00eda y hora</label>' +
-        '<input id="fm-room-when" type="datetime-local" value="' + defWhen + '" style="' + inS + ';margin:4px 0 14px">' +
+        '<input id="fm-room-when" type="datetime-local" value="' + defWhenValue() + '" style="' + inS + ';margin:4px 0 14px">' +
         '<p style="font-size:12px;color:#8b92b0;margin:0 0 14px"><i class="fa-solid fa-circle-info mr-1"></i>Se generar\u00e1 un c\u00f3digo y se anunciar\u00e1 en el chat. T\u00fa dar\u00e1s la orden de <b>Empezar</b>.</p>' +
         '<div style="display:flex;gap:10px">' +
           '<button onclick="FMRooms.showList()" style="' + btnS + '">Cancelar</button>' +
@@ -140,17 +142,60 @@
       '</div>';
   }
 
+  // Crear sala eligiendo rutina de una lista (filtrada por la categoria activa)
+  function showCreate(showAll) {
+    lockedRoutine = null;
+    const ctx = window.FMTrainCtx || null;
+    const catMeta = ctx && ctx.categoryMeta ? ctx.categoryMeta() : null;
+    let rs, noteHtml = '';
+    const catList = catMeta && ctx.categoryRoutines ? ctx.categoryRoutines() : null;
+    if (!showAll && catMeta && catList && catList.length) {
+      rs = catList;
+      noteHtml = '<div style="background:rgba(124,92,255,.1);border:1px solid #313961;border-radius:11px;padding:9px 11px;font-size:12px;color:#c2c9ea;margin-bottom:12px">' +
+        '<i class="fa-solid fa-filter mr-1" style="color:#8b7bff"></i>Solo rutinas de <b>' + esc(catMeta.name) + '</b>. ' +
+        '<a onclick="FMRooms.showCreate(true)" style="color:#8b7bff;cursor:pointer;text-decoration:underline">Ver todas</a></div>';
+    } else {
+      rs = allRoutines();
+      if (catMeta && catList && catList.length) {
+        noteHtml = '<div style="background:#1a1f33;border-radius:11px;padding:9px 11px;font-size:12px;color:#9aa2c4;margin-bottom:12px">Mostrando todas. ' +
+          '<a onclick="FMRooms.showCreate()" style="color:#8b7bff;cursor:pointer;text-decoration:underline">Volver a ' + esc(catMeta.name) + '</a></div>';
+      }
+    }
+    const opts = rs.map(r => '<option value="' + r.id + '">' + esc(r.name) + ' (' + esc(r.level || '') + ')</option>').join('');
+    const routineField = '<label style="font-size:11px;text-transform:uppercase;color:#8b92b0;font-weight:700">Rutina</label>' +
+      '<select id="fm-room-routine" style="' + inS + ';margin:4px 0 14px">' + opts + '</select>';
+    card().innerHTML = createFormHtml(routineField, noteHtml);
+  }
+
+  // Crear sala con una rutina YA armada (desde el cuerpo interactivo): rutina fija
+  function showCreateWith(routine) {
+    if (!me()) { toast('Inicia sesi\u00f3n para crear una sala.', 'Salas', '#f59e0b'); return; }
+    lockedRoutine = routine;
+    ensureOverlay().style.display = 'flex';
+    const exCount = (routine.exercises || []).length;
+    const routineField = '<label style="font-size:11px;text-transform:uppercase;color:#8b92b0;font-weight:700">Rutina (armada por ti)</label>' +
+      '<div style="background:#0f1117;border:1px solid #2c3350;border-radius:12px;padding:12px;margin:4px 0 14px">' +
+        '<div style="font-weight:800;font-size:14px;color:#e7eaf6">' + esc(routine.name) + '</div>' +
+        '<div style="font-size:12px;color:#8b92b0;margin-top:2px"><i class="fa-solid fa-dumbbell mr-1"></i>' + exCount + ' ejercicios \u00b7 ' + esc(routine.level || 'personalizada') + '</div>' +
+      '</div>';
+    card().innerHTML = createFormHtml(routineField, '');
+  }
+
   async function doCreate() {
     const msg = document.getElementById('fm-room-msg');
-    const rid = document.getElementById('fm-room-routine').value;
+    const sel = document.getElementById('fm-room-routine');
+    const rid = lockedRoutine ? lockedRoutine.id : (sel ? sel.value : null);
     const when = document.getElementById('fm-room-when').value;
-    const routine = (window.findRoutineById && window.findRoutineById(rid)) || allRoutines().find(r => r.id === rid);
+    const routine = lockedRoutine || (window.findRoutineById && window.findRoutineById(rid)) || allRoutines().find(r => r.id === rid);
     if (!routine) { if (msg) msg.textContent = 'Elige una rutina v\u00e1lida.'; return; }
     const s = sb(); if (!s) return;
     const btn = document.getElementById('fm-room-create-btn'); if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
     try {
       const code = genCode();
-      const cat = (window.FMSpecializedRoutines || []).some(r => r.id === rid) ? 'spec' : 'gods';
+      const cat = routine._assembled ? 'armada'
+        : ((window.FMSpecializedRoutines || []).some(r => r.id === rid) ? 'spec' : 'gods');
+      // Asegurar que la rutina armada quede registrada para poder sincronizarla a los miembros
+      if (routine._assembled && window.registerCustomRoutine) window.registerCustomRoutine(routine);
       const payload = {
         code: code, host_id: myId(), host_apodo: me().apodo,
         routine_id: rid, routine_name: routine.name, routine_category: cat,
@@ -165,6 +210,7 @@
       if (window.sendGeneralChatNotice) {
         window.sendGeneralChatNotice('\ud83c\udfcb\ufe0f Abr\u00ed una sala: ' + routine.name + ' \u00b7 ' + fmtWhen(payload.scheduled_at) + ' \u00b7 c\u00f3digo ' + code + '. \u00a1\u00danete desde "Salas"!');
       }
+      lockedRoutine = null;
       enterRoom(data);
     } catch (e) {
       if (msg) msg.textContent = 'No se pudo crear: ' + (e.message || e) + '. \u00bfCorriste sql-salas.sql?';
@@ -324,5 +370,5 @@
     showList();
   }
 
-  window.FMRooms = { open, close, showList, showCreate, doCreate, showJoinByCode, doJoinByCode, enter, start, leave };
+  window.FMRooms = { open, close, showList, showCreate, showCreateWith, doCreate, showJoinByCode, doJoinByCode, enter, start, leave };
 })();

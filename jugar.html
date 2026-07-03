@@ -164,7 +164,7 @@
 <script src="fm-group-call.js?v=3"></script>
 <script src="fm-music.js?v=2"></script>
 <script src="fm-fx.js?v=1"></script>
-<script src="fm-rooms.js?v=3"></script>
+<script src="fm-rooms.js?v=4"></script>
 <script src="fm-install.js?v=2"></script>
 <script src="fm-trainer.js?v=3"></script>
 <script src="fm-monthly.js?v=4"></script>
@@ -2299,8 +2299,19 @@ function closeInviteRoutine() {
 function findRoutineById(id) {
   return (window.FMRoutines || []).find(r => r.id === id)
       || (window.FMSpecializedRoutines || []).find(r => r.id === id)
-      || ((window.FM_ASSEMBLED && window.FM_ASSEMBLED.id === id) ? window.FM_ASSEMBLED : null);
+      || ((window.FM_ASSEMBLED && window.FM_ASSEMBLED.id === id) ? window.FM_ASSEMBLED : null)
+      || (window.FM_CUSTOM_ROUTINES && window.FM_CUSTOM_ROUTINES[id]) || null;
 }
+// Registro de rutinas armadas (para que sobrevivan y se puedan sincronizar a los miembros de una sala)
+window.FM_CUSTOM_ROUTINES = window.FM_CUSTOM_ROUTINES || {};
+function registerCustomRoutine(rt){ if (rt && rt.id) window.FM_CUSTOM_ROUTINES[rt.id] = rt; return rt; }
+window.registerCustomRoutine = registerCustomRoutine;
+// Puente para que fm-rooms.js sepa el filtro/categoria activa y sus rutinas
+window.FMTrainCtx = {
+  categoryId: function(){ return trainCategory; },
+  categoryMeta: function(){ return TRAIN_CATS.find(c => c.id === trainCategory) || null; },
+  categoryRoutines: function(){ const cat = TRAIN_CATS.find(c => c.id === trainCategory); return cat ? getCatRoutines(cat) : null; }
+};
 function renderInviteRoutineOptions() {
   const cont = document.getElementById('invite-routine-options');
   if (!cont) return;
@@ -3216,6 +3227,9 @@ function renderAssembledCard(meta, picked, showShuffle){
     +     (showShuffle ? '<button onclick="buildAuto()" class="px-3 py-3 rounded-xl fun font-bold" style="background:var(--surface2);color:var(--txt)" title="Otra variante"><i class="fa-solid fa-shuffle"></i></button>' : '')
     +     '<button onclick="startAssembledCurrent()" ' + (rt.exercises.length ? '' : 'disabled') + ' class="flex-1 py-3 rounded-xl fun font-extrabold text-white" style="background:linear-gradient(120deg,' + meta.color + ',' + meta.color + 'cc)' + (rt.exercises.length ? '' : ';opacity:.5;cursor:not-allowed') + '"><i class="fa-solid fa-play mr-1"></i>Empezar esta rutina</button>'
     +   '</div>'
+    +   '<div class="px-3 pb-3">'
+    +     '<button onclick="createSalaFromAssembled()" ' + (rt.exercises.length ? '' : 'disabled') + ' class="w-full py-3 rounded-xl fun font-extrabold text-white flex items-center justify-center gap-2" style="background:linear-gradient(150deg,#7c3aed,#22d3ee)' + (rt.exercises.length ? '' : ';opacity:.5;cursor:not-allowed') + '"><i class="fa-solid fa-people-roof"></i>Crear Sala con esta rutina</button>'
+    +   '</div>'
     + '</div>';
 }
 
@@ -3243,6 +3257,17 @@ function startAssembled(meta, picked){
 function startAssembledCurrent(){
   if (window.FM_ASSEMBLED) openRoutineDetail(window.FM_ASSEMBLED.id, 'specialized');
 }
+// Crea una SALA usando la rutina que acabas de armar con el cuerpo interactivo
+function createSalaFromAssembled(){
+  if (!window.FM_ASSEMBLED || !window.FM_ASSEMBLED.exercises.length) return;
+  registerCustomRoutine(window.FM_ASSEMBLED); // que sobreviva y se pueda sincronizar
+  if (window.FMRooms && window.FMRooms.showCreateWith) {
+    window.FMRooms.showCreateWith(window.FM_ASSEMBLED);
+  } else if (window.createRoomCodeSession) {
+    window.createRoomCodeSession(window.FM_ASSEMBLED.id);
+  }
+}
+window.createSalaFromAssembled = createSalaFromAssembled;
 
 function renderRoutinePicker() {
   const grid = document.getElementById('routines-grid');
@@ -4057,10 +4082,13 @@ async function createRoomCodeSession(routineId, presetCode, silent) {
     // Responder a solicitudes de sincronización de nuevos usuarios que entran con el código
     .on('broadcast', { event: 'coop-request-sync' }, payload => {
       const checkedIndices = Array.from(document.querySelectorAll('#active-routine-list > div')).map((div, i) => div.classList.contains('bg-purple-50') ? i : -1).filter(i => i !== -1);
+      // Si la rutina es armada/personalizada, enviamos el objeto completo para que el miembro la tenga
+      const full = findRoutineById(routineId);
+      const custom = (full && (full._assembled || (window.FM_CUSTOM_ROUTINES && window.FM_CUSTOM_ROUTINES[routineId]))) ? full : null;
       activeCoopChannel.send({
         type: 'broadcast',
         event: 'coop-sync-routine',
-        payload: { routineId: routineId, checked: checkedIndices }
+        payload: { routineId: routineId, checked: checkedIndices, routine: custom }
       });
     })
     .subscribe(status => {
@@ -4110,6 +4138,8 @@ async function joinRoomCodeSession(code) {
     .on('broadcast', { event: 'coop-sync-routine' }, payload => {
       // Recibimos la rutina del host, la abrimos y lanzamos el workout
       const routineId = payload.payload.routineId;
+      // Si el host nos manda una rutina armada completa, la registramos para poder resolverla
+      if (payload.payload.routine) { registerCustomRoutine(payload.payload.routine); }
       openRoutineDetail(routineId);
       setTimeout(() => {
         startRoutineWorkout();
