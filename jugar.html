@@ -2946,14 +2946,18 @@ const BODY_GROUPS = {
 let bodySide = 'front', bodyCat = null, bodyLevel = 'todos', bodyMode = 'auto';
 let bodySel = [];          // grupos musculares seleccionados (multi)
 let bodyManualPicks = {};  // ejercicios elegidos a mano: nombre -> {name,reps,level}
+let bodyViewSex = null;    // null = segun perfil; 'hombre' | 'mujer' = vista forzada (preview)
 
 function renderBodyInteractive(cat){
   bodyCat = cat.id; bodySide = 'front'; bodyLevel = 'todos'; bodyMode = 'auto';
   bodySel = []; bodyManualPicks = {};
+  // Vista inicial segun tu perfil (puedes alternarla con el interruptor)
+  bodyViewSex = (window.cloudProfile && cloudProfile.sexo === 'mujer') ? 'mujer' : 'hombre';
   const grid = document.getElementById('routines-grid');
   grid.innerHTML = buildCatHero(cat, 'Marca uno o varios musculos y arma tu rutina')
     + '<div class="grid md:grid-cols-2 gap-5 items-start">'
     +   '<div class="flex flex-col items-center">'
+    +     '<div id="body-sex-toggle" class="flex gap-2 mb-2"></div>'
     +     '<div class="flex gap-2 mb-2">'
     +       '<button id="body-front-btn" onclick="setBodySide(\'front\')" class="fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:var(--accent);color:#fff"><i class="fa-solid fa-user mr-1"></i>Frente</button>'
     +       '<button id="body-back-btn" onclick="setBodySide(\'back\')" class="fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:var(--surface2);color:var(--txt-soft)"><i class="fa-solid fa-user mr-1"></i>Espalda</button>'
@@ -2967,10 +2971,22 @@ function renderBodyInteractive(cat){
     +     '<div id="body-content"></div>'
     +   '</div>'
     + '</div>';
+  renderBodySexToggle();
   renderBodyChips();
   renderBodySvg();
   refreshBodyPanel();
 }
+
+// Interruptor Hombre / Mujer (solo cambia la vista del cuerpo, no tu perfil)
+function renderBodySexToggle(){
+  const box = document.getElementById('body-sex-toggle'); if (!box) return;
+  const opts = [['hombre','Hombre','fa-mars'],['mujer','Mujer','fa-venus']];
+  box.innerHTML = opts.map(([id,lbl,ic]) => {
+    const on = bodyViewSex === id;
+    return '<button onclick="setBodyViewSex(\'' + id + '\')" class="fun font-bold text-xs px-4 py-1.5 rounded-full" style="background:' + (on ? 'var(--accent)' : 'var(--surface2)') + ';color:' + (on ? '#fff' : 'var(--txt-soft)') + '"><i class="fa-solid ' + ic + ' mr-1"></i>' + lbl + '</button>';
+  }).join('');
+}
+function setBodyViewSex(s){ bodyViewSex = s; renderBodySexToggle(); renderBodySvg(); }
 
 // Controles: selector de nivel + modo (automatica / elegir yo)
 function buildBodyControls(){
@@ -3002,8 +3018,9 @@ function renderBodyChips(){
 
 function renderBodySvg(){
   const svg = document.getElementById('body-svg'); if (!svg || typeof FM_BODY_FRONT === 'undefined') return;
-  // Si el usuario es mujer, usar la anatomia femenina (misma libreria MIT)
-  const fem = (window.cloudProfile && cloudProfile.sexo === 'mujer' && typeof FM_BODY_FEMALE_FRONT !== 'undefined');
+  // Vista del cuerpo: interruptor manual si existe, si no segun el perfil
+  const wantFem = bodyViewSex ? (bodyViewSex === 'mujer') : (window.cloudProfile && cloudProfile.sexo === 'mujer');
+  const fem = wantFem && typeof FM_BODY_FEMALE_FRONT !== 'undefined';
   const data = bodySide === 'front'
     ? (fem ? FM_BODY_FEMALE_FRONT : FM_BODY_FRONT)
     : (fem ? FM_BODY_FEMALE_BACK : FM_BODY_BACK);
