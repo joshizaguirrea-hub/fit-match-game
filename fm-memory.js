@@ -32,6 +32,7 @@
     if (!m.shop.active) m.shop.active = {};
     if (!m.shop.tokens) m.shop.tokens = {};
     if (!m.shop.frozen) m.shop.frozen = {};
+    if (!m.checkin) m.checkin = { last: '', days: 0 };
     return m;
   }
 
@@ -87,6 +88,14 @@
       return { suggest:true, from:+e.weight, to:nextWeight(e.weight), sessions:sessions, reps:reps };
     }
     return { suggest:false, sessions:sessions };
+  }
+
+  // ---- CHECK-IN DIARIO (loop de retencion) ----
+  function checkinGet() { return ensure(load()).checkin; }
+  function checkinSet(last, days) {
+    var m = ensure(load());
+    m.checkin = { last: last, days: days };
+    save(m); return m.checkin;
   }
 
   // ---- FAVORITAS ----
@@ -223,6 +232,11 @@
       });
       Object.keys(remote.shop.frozen || {}).forEach(function (k) { m.shop.frozen[k] = true; });
     }
+    // Check-in diario: gana la fecha mas reciente; si es el mismo dia, el mayor contador.
+    if (remote.checkin && remote.checkin.last) {
+      if (!m.checkin || (remote.checkin.last > (m.checkin.last || ''))) m.checkin = remote.checkin;
+      else if (remote.checkin.last === m.checkin.last) m.checkin.days = Math.max(m.checkin.days || 0, remote.checkin.days || 0);
+    }
     save(m);
     return m;
   }
@@ -254,6 +268,7 @@
   window.FMMem = {
     exGet: exGet, exSetWeight: exSetWeight, exSetReps: exSetReps, exBumpDone: exBumpDone,
     suggestProgress: suggestProgress,
+    checkinGet: checkinGet, checkinSet: checkinSet,
     favIs: favIs, favToggle: favToggle, favList: favList,
     recordRoutine: recordRoutine, recentList: recentList, summary: summary,
     orderGet: orderGet, orderSet: orderSet,

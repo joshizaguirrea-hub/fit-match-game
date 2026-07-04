@@ -1646,6 +1646,26 @@ function initIntroExtras(){
     }
   }catch(e){ /* sin rutinas aun */ }
   refreshIntroStreak();
+  dailyCheckIn();
+}
+
+// Loop de retencion: bono de FitCoins por volver cada dia (escala con dias seguidos).
+async function dailyCheckIn(){
+  try{
+    if(!cloudUser || !window.FMMem || !FMMem.checkinGet) return;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const fmt = d => d.toISOString().slice(0,10);
+    const todayStr = fmt(hoy);
+    const ci = FMMem.checkinGet() || { last:'', days:0 };
+    if(ci.last === todayStr) return; // ya hizo check-in hoy
+    const ayer = new Date(hoy); ayer.setDate(ayer.getDate()-1);
+    const days = (ci.last === fmt(ayer)) ? (ci.days||0)+1 : 1;
+    FMMem.checkinSet(todayStr, days);
+    const reward = Math.min(50, 10 + (days-1)*5); // 10,15,20... tope 50
+    if(typeof addFitCoins === 'function') await addFitCoins(reward);
+    if(window.FMNotify && FMNotify.toast) FMNotify.toast('\u00a1Check-in diario! +' + reward + ' FitCoins', 'D\u00eda ' + days + ' seguido. \u00a1Vuelve ma\u00f1ana para m\u00e1s!', 'fa-gift', '#fbbf24');
+    if(window.FMFX && FMFX.success) FMFX.success();
+  }catch(e){ console.warn('dailyCheckIn', e); }
 }
 
 function startDailyChallenge(){
@@ -2847,6 +2867,8 @@ cloudUser = user;
       }
       // Refrescar la racha visible del inicio ahora que hay sesion
       if (typeof refreshIntroStreak === 'function') refreshIntroStreak();
+      // Bono de check-in diario (loop de retencion), ya con sesion lista
+      if (typeof dailyCheckIn === 'function') setTimeout(dailyCheckIn, 1200);
       // Revisar buzon para el punto rojo de notificacion
       if (typeof checkInboxBadge === 'function') checkInboxBadge();
       // Notificaciones: saludo diario + avisos de citas en tiempo real
