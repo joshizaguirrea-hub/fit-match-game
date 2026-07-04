@@ -1,6 +1,7 @@
 {
   "name": "Fit Match",
   "short_name": "Fit Match",
+  "id": "./",
   "description": "Entrena a tu ritmo, reta a tus amigos en tiempo real y sube de nivel.",
   "start_url": "index.html",
   "scope": "./",

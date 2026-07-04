@@ -1,0 +1,15 @@
+{
+  "COMENTARIO": "Digital Asset Links para TWA (Trusted Web Activity). Reemplaza el fingerprint SHA-256 con el de TU keystore (o el de Play App Signing) y sube este archivo a la RAIZ del dominio en la ruta /.well-known/assetlinks.json. Ver GOOGLE-PLAY.md.",
+  "assetlinks": [
+    {
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.fitmatch.app",
+        "sha256_cert_fingerprints": [
+          "REEMPLAZA:CON:EL:SHA256:DE:TU:KEYSTORE:O:PLAY:APP:SIGNING"
+        ]
+      }
+    }
+  ]
+}
