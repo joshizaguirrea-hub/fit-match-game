@@ -417,10 +417,10 @@
         <table class="w-full text-left text-sm border-collapse">
           <thead>
             <tr class="bg-gray-900/50 text-gray-400 border-b border-gray-800 text-xs font-bold uppercase">
-              <th class="py-4 px-6 text-center w-16">Puesto</th>
-              <th class="py-4 px-6">Atleta</th>
-              <th class="py-4 px-6 text-right">Partidas</th>
-              <th class="py-4 px-6 text-right text-yellow-400">Total Puntos</th>
+              <th class="py-4 px-3 text-center w-12">Puesto</th>
+              <th class="py-4 px-3">Atleta</th>
+              <th class="py-4 px-3 text-right">Partidas</th>
+              <th class="py-4 px-3 text-right text-yellow-400 whitespace-nowrap">Puntos</th>
             </tr>
           </thead>
           <tbody id="ranking-rows" class="divide-y divide-gray-900">
@@ -1281,7 +1281,10 @@
       }
 
       tbody.innerHTML = data.map((row, index) => {
-        let medal = index === 0 ? "" : index === 1 ? "" : index === 2 ? "" : `${index + 1}`;
+        let medal = index === 0 ? '<i class="fa-solid fa-trophy" style="color:#fbbf24"></i>'
+                  : index === 1 ? '<i class="fa-solid fa-trophy" style="color:#cbd5e1"></i>'
+                  : index === 2 ? '<i class="fa-solid fa-trophy" style="color:#f59e0b"></i>'
+                  : `${index + 1}`;
         let rowClass = "";
         
         if (currentProfile && row.apodo === currentProfile.apodo) {
@@ -1290,13 +1293,13 @@
 
         return `
           <tr class="${rowClass} hover:bg-gray-900/30 transition">
-            <td class="py-4 px-6 text-center text-lg font-bold">${medal}</td>
-            <td class="py-4 px-6 font-medium text-white flex items-center gap-2">
-              ${row.apodo}
-              ${currentProfile && row.apodo === currentProfile.apodo ? '<span class="bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded-full uppercase">Tú</span>' : ''}
+            <td class="py-4 px-3 text-center text-lg font-bold">${medal}</td>
+            <td class="py-4 px-3 font-medium text-white">
+              <span class="inline-flex items-center gap-2">${row.apodo}
+              ${currentProfile && row.apodo === currentProfile.apodo ? '<span class="bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded-full uppercase">Tú</span>' : ''}</span>
             </td>
-            <td class="py-4 px-6 text-right text-gray-400">${row.entrenamientos}</td>
-            <td class="py-4 px-6 text-right font-bold text-yellow-400 text-lg">${row.puntos_totales || row.mejor_puntaje || 0} pts</td>
+            <td class="py-4 px-3 text-right text-gray-400">${row.entrenamientos}</td>
+            <td class="py-4 px-3 text-right font-bold text-yellow-400 text-base whitespace-nowrap">${row.puntos_totales || row.mejor_puntaje || 0} pts</td>
           </tr>
         `;
       }).join('');
