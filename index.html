@@ -29,10 +29,17 @@
   .onb-opt{transition:border-color .15s, background .15s, transform .1s;}
   .onb-opt:hover{border-color:#7c3aed;}
   .onb-opt.selected{border-color:#a855f7;background:rgba(124,58,237,.18);box-shadow:0 0 0 1px #a855f7 inset;}
+  /* Accesibilidad WCAG 2.2 AA */
+  :focus-visible{ outline:3px solid #a855f7; outline-offset:2px; border-radius:6px; }
+  .sr-only{ position:absolute!important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  .skip-link{ position:absolute; left:8px; top:-48px; z-index:200; background:#7c3aed; color:#fff; padding:10px 16px; border-radius:8px; font-weight:700; transition:top .15s; }
+  .skip-link:focus{ top:8px; }
+  @media (prefers-reduced-motion: reduce){ *,*::before,*::after{ animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
 </style>
 <!-- Supabase JS & Connection -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="fm-supabase.js?v=18"></script>
+<script src="fm-a11y.js?v=1" defer></script>
 <script src="fm-badges.js?v=18"></script>
 <script src="fm-achievements.js?v=18"></script>
 <script src="fm-nutrition.js?v=31"></script>
