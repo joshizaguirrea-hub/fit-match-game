@@ -8,9 +8,12 @@ Thumbs.db
 node_modules/
 .env
 .env.*
+__pycache__/
+*.pyc
 
 # Netlify
 .netlify/
 
 # Capturas de auditoria visual (no son codigo)
 tests/shots/
+tests/_exdb.json

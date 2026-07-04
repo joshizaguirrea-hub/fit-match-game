@@ -10,6 +10,25 @@
 
   // Orden IMPORTA: lo mas especifico primero (gana el primer match).
   var MAP = [
+    // ============================================================
+    // ALTA PRIORIDAD: nombres compuestos/ambiguos que DEBEN ganar al
+    // generico (ej. 'escaladores en plancha' es escalador, NO plancha;
+    // 'pino contra pared' es pino, NO sentadilla contra pared).
+    // Keywords elegidas para evitar falsos positivos por substring.
+    // ============================================================
+    [['escalador', 'escaladores', 'mountain climber'], 'Mountain_Climbers'],
+    [['el pino', 'al pino', 'de pino', 'pino contra', 'pino asistido', 'handstand', 'parada de manos', 'vertical invertida'], 'Handstand_Push-Ups'],
+    [['caminata de oso', 'oso estatica', 'oso dinamica', 'bear crawl', 'caminata de cangrejo', 'crab walk', 'marcha del cangrejo'], 'Bear_Crawl_Sled_Drags'],
+    [['gato-camello', 'gato camello', 'gato-vaca', 'gato vaca', 'cat-cow', 'cat cow', 'camello'], 'Cat_Stretch'],
+    [['walkout', 'walkouts', 'caminata de manos', 'inchworm', 'oruga', 'gusano'], 'Inchworm'],
+    [['turkish', 'get-up turco', 'get up turco', 'levantada turca', 'levantamiento turco'], 'Kettlebell_Turkish_Get-Up_Squat_style'],
+    [['arnold press', 'press arnold'], 'Arnold_Dumbbell_Press'],
+    [['chin up', 'chin ups', 'chin-up', 'dominada supina', 'palmas adentro'], 'Chin-Up'],
+    [['salto de rana', 'saltos de rana', 'frog jump', 'frog hop'], 'Frog_Hops'],
+    [['patada de aleteo', 'aleteo de piernas', 'flutter kick', 'flutter'], 'Flutter_Kicks'],
+    [['patada de tijera', 'patadas de tijera', 'scissor kick'], 'Scissor_Kick'],
+    [['elevaciones frontales', 'elevacion frontal', 'elevaciones frontal', 'elevacion de brazos al frente', 'front raise'], 'Front_Dumbbell_Raise'],
+    [['step up', 'step-up', 'step ups', 'subida al cajon', 'subida al banco'], 'Barbell_Step_Ups'],
     // ----- CORE -----
     [['limpiaparabrisas', 'wiper'], 'Isometric_Wipers'],
     [['bicho muerto', 'dead bug'], 'Dead_Bug'],
