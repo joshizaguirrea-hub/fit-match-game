@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preview demos</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#0f1226;color:#eceefb;margin:0;padding:16px}
+  h2{margin:18px 0 8px;font-size:15px;color:#a5b4fc}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .card{background:#1a1e3a;border-radius:12px;overflow:hidden}
+  .cap{font-size:11px;padding:6px 8px;line-height:1.2}
+</style></head>
+<body>
+<div id="app"></div>
+<script src="../fm-exercise-photos.js"></script>
+<script src="../fm-demo.js"></script>
+<script>
+  var groups = {
+    'YOGA (fallback tematico)': ['Guerrero II','Guerrero III','Postura del arbol balance','Perro boca abajo','Saludo al sol A','Wheel (Urdhva Dhanurasana)','Eagle (Garuda)','King pigeon','Half moon'],
+    'PILATES (fallback tematico)': ['Hundred','Teaser','Roll up','Saw con rotacion','Single leg circles','Corkscrew','Scissors en V','Rolling like a ball','Boomerang'],
+    'RESPIRACION / RELAJACION': ['Respiracion diafragmatica','Apnea costal (4 segundos)','Savasana final','Relajacion profunda','Enfriamiento stretch','Descanso 1 minuto'],
+    'MATCH EXACTO (imagen precisa)': ['Plancha','Sentadillas clasicas','Escaladores rapidos en plancha','Pino contra pared','Flexiones diamante','Elevaciones frontales','Gato-Camello','Caminata de oso estatica','Step ups explosivos']
+  };
+  var app = document.getElementById('app');
+  Object.keys(groups).forEach(function(g){
+    var h = document.createElement('h2'); h.textContent = g; app.appendChild(h);
+    var grid = document.createElement('div'); grid.className='grid';
+    groups[g].forEach(function(nm){
+      var c = document.createElement('div'); c.className='card';
+      c.innerHTML = FMDemo.html(nm,{height:'110px'}) + '<div class="cap">'+nm+'</div>';
+      grid.appendChild(c);
+    });
+    app.appendChild(grid);
+  });
+</script>
+</body></html>

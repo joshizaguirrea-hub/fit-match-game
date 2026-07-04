@@ -111,19 +111,26 @@ def run():
             res = page.evaluate("""() => {
               if (!window.FMDemo) return {ok:false};
               const known = FMDemo.html('flexiones');
-              const unknown = FMDemo.html('zzz-ejercicio-inexistente-999');
+              // Antes caia a icono; ahora usa fallback tematico por disciplina
+              // (yoga/pilates/etc.) => SIEMPRE demo con 2 frames, nunca icono.
+              const pose = FMDemo.html('Guerrero II');
+              const breath = FMDemo.html('Respiracion diafragmatica');
+              const cnt = (s) => (s.match(/<img/g)||[]).length;
               return {
                 ok:true,
-                animKnown: known.includes('fm-demo') && (known.match(/<img/g)||[]).length===2 && known.includes('fmDemoCross')===false && known.includes('fm-demo-b'),
-                fallbackUnknown: unknown.includes('fa-dumbbell') && !unknown.includes('fm-demo-b')
+                animKnown: known.includes('fm-demo') && cnt(known)===2 && known.includes('fm-demo-b'),
+                fallbackPose: pose.includes('fm-demo') && cnt(pose)===2 && pose.includes('fm-demo-b'),
+                fallbackBreath: breath.includes('fm-demo') && cnt(breath)===2 && breath.includes('fm-demo-b')
               };
             }""")
             if not res.get("ok"):
                 raise AssertionError("FMDemo no esta cargado")
             if not res.get("animKnown"):
                 raise AssertionError("FMDemo no genera demo animada (2 frames) para ejercicio conocido")
-            if not res.get("fallbackUnknown"):
-                raise AssertionError("FMDemo no cae a icono de respaldo para ejercicio desconocido")
+            if not res.get("fallbackPose"):
+                raise AssertionError("FMDemo no da imagen tematica (2 frames) para pose de yoga")
+            if not res.get("fallbackBreath"):
+                raise AssertionError("FMDemo no da imagen tematica (2 frames) para ejercicio de respiracion")
 
         check_page("jugar.html", actions=jugar_actions, name="jugar.html (ajustes+temas+clan)")
 

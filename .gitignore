@@ -17,3 +17,4 @@ __pycache__/
 # Capturas de auditoria visual (no son codigo)
 tests/shots/
 tests/_exdb.json
+tests/_unmatched.txt
