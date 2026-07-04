@@ -18,3 +18,6 @@ __pycache__/
 tests/shots/
 tests/_exdb.json
 tests/_unmatched.txt
+tests/_wiki_candidates.json
+tests/_wiki_check.html
+tests/_probe_wikimedia.py

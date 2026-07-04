@@ -37,10 +37,11 @@ with sync_playwright() as p:
                        i.addEventListener('error',()=>{done++;check();}); }
             });
             check();
-            setTimeout(()=>res(report()), 8000);
+            setTimeout(()=>res(report()), 20000);
         });
     }""")
     print("IMAGENES:", stats)
+    pg.wait_for_timeout(4000)
     pg.screenshot(path="tests/shots/demos_fallback.png", full_page=True)
     b.close()
 print("[OK] captura en tests/shots/demos_fallback.png")

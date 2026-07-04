@@ -6,7 +6,32 @@
  * NO metemos 1041 fotos a mano (DRY): un solo mapa de ~60 movimientos base cubre casi todo.
  */
 (function () {
+  'use strict';
   var BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+
+  // ============================================================
+  // OVERRIDE WIKIMEDIA COMMONS: fotos REALES de posturas de yoga que NO
+  // existen en free-exercise-db (base de fuerza). Licencia libre (CC / PD).
+  // Atribucion en CREDITS-YOGA.md. Estas URLs GANAN sobre todo lo demas.
+  // Orden IMPORTA: 'king pigeon' antes que 'pigeon'.
+  // ============================================================
+  var WIKI = [
+    [['guerrero iii', 'warrior iii', 'guerrero 3'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Tuladandasana.jpg/500px-Tuladandasana.jpg'],
+    [['guerrero ii', 'warrior ii', 'guerrero 2'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Virabhadrasana_II_-_Warrior_II_Pose.jpg/500px-Virabhadrasana_II_-_Warrior_II_Pose.jpg'],
+    [['arbol', 'tree pose', 'vrksasana', 'vriksasana'], 'https://upload.wikimedia.org/wikipedia/commons/7/72/Vriksasana_Yoga-Asana_Nina-Mel.jpg'],
+    [['perro boca abajo', 'downward', 'adho mukha svanasana'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Downward-Facing-Dog.JPG/500px-Downward-Facing-Dog.JPG'],
+    [['saludo al sol', 'surya namaskar', 'sun salutation'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Surya_Namaskar.jpg/500px-Surya_Namaskar.jpg'],
+    [['savasana', 'shavasana', 'corpse pose'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Shavasana.jpg/500px-Shavasana.jpg'],
+    [['silla (utkatasana)', 'utkatasana', 'chair pose'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/A_style_of_Utkatasana.JPG/500px-A_style_of_Utkatasana.JPG'],
+    [['navasana', 'boat pose'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Navasana_Boat_Pose_Yoga_Pose.jpg/500px-Navasana_Boat_Pose_Yoga_Pose.jpg'],
+    [['natarajasana', 'dancer', 'lord of the dance'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Natarajasana_I.png/500px-Natarajasana_I.png'],
+    [['garuda', 'eagle pose', 'garudasana'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Garudasana_Yoga-Asana_Nina-Mel.jpg/500px-Garudasana_Yoga-Asana_Nina-Mel.jpg'],
+    [['king pigeon', 'rajakapotasana', 'eka pada raja'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Eka_Pada_Rajakapotasana_-_One_Legged_Royal_Pigeon_Pose.jpg/500px-Eka_Pada_Rajakapotasana_-_One_Legged_Royal_Pigeon_Pose.jpg'],
+    [['pigeon', 'paloma', 'kapotasana'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Kapotasana_-_Pigeon_pose.jpg/500px-Kapotasana_-_Pigeon_pose.jpg'],
+    [['peacock', 'mayurasana', 'forearm stand', 'pincha'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Feathered_Peacock_Pose_aka_Pincha_Mayurasana.jpg/500px-Feathered_Peacock_Pose_aka_Pincha_Mayurasana.jpg'],
+    [['wheel', 'urdhva dhanurasana', 'chakrasana'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Chakrasana_Yoga-Asana_Nina-Mel.jpg/500px-Chakrasana_Yoga-Asana_Nina-Mel.jpg'],
+    [['headstand', 'sirsasana', 'parada de cabeza'], 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Mr-yoga-headstand-5-6.jpg/500px-Mr-yoga-headstand-5-6.jpg']
+  ];
 
   // Orden IMPORTA: lo mas especifico primero (gana el primer match).
   var MAP = [
@@ -231,19 +256,35 @@
     return hashPick(n, pool);
   }
 
+  // Foto real de Wikimedia (yoga) si aplica. Gana sobre todo.
+  function wikiUrl(name) {
+    var n = norm(name);
+    for (var i = 0; i < WIKI.length; i++) {
+      var kws = WIKI[i][0];
+      for (var j = 0; j < kws.length; j++) {
+        if (n.indexOf(kws[j]) !== -1) return WIKI[i][1];
+      }
+    }
+    return '';
+  }
+
   function get(name) {
+    var w = wikiUrl(name);
+    if (w) return w;
     var f = resolveFolder(name);
     return f ? (BASE + f + '/0.jpg') : '';
   }
 
   // Las 2 imagenes (inicio y fin del movimiento). Con fallback tematico
-  // por disciplina, SIEMPRE devuelve un par (nunca icono).
+  // por disciplina, SIEMPRE devuelve un par (nunca icono). Para posturas
+  // de yoga (Wikimedia) devuelve la MISMA foto 2 veces (pose estatica).
   function getPair(name) {
+    var w = wikiUrl(name);
+    if (w) return [w, w];
     var f = resolveFolder(name);
     return f ? [BASE + f + '/0.jpg', BASE + f + '/1.jpg'] : [];
   }
 
-  // exactMatch: true si hubo match por palabra clave (no fallback). Util
-  // para debugging/auditoria desde consola.
-  window.FMPhotos = { get: get, getPair: getPair, exactMatch: function (n) { return !!folderFor(n); } };
+  // exactMatch: true si hubo match por palabra clave o Wikimedia (no fallback).
+  window.FMPhotos = { get: get, getPair: getPair, exactMatch: function (n) { return !!wikiUrl(n) || !!folderFor(n); } };
 })();
