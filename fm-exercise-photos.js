@@ -29,6 +29,16 @@
     [['patada de tijera', 'patadas de tijera', 'scissor kick'], 'Scissor_Kick'],
     [['elevaciones frontales', 'elevacion frontal', 'elevaciones frontal', 'elevacion de brazos al frente', 'front raise'], 'Front_Dumbbell_Raise'],
     [['step up', 'step-up', 'step ups', 'subida al cajon', 'subida al banco'], 'Barbell_Step_Ups'],
+    // ----- GIM / FUERZA especificos (maquinas y variantes con barra) -----
+    [['extensiones de cuadriceps', 'extension de cuadriceps', 'extensiones de cuadricep', 'leg extension', 'extension de pierna', 'extensiones de pierna'], 'Leg_Extensions'],
+    [['estiramiento de isquio', 'isquiotibiales', 'hamstring stretch', 'estiramiento isquio'], 'Seated_Floor_Hamstring_Stretch'],
+    [['sentadilla frontal', 'front squat', 'sentadilla front'], 'Front_Barbell_Squat'],
+    [['sentadilla con barra', 'barbell squat', 'sentadilla profunda con barra', 'back squat'], 'Barbell_Full_Squat'],
+    [['remo en polea', 'remo sentado', 'seated cable row', 'remo en maquina', 'remo en polea baja'], 'Seated_Cable_Rows'],
+    [['abductor', 'abduccion'], 'Thigh_Abductor'],
+    [['cruces en polea', 'aperturas en polea', 'crossover', 'cruce en polea', 'cruces de polea'], 'Cable_Crossover'],
+    [['thruster'], 'Kettlebell_Thruster'],
+    [['talones al gluteo', 'talon al gluteo', 'butt kick', 'patada de gluteo corriendo'], 'Trail_Running_Walking'],
     // ============================================================
     // MOVILIDAD / ESTIRAMIENTOS / POSTURAS (categoria 'stretching' de
     // free-exercise-db). Imagenes REALES y relevantes para yoga suave,
@@ -40,7 +50,7 @@
     [['postura del nino', 'child', 'balasana', 'esfinge', 'sphinx'], 'Childs_Pose'],
     [['cobra', 'locust', 'langosta', 'camello', 'swan', 'esfinge'], 'One_Half_Locust'],
     [['rodillas al pecho', 'rodilla al pecho', 'knee to chest', 'knees to chest', 'hug knees', 'hug a ball'], 'Hug_Knees_To_Chest'],
-    [['giro de columna', 'twist de columna', 'spine twist', 'giro de tronco', 'giros de tronco', 'rotacion toracica', 'torso rotation', 'rotacion de tronco', 'giros suaves de tronco', 'giros de cadera y tronco', 'giro suave de columna', 'twist'], 'Torso_Rotation'],
+    [['giro de columna', 'twist de columna', 'spine twist', 'giro de tronco', 'giros de tronco', 'rotacion toracica', 'torso rotation', 'rotacion de tronco', 'giros suaves de tronco', 'giros de cadera y tronco', 'giro suave de columna'], 'Torso_Rotation'],
     [['forward fold', 'doblez hacia adelante', 'toe touch', 'toque de punta', 'flexion hacia adelante', 'forward bend', 'standing toe'], 'Standing_Toe_Touches'],
     [['estiramiento de columna', 'spine stretch', 'spinal', 'columna'], 'Spinal_Stretch'],
     [['brazos al cielo', 'brazos arriba', 'overhead stretch', 'estiramiento hacia arriba', 'upward stretch', 'estiramiento al cielo', 'estiramiento de brazos'], 'Overhead_Stretch'],
@@ -143,7 +153,7 @@
     // ----- CARDIO / SALTOS -----
     [['tuck jump', 'rodillas al pecho', 'salto de rodillas'], 'Knee_Tuck_Jump'],
     [['jumping jack', 'saltos de tijera', 'saltos de estrella', 'star jump', 'jack'], 'Star_Jump'],
-    [['patinador', 'skater', 'esquiador'], 'Side_Hop-Sprint'],
+    [['patinador', 'skater', 'esquiador', 'toques laterales', 'toque lateral', 'saltos laterales'], 'Side_Hop-Sprint'],
     [['comba', 'cuerda', 'jump rope', 'saltar la cuerda'], 'Rope_Jumping'],
     [['sprint'], 'Wind_Sprints'],
     [['trote', 'correr', 'running', 'jog', 'skipping'], 'Trail_Running_Walking'],
