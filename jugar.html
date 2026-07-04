@@ -1625,9 +1625,9 @@ function shareMissionComplete(){
   const d = lastMissionData || {};
   const rachaTxt = d.streak >= 2 ? ` Llevo una racha de ${d.streak} días.` : '';
   const coinsTxt = d.coins ? ` (+${d.coins} FitCoins)` : '';
-  const texto = `¡Acabo de completar "${d.routineName}" en Fit Match y gané ${d.points} puntos${coinsTxt}!${rachaTxt} \nÚnete: https://fit-match-game.netlify.app`;
+  const texto = `¡Acabo de completar "${d.routineName}" en Fit Match y gané ${d.points} puntos${coinsTxt}!${rachaTxt} \nÚnete: https://joshizaguirrea-hub.github.io/fit-match-game/`;
   if(navigator.share){
-    navigator.share({ title:'Fit Match', text:texto, url:'https://fit-match-game.netlify.app' }).catch(()=>{});
+    navigator.share({ title:'Fit Match', text:texto, url:'https://joshizaguirrea-hub.github.io/fit-match-game/' }).catch(()=>{});
   } else if(navigator.clipboard){
     navigator.clipboard.writeText(texto).then(()=>alert('¡Logro copiado! Pégalo donde quieras compartirlo.')).catch(()=>alert(texto));
   } else {

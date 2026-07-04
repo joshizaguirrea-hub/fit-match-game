@@ -17,7 +17,7 @@
   var CONTACT_EMAIL = 'fit.match.studio@gmail.com';
   var APP_URL = (function () {
     try { return location.origin + location.pathname.replace(/jugar\.html.*$/, 'jugar.html'); }
-    catch (e) { return 'https://fit-match-game.netlify.app'; }
+    catch (e) { return 'https://joshizaguirrea-hub.github.io/fit-match-game/'; }
   })();
 
   var DEFAULTS = {

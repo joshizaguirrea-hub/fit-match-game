@@ -26,7 +26,7 @@ la cual **no controlas** en un project page.
    GitHub Pages y sube ahí `assetlinks.json`. TWA sin fricción.
 2. **User/Org page**: mover el sitio a `joshizaguirrea-hub.github.io` (repo
    `joshizaguirrea-hub.github.io`) para controlar la raíz.
-3. **Otro hosting** (Netlify/Vercel/Firebase Hosting) con control de `.well-known`.
+3. **Otro hosting** (Vercel/Firebase Hosting/Cloudflare Pages) con control de `.well-known`.
 
 ---
 
