@@ -1,0 +1,55 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preview - Cambiar ejercicio</title>
+<style>
+  :root{
+    --bg:#0f1117; --surface:#181c2a; --surface2:#222842; --border:#2c3350;
+    --txt:#eceefb; --txt-soft:#b2b9d4; --txt-mut:#8b92b0;
+    --brand:#7c5cff; --brand2:#a855f7; --accent:#22d3ee; --good:#34d399;
+  }
+  body{font-family:sans-serif;background:var(--bg);color:var(--txt);padding:2rem;}
+  .card{background:var(--surface);border:1.5px solid var(--border);border-radius:1.25rem;
+    max-width:420px;margin:auto;padding:1.25rem;box-shadow:0 20px 50px rgba(0,0,0,.5);}
+  .space-y-1\.5>*+*{margin-top:.375rem;}
+  h3{font-size:1.4rem;margin:.25rem 0;text-align:center;}
+  .sub{color:var(--txt-mut);font-size:.75rem;text-align:center;margin-bottom:1rem;}
+
+  /* ==== bloque copiado de jugar.html ==== */
+  .swap-item{display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+    width:100%;text-align:left;padding:.7rem 1rem;border-radius:.75rem;
+    font-weight:700;font-size:.9rem;line-height:1.25;
+    background:var(--surface2);color:var(--txt) !important;
+    border:1.5px solid var(--border);transition:background .15s,border-color .15s,transform .1s;}
+  .swap-item:hover{background:#2b3357;border-color:var(--brand);transform:translateX(2px);}
+  .swap-item .swap-arrow{color:var(--brand);flex:none;}
+  .swap-item--hl{background:rgba(251,146,60,.14);border-color:rgba(251,146,60,.55);
+    box-shadow:inset 3px 0 0 #fb923c;}
+  .swap-item--hl:hover{background:rgba(251,146,60,.24);border-color:#fb923c;}
+  .swap-item--hl .swap-arrow{color:#fb923c;}
+  .swap-hint{background:rgba(251,146,60,.16);border:1.5px solid rgba(251,146,60,.5);
+    border-radius:.75rem;padding:.5rem .75rem;margin-bottom:.5rem;}
+  .swap-hint p{color:#fdba74;font-size:.72rem;font-weight:700;
+    display:flex;align-items:center;gap:.4rem;margin:0;}
+  .swap-sub{color:var(--txt-mut);font-size:.68rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:.03em;margin:0 0 .5rem .25rem;}
+  .swap-divider{border-top:1.5px solid var(--border);padding-top:.5rem;margin-top:.25rem;}
+</style></head>
+<body>
+  <div class="card">
+    <h3>Cambiar ejercicio</h3>
+    <p class="sub">¿No puedes hacerlo? Te sugerimos otros que trabajan <b>el mismo músculo</b>.</p>
+    <div class="swap-hint"><p>* Tambien puedes hacer <span style="text-decoration:underline">(mismo musculo: Piernas)</span></p></div>
+    <div class="space-y-1.5" style="margin-bottom:1rem">
+      <button class="swap-item swap-item--hl"><span>Sentadilla bulgara</span><i class="swap-arrow">&#8594;</i></button>
+      <button class="swap-item swap-item--hl"><span>Zancadas caminando</span><i class="swap-arrow">&#8594;</i></button>
+    </div>
+    <div class="swap-divider">
+      <p class="swap-sub">Otros ejercicios</p>
+      <div class="space-y-1.5">
+        <button class="swap-item"><span>Flexiones de pecho</span><i class="swap-arrow">&#8594;</i></button>
+        <button class="swap-item"><span>Plancha abdominal</span><i class="swap-arrow">&#8594;</i></button>
+        <button class="swap-item"><span>Remo con mancuerna</span><i class="swap-arrow">&#8594;</i></button>
+      </div>
+    </div>
+  </div>
+</body></html>

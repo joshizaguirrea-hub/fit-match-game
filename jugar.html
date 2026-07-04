@@ -104,6 +104,29 @@
   .exsel.selected{background:linear-gradient(150deg,var(--c1),var(--c2)) !important;color:#fff !important;
     box-shadow:3px 3px 0 #111827, inset 0 0 0 3px #fff;transform:translateX(2px) scale(1.02);}
   .exsel.selected .text-amber-300{color:#fff !important;}
+
+  /* ===== Modal "Cambiar ejercicio": legible en tema oscuro (WCAG AA) ===== */
+  .swap-item{display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+    width:100%;text-align:left;padding:.7rem 1rem;border-radius:.75rem;
+    font-weight:700;font-size:.9rem;line-height:1.25;
+    background:var(--surface2);color:var(--txt) !important;
+    border:1.5px solid var(--border);transition:background .15s,border-color .15s,transform .1s;}
+  .swap-item:hover{background:#2b3357;border-color:var(--brand);transform:translateX(2px);}
+  .swap-item .swap-arrow{color:var(--brand);flex:none;}
+  /* Sugeridos (mismo musculo): acento naranja pero SIEMPRE texto claro */
+  .swap-item--hl{background:rgba(251,146,60,.14);border-color:rgba(251,146,60,.55);
+    box-shadow:inset 3px 0 0 #fb923c;}
+  .swap-item--hl:hover{background:rgba(251,146,60,.24);border-color:#fb923c;}
+  .swap-item--hl .swap-arrow{color:#fb923c;}
+  /* Encabezado de la seccion "mismo musculo" */
+  .swap-hint{background:rgba(251,146,60,.16);border:1.5px solid rgba(251,146,60,.5);
+    border-radius:.75rem;padding:.5rem .75rem;margin-bottom:.5rem;}
+  .swap-hint p{color:#fdba74;font-size:.72rem;font-weight:700;
+    display:flex;align-items:center;gap:.4rem;margin:0;}
+  .swap-sub{color:var(--txt-mut);font-size:.68rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:.03em;margin:0 0 .5rem .25rem;}
+  .swap-divider{border-top:1.5px solid var(--border);padding-top:.5rem;margin-top:.25rem;}
+  .swap-empty{color:var(--txt-mut);text-align:center;padding:1rem 0;font-size:.75rem;}
   
   /* Panel de Chat Lateral Desplizable */
   .social-sidebar {
@@ -3336,11 +3359,12 @@ const BODY_GROUPS = {
 let bodySide = 'front', bodyCat = null, bodyLevel = 'todos', bodyMode = 'auto';
 let bodySel = [];          // grupos musculares seleccionados (multi)
 let bodyManualPicks = {};  // ejercicios elegidos a mano: nombre -> {name,reps,level}
+let bodyEquipOff = {};     // implementos que NO tengo (label -> true). Vacio = tengo todo.
 let bodyViewSex = null;    // null = segun perfil; 'hombre' | 'mujer' = vista forzada (preview)
 
 function renderBodyInteractive(cat){
   bodyCat = cat.id; bodySide = 'front'; bodyLevel = 'todos'; bodyMode = 'auto';
-  bodySel = []; bodyManualPicks = {};
+  bodySel = []; bodyManualPicks = {}; bodyEquipOff = {};
   // Vista inicial segun tu perfil (puedes alternarla con el interruptor)
   bodyViewSex = (window.cloudProfile && cloudProfile.sexo === 'mujer') ? 'mujer' : 'hombre';
   const grid = document.getElementById('routines-grid');
@@ -3357,6 +3381,7 @@ function renderBodyInteractive(cat){
     +     '</div>'
     +     '<p class="text-[11px] text-center mt-1" style="color:var(--txt-mut)">Puedes marcar varios (ej. Espalda + Piernas)</p>'
     +     '<div id="body-chips" class="flex flex-wrap justify-center gap-2 mt-2"></div>'
+    +     '<div id="body-equip" class="w-full mt-3"></div>'
     +   '</div>'
     +   '<div id="body-panel" class="space-y-3">'
     +     buildBodyControls()
@@ -3507,6 +3532,63 @@ function collectExercises(catId, groups, applyLevel){
   return pool;
 }
 
+// ===== IMPLEMENTOS: que necesito segun los musculos marcados =====
+// Equipo de un ejercicio; si no detecta nada, es a peso corporal.
+function exEquipList(name){
+  const eq = detectEquipment(name);
+  return eq.length ? eq : [{label:'Peso corporal', icon:'fa-person'}];
+}
+// Un ejercicio es posible si TODO su equipo esta disponible (peso corporal siempre lo esta).
+function exAllowedByEquip(name){
+  return exEquipList(name).every(e => e.label === 'Peso corporal' || !bodyEquipOff[e.label]);
+}
+// Pool completo (por musculo+nivel), sin filtrar por equipo. Cacheado para el panel.
+function bodyFullPool(){
+  window.__bodyPoolFull = collectExercises(bodyCat, bodySel, true);
+  return window.__bodyPoolFull;
+}
+// Pool ya filtrado por los implementos que SI tengo.
+function bodyPool(){
+  return bodyFullPool().filter(e => exAllowedByEquip(e.name));
+}
+// Panel "Con que cuentas": lista los implementos que usan los ejercicios disponibles.
+function renderBodyEquip(){
+  const box = document.getElementById('body-equip'); if (!box) return;
+  if (!bodySel.length){ box.innerHTML = ''; return; }
+  const full = bodyFullPool();  // recalcular siempre (la seleccion pudo cambiar)
+  // Junta el equipo distinto de todo el pool (sin "Peso corporal", que va aparte).
+  const seen = {}, items = [];
+  full.forEach(e => exEquipList(e.name).forEach(eq => {
+    if (eq.label === 'Peso corporal' || seen[eq.label]) return;
+    seen[eq.label] = 1; items.push(eq);
+  }));
+  items.sort((a,b) => a.label.localeCompare(b.label));
+  const hasBw = full.some(e => exEquipList(e.name).some(q => q.label === 'Peso corporal'));
+  let chips = '';
+  if (hasBw){
+    chips += '<span class="fun font-bold text-[11px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5" style="background:var(--good);color:#062a1e" title="Siempre disponible"><i class="fa-solid fa-person"></i>Peso corporal</span>';
+  }
+  chips += items.map(eq => {
+    const off = !!bodyEquipOff[eq.label];
+    const safe = eq.label.replace(/'/g, "\\'");
+    return '<button onclick="toggleBodyEquip(\'' + safe + '\')" title="' + (off ? 'No lo tengo (toca para activar)' : 'Lo tengo (toca para quitar)') + '" class="fun font-bold text-[11px] px-3 py-1.5 rounded-full inline-flex items-center gap-1.5" style="background:' + (off ? 'var(--surface2)' : 'var(--brand)') + ';color:' + (off ? 'var(--txt-mut)' : '#fff') + ';border:1px solid ' + (off ? 'var(--border)' : 'var(--brand)') + (off ? ';text-decoration:line-through;opacity:.7' : '') + '"><i class="fa-solid ' + eq.icon + '"></i>' + eq.label + '</button>';
+  }).join('');
+  box.innerHTML = ''
+    + '<div class="rounded-2xl p-3" style="background:var(--surface);border:1px solid var(--border)">'
+    +   '<p class="fun font-bold text-[11px] mb-1" style="color:var(--txt-soft)"><i class="fa-solid fa-toolbox mr-1" style="color:var(--accent)"></i>¿Con qué cuentas?</p>'
+    +   '<p class="text-[10px] mb-2" style="color:var(--txt-mut)">Estos implementos usan tus músculos marcados. <b>Quita el que no tengas</b> y filtramos los ejercicios.</p>'
+    +   '<div class="flex flex-wrap gap-1.5">' + (chips || '<span class="text-[11px]" style="color:var(--txt-mut)">Solo peso corporal.</span>') + '</div>'
+    + '</div>';
+}
+// Toggle de un implemento: si lo quito, se filtran los ejercicios que lo necesitan.
+function toggleBodyEquip(label){
+  if (bodyEquipOff[label]) delete bodyEquipOff[label]; else bodyEquipOff[label] = true;
+  // Suelta los ejercicios elegidos a mano que ya no sean posibles.
+  Object.keys(bodyManualPicks).forEach(nm => { if (!exAllowedByEquip(nm)) delete bodyManualPicks[nm]; });
+  renderBodyEquip();
+  if (bodyMode === 'auto') buildAuto(); else buildManual();
+}
+
 function toggleBodyGroup(group){
   const i = bodySel.indexOf(group);
   if (i >= 0) bodySel.splice(i, 1); else bodySel.push(group);
@@ -3552,14 +3634,16 @@ function refreshBodyPanel(){
   const box = document.getElementById('body-content'); if (!box) return;
   if (!bodySel.length){
     box.innerHTML = '<div class="text-center py-10 px-4 rounded-2xl" style="background:var(--surface);border:1px dashed var(--border)"><i class="fa-solid fa-hand-pointer text-3xl mb-2" style="color:var(--txt-mut)"></i><p class="fun font-bold" style="color:var(--txt)">Marca un musculo</p><p class="text-sm mt-1" style="color:var(--txt-soft)">Toca el cuerpo o los chips. Puedes elegir varios.</p></div>';
+    const eb = document.getElementById('body-equip'); if (eb) eb.innerHTML = '';
     return;
   }
+  renderBodyEquip();
   if (bodyMode === 'auto') buildAuto(); else buildManual();
 }
 
 function buildAuto(){
   const meta = routineMeta();
-  const pool = collectExercises(bodyCat, bodySel, true);
+  const pool = bodyPool();
   const target = bodySel.length > 1 ? 8 : 6;
   const picked = shuffleArr(pool).slice(0, target);
   renderAssembledCard(meta, picked, true);
@@ -3567,7 +3651,7 @@ function buildAuto(){
 
 function buildManual(){
   const meta = routineMeta();
-  const pool = collectExercises(bodyCat, bodySel, true);
+  const pool = bodyPool();
   window.__bodyPool = {}; pool.forEach(e => window.__bodyPool[e.name] = e);
   const box = document.getElementById('body-content');
   const n = Object.keys(bodyManualPicks).length;
@@ -3591,7 +3675,7 @@ function buildManual(){
             + exLevelBadge(e.level)
             + '<span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style="background:var(--bg);color:var(--txt-soft)">x' + e.reps + '</span>'
             + '</div>';
-        }).join('') : '<p class="text-center py-6 text-sm" style="color:var(--txt-mut)">No hay ejercicios para ese nivel. Prueba con \'Todos\'.</p>')
+        }).join('') : '<p class="text-center py-6 text-sm" style="color:var(--txt-mut)">No hay ejercicios con ese nivel/equipo. Activa más implementos o usa \'Todos\'.</p>')
     +   '</div>'
     +   '<div class="p-3 pt-0">'
     +     '<button onclick="startManualRoutine()" ' + (n ? '' : 'disabled') + ' class="w-full py-3 rounded-xl fun font-extrabold text-white" style="background:' + (n ? 'linear-gradient(120deg,' + meta.color + ',' + meta.color + 'cc)' : 'var(--surface2)') + (n ? '' : ';opacity:.5;cursor:not-allowed') + '"><i class="fa-solid fa-play mr-1"></i>Empezar (' + n + ' ejercicios)</button>'
@@ -3629,7 +3713,7 @@ function renderAssembledCard(meta, picked, showShuffle){
         +   '<button onclick="showExerciseHelp(\'' + e.name.replace(/'/g, "\\'") + '\', event)" class="shrink-0 text-sm" style="color:var(--accent)" title="Ver como se hace"><i class="fa-solid fa-circle-info"></i></button>'
         +   exLevelBadge(e.level)
         +   '<span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style="background:var(--bg);color:var(--txt-soft)">x' + e.reps + '</span>'
-        + '</div>').join('') : '<p class="text-center py-6 text-sm" style="color:var(--txt-mut)">No hay ejercicios para ese nivel. Prueba con \'Todos\'.</p>')
+        + '</div>').join('') : '<p class="text-center py-6 text-sm" style="color:var(--txt-mut)">No hay ejercicios con ese nivel/equipo. Activa más implementos o usa \'Todos\'.</p>')
     +   '</div>'
     +   '<div class="p-3 pt-0 flex gap-2">'
     +     (showShuffle ? '<button onclick="buildAuto()" class="px-3 py-3 rounded-xl fun font-bold" style="background:var(--surface2);color:var(--txt)" title="Otra variante"><i class="fa-solid fa-shuffle"></i></button>' : '')
@@ -3883,20 +3967,42 @@ function getCategoryIcon(category) {
 // Detecta el equipo necesario leyendo el nombre del ejercicio (sin meter datos a mano)
 function detectEquipment(name){
   const n = (name||'').toLowerCase();
+  // 'not' = si aparece alguna de esas palabras, NO cuenta (evita falsos positivos).
   const map = [
     {k:['mancuerna'], label:'Mancuernas', icon:'fa-dumbbell'},
-    {k:['barra'], label:'Barra', icon:'fa-grip-lines'},
-    {k:['banca','banco'], label:'Banco', icon:'fa-couch'},
+    {k:['barra de dominadas','dominada','pull-up','pull up'], label:'Barra de dominadas', icon:'fa-grip-lines'},
+    {k:['barra'], not:['dominada'], label:'Barra', icon:'fa-grip-lines'},
     {k:['polea'], label:'Polea', icon:'fa-link'},
     {k:['prensa'], label:'Prensa', icon:'fa-weight-hanging'},
     {k:['máquina','maquina'], label:'Máquina', icon:'fa-gears'},
     {k:['kettlebell','pesa rusa'], label:'Kettlebell', icon:'fa-bowling-ball'},
-    {k:['banda','elástic','elastic'], label:'Banda', icon:'fa-bezier-curve'},
+    {k:['banda','elástic','elastic','goma'], label:'Banda elástica', icon:'fa-bezier-curve'},
+    {k:['balón medicinal','balon medicinal','medicinal','med ball','wall ball','pelota con peso','balón con peso','balon con peso'], label:'Balón medicinal', icon:'fa-baseball'},
+    // --- Caseros (aparecen en los nombres de ejercicios de Casa) ---
+    {k:['mochila','saco','bulto','costal','morral','sandbag'], label:'Mochila / Bulto con peso', icon:'fa-suitcase-rolling'},
+    {k:['botella','botellas de agua'], label:'Botellas de agua', icon:'fa-bottle-water'},
+    {k:['silla','fondos en silla','sentarse'], label:'Silla', icon:'fa-chair'},
+    {k:['mesa','remo invertido','remo bajo'], label:'Mesa', icon:'fa-table'},
+    {k:['pared'], label:'Pared', icon:'fa-block-brick'},
+    {k:['cama','sofá','sofa'], label:'Cama / Sofá', icon:'fa-bed'},
+    {k:['toalla'], label:'Toalla', icon:'fa-scroll'},
+    // --- Otros de gym/crossfit ---
+    {k:['banca','banco'], not:['silla'], label:'Banco', icon:'fa-couch'},
+    {k:['trx','suspensión','suspension'], label:'TRX / Suspensión', icon:'fa-grip-lines-vertical'},
+    {k:['cuerda','comba','soga','salto de cuerda','saltar la cuerda'], label:'Cuerda para saltar', icon:'fa-rotate'},
+    {k:['disco','placa','plato de peso'], label:'Disco / Placa', icon:'fa-record-vinyl'},
+    {k:['chaleco'], label:'Chaleco con peso', icon:'fa-vest'},
+    {k:['anilla','gimnasia'], label:'Anillas', icon:'fa-circle-notch'},
+    {k:['cajón','cajon','step','escalón','escalon','box jump'], label:'Cajón / Step', icon:'fa-stairs'},
     {k:['esterilla','colchoneta'], label:'Colchoneta', icon:'fa-square'},
-    {k:['paralelas','fondos'], label:'Paralelas', icon:'fa-equals'}
+    {k:['paralelas','fondos'], not:['silla','banco','banca','mesa','suelo'], label:'Paralelas', icon:'fa-equals'}
   ];
-  const found = [];
-  map.forEach(m => { if(m.k.some(kw => n.includes(kw))) found.push({label:m.label, icon:m.icon}); });
+  const found = []; const seen = {};
+  map.forEach(m => {
+    const hit = m.k.some(kw => n.includes(kw));
+    const blocked = m.not && m.not.some(kw => n.includes(kw));
+    if(hit && !blocked && !seen[m.label]){ seen[m.label]=1; found.push({label:m.label, icon:m.icon}); }
+  });
   return found;
 }
 // Equipo de toda la rutina: usa el campo equipment si existe; si no, lo deduce de los ejercicios
@@ -4538,12 +4644,11 @@ function closeExerciseSwap() {
 }
 // Genera el HTML de un boton de ejercicio para el modal de cambio.
 function _swapBtn(n, highlight) {
-  const cls = highlight
-    ? 'bg-orange-50 hover:bg-orange-100 border-orange-400'
-    : 'bg-gray-100 hover:bg-orange-100 border-gray-900';
-  return '<button onclick="applyExerciseSwap(\'' + n.replace(/'/g, "\\'") + '\')" class="w-full text-left ' + cls +
-    ' border-2 rounded-xl px-4 py-2.5 text-sm font-bold transition flex items-center justify-between text-gray-900">' +
-    n + '<i class="fa-solid fa-arrow-right text-orange-500"></i></button>';
+  const safe = n.replace(/'/g, "\\'");
+  const esc = n.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return '<button onclick="applyExerciseSwap(\'' + safe + '\')" class="swap-item' +
+    (highlight ? ' swap-item--hl' : '') + '"><span>' + esc +
+    '</span><i class="fa-solid fa-arrow-right swap-arrow"></i></button>';
 }
 function renderSwapOptions() {
   const cont = document.getElementById('swap-options');
@@ -4560,7 +4665,7 @@ function renderSwapOptions() {
     const lista = all.filter(n => _swapNorm(n) !== actualN && _swapNorm(n).includes(q));
     cont.innerHTML = lista.length
       ? lista.map(n => _swapBtn(n, false)).join('')
-      : '<p class="text-gray-500 text-center py-4 text-xs">Sin coincidencias.</p>';
+      : '<p class="swap-empty">Sin coincidencias.</p>';
     return;
   }
 
@@ -4570,9 +4675,8 @@ function renderSwapOptions() {
   if (muscle && MUSCLE_GROUPS[muscle]) {
     const same = MUSCLE_GROUPS[muscle].exercises.filter(n => _swapNorm(n) !== actualN);
     if (same.length) {
-      html += '<div class="bg-orange-100 border-2 border-orange-400 rounded-xl px-3 py-2 mb-2">' +
-        '<p class="text-orange-800 text-xs font-bold flex items-center gap-1.5">' +
-        '<i class="fa-solid fa-lightbulb"></i> Tambien puedes hacer <span class="underline">(mismo musculo: ' +
+      html += '<div class="swap-hint">' +
+        '<p><i class="fa-solid fa-lightbulb"></i> Tambien puedes hacer <span class="underline">(mismo musculo: ' +
         MUSCLE_GROUPS[muscle].icon + ' ' + MUSCLE_GROUPS[muscle].label + ')</span></p></div>';
       html += '<div class="space-y-1.5 mb-3">' + same.map(n => _swapBtn(n, true)).join('') + '</div>';
     }
@@ -4581,11 +4685,11 @@ function renderSwapOptions() {
   const otras = all.filter(n => _swapNorm(n) !== actualN &&
     !(muscle && MUSCLE_GROUPS[muscle] && MUSCLE_GROUPS[muscle].exercises.some(e => _swapNorm(e) === _swapNorm(n))));
   if (otras.length) {
-    html += '<div class="border-t-2 border-gray-200 pt-2 mt-1">' +
-      '<p class="text-gray-400 text-[11px] font-bold uppercase tracking-wide mb-2 px-1">Otros ejercicios</p>' +
+    html += '<div class="swap-divider">' +
+      '<p class="swap-sub">Otros ejercicios</p>' +
       '<div class="space-y-1.5">' + otras.map(n => _swapBtn(n, false)).join('') + '</div></div>';
   }
-  cont.innerHTML = html || '<p class="text-gray-500 text-center py-4 text-xs">Sin opciones.</p>';
+  cont.innerHTML = html || '<p class="swap-empty">Sin opciones.</p>';
 }
 function applyExerciseSwap(newName) {
   if (_swapIdx < 0 || !selectedRoutine || !selectedRoutine.exercises[_swapIdx]) { closeExerciseSwap(); return; }
