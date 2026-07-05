@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preview Planchas SVG (10 tipos)</title>
+<style>
+  :root{ --bg:#0f1117; --surface:#181c2a; --border:#2c3350; --txt:#eceefb; --brand:#7c5cff; --accent:#22d3ee; }
+  *{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,Segoe UI,Roboto,sans-serif;padding:18px;max-width:1000px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 6px}
+  .sub{color:#9aa3c7;font-size:13px;margin:0 0 18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px}
+  .card h2{font-size:14px;margin:0 0 8px;color:var(--accent)}
+  .frame{background:radial-gradient(120% 120% at 50% 20%, #20263c 0%, #0f1117 80%);border-radius:12px;overflow:hidden}
+  svg{display:block;width:100%;height:auto}
+</style>
+</head>
+<body>
+  <h1>Planchas &mdash; 10 tipos (estilo trazo grueso + gradiente)</h1>
+  <p class="sub">Vista lateral. Las flechas cian indican movimiento. Nota: la #4 (lateral) es la mas dificil de leer de perfil; se puede rehacer en vista frontal si no convence.</p>
+  <div class="grid" id="grid"></div>
+
+<script>
+// ---- Helpers de flechas de movimiento (accent, punteadas) ----
+function darrowV(x, ytop, ybot){
+  return `<g fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M${x} ${ytop} L${x} ${ybot}"/>
+    <path d="M${x-6} ${ytop+9} L${x} ${ytop} L${x+6} ${ytop+9}"/>
+    <path d="M${x-6} ${ybot-9} L${x} ${ybot} L${x+6} ${ybot-9}"/>
+  </g>`;
+}
+function darrowH(xl, xr, y){
+  return `<g fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M${xl} ${y} L${xr} ${y}"/>
+    <path d="M${xl+9} ${y-6} L${xl} ${y} L${xl+9} ${y+6}"/>
+    <path d="M${xr-9} ${y-6} L${xr} ${y} L${xr-9} ${y+6}"/>
+  </g>`;
+}
+
+// ---- Renderer base (vista lateral, mira a la izquierda) ----
+function fig(paths, head, extras){
+  return `
+  <svg viewBox="0 0 480 300" xmlns="http://www.w3.org/2000/svg" role="img">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#7c5cff"/>
+        <stop offset="1" stop-color="#22d3ee"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="270" cy="256" rx="205" ry="11" fill="#000" opacity="0.28"/>
+    <line x1="70" y1="250" x2="470" y2="250" stroke="#3a4266" stroke-width="4" stroke-linecap="round"/>
+    <g fill="none" stroke="url(#g)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+      ${paths.map(function(d){return '<path d="'+d+'"/>';}).join('')}
+    </g>
+    ${extras||''}
+    <circle cx="${head[0]}" cy="${head[1]}" r="18" fill="url(#g)"/>
+  </svg>`;
+}
+
+var POSES = [
+  { t:'1. Antebrazos (basica)',
+    p:['M178 180 L300 188 L410 196','M410 196 L434 246','M178 180 L176 248','M176 248 L112 248','M178 180 L160 170'],
+    h:[147,163] },
+
+  { t:'2. Alta / tradicional (manos)',
+    p:['M186 182 L300 190 L410 198','M410 198 L434 248','M186 182 L186 248','M186 182 L168 172'],
+    h:[155,165] },
+
+  { t:'3. Sobre rodillas',
+    p:['M178 180 L176 248','M176 248 L112 248','M178 180 L300 192 L360 246','M360 246 L392 214','M178 180 L160 170'],
+    h:[147,163] },
+
+  { t:'4. Lateral (side plank)',
+    p:['M172 248 L176 186','M176 186 L300 216 L405 248','M176 186 L188 120','M176 186 L162 178'],
+    h:[150,168] },
+
+  { t:'5. Toques de hombro',
+    p:['M186 182 L300 190 L410 198','M410 198 L434 248','M186 182 L186 248','M186 182 L206 208 L184 190','M186 182 L168 172'],
+    h:[155,165] },
+
+  { t:'6. Con saltos (Plank Jacks)',
+    p:['M178 180 L300 188 L406 196','M406 196 L430 246','M178 180 L176 248','M176 248 L112 248','M178 180 L160 170'],
+    h:[147,163],
+    x:'<g fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 8"><path d="M436 250 q 22 -4 30 8"/><path d="M436 250 q 16 10 22 24"/></g>' },
+
+  { t:'7. Comandos (subir/bajar)',
+    p:['M178 180 L300 188 L410 196','M410 196 L434 246','M178 180 L176 248','M176 248 L112 248','M178 180 L160 170'],
+    h:[147,163],
+    x: darrowV(232,120,166) },
+
+  { t:'8. Body Saw (balanceo)',
+    p:['M178 180 L300 188 L410 196','M410 196 L434 246','M178 180 L176 248','M176 248 L112 248','M178 180 L160 170'],
+    h:[147,163],
+    x: darrowH(150,320,140) },
+
+  { t:'9. Escapular',
+    p:['M178 180 L300 188 L410 196','M410 196 L434 246','M178 180 L176 248','M176 248 L112 248','M178 180 L160 170'],
+    h:[147,163],
+    x: darrowV(200,146,178) },
+
+  { t:'10. A pica (Pike)',
+    p:['M176 248 L112 248','M176 248 L182 200','M182 200 L318 138','M318 138 L420 246','M182 200 L170 212'],
+    h:[156,214] }
+];
+
+var grid = document.getElementById('grid');
+grid.innerHTML = POSES.map(function(P){
+  return '<div class="card"><h2>'+P.t+'</h2><div class="frame">'+fig(P.p, P.h, P.x)+'</div></div>';
+}).join('');
+</script>
+</body>
+</html>

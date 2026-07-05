@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preview Planchas - estilo cuerpo anatomico</title>
+<style>
+  :root{ --bg:#0f1117; --surface:#181c2a; --border:#2c3350; --txt:#eceefb; --accent:#22d3ee; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,Segoe UI,Roboto,sans-serif;padding:18px;max-width:1000px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 6px}
+  .sub{color:#9aa3c7;font-size:13px;margin:0 0 18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px}
+  .card h2{font-size:14px;margin:0 0 8px;color:var(--accent)}
+  .frame{background:radial-gradient(120% 120% at 50% 25%, #20263c 0%, #0f1117 82%);border-radius:12px;overflow:hidden}
+  svg{display:block;width:100%;height:auto}
+  /* mismo estilo que el muneco de filtros */
+  .body-base{ fill:#222a40; stroke:#0a0c14; stroke-width:3; stroke-linejoin:round; }
+  .limb{ fill:#222a40; stroke:#0a0c14; stroke-width:3; stroke-linejoin:round; }
+  .head{ fill:#222a40; stroke:#0a0c14; stroke-width:3; }
+  .def{ fill:none; stroke:#0a0c14; stroke-width:2; opacity:.5; }
+  .core{ fill:#22d3ee; opacity:.45; }
+  .core2{ fill:#7c5cff; opacity:.4; }
+</style>
+</head>
+<body>
+  <h1>Planchas con cuerpo anatomico (mismo estilo que los filtros)</h1>
+  <p class="sub">Silueta de perfil, colores del muneco de filtros, con el musculo trabajado resaltado (cyan = core / abdomen).</p>
+  <div class="grid" id="grid"></div>
+
+<script>
+var GROUND = 252;
+
+// Cuerpo de PERFIL: cuerpo/pierna casi horizontal, SOLO el pie baja en punta.
+var BODY_STRAIGHT = "M165 150 L300 158 C360 162 402 166 432 176 C444 198 452 222 456 246 L436 246 C430 220 422 200 410 188 C372 182 330 186 300 188 L185 188 C176 186 168 174 166 158 Z";
+
+// Cuerpo de PERFIL con rodilla apoyada (muslo casi recto y baja a la rodilla).
+var BODY_KNEES = "M165 150 L300 158 C340 160 360 166 372 180 C382 198 388 220 388 244 L370 244 C370 222 366 202 358 190 C344 184 320 186 300 188 L185 188 C176 186 168 174 166 158 Z";
+
+function head(cx, cy){ return '<ellipse class="head" cx="'+cx+'" cy="'+cy+'" rx="27" ry="25"/>' +
+  '<path class="head" d="M140 140 L166 147 L163 172 L137 166 Z"/>'; }
+
+function armBent(){ // antebrazo en el suelo
+  return '<rect class="limb" x="150" y="156" width="20" height="96" rx="10"/>' +
+         '<rect class="limb" x="100" y="234" width="72" height="18" rx="9"/>';
+}
+function armStraight(){ // mano en el suelo
+  return '<rect class="limb" x="150" y="156" width="20" height="96" rx="10"/>' +
+         '<rect class="limb" x="132" y="240" width="40" height="14" rx="7"/>';
+}
+
+function coreCore(){ // resalte del abdomen trabajado
+  return '<ellipse class="core" cx="248" cy="172" rx="52" ry="12"/>';
+}
+
+function svg(inner){
+  return '<svg viewBox="0 0 520 300" xmlns="http://www.w3.org/2000/svg" role="img">' +
+    '<ellipse cx="285" cy="258" rx="215" ry="10" fill="#000" opacity="0.30"/>' +
+    '<line x1="70" y1="252" x2="500" y2="252" stroke="#3a4266" stroke-width="4" stroke-linecap="round"/>' +
+    inner + '</svg>';
+}
+
+var POSES = [
+  { t:'1. Antebrazos (basica)', s: svg(
+      armBent() +
+      '<path class="body-base" d="'+BODY_STRAIGHT+'"/>' +
+      coreCore() +
+      head(116,150)
+    )},
+  { t:'2. Alta / sobre manos', s: svg(
+      armStraight() +
+      '<path class="body-base" d="'+BODY_STRAIGHT+'"/>' +
+      coreCore() +
+      head(116,150)
+    )},
+  { t:'3. Sobre rodillas', s: svg(
+      armBent() +
+      '<rect class="limb" x="376" y="238" width="72" height="16" rx="8"/>' +
+      '<path class="body-base" d="'+BODY_KNEES+'"/>' +
+      '<ellipse class="core" cx="238" cy="172" rx="46" ry="12"/>' +
+      head(116,150)
+    )}
+];
+
+document.getElementById('grid').innerHTML = POSES.map(function(P){
+  return '<div class="card"><h2>'+P.t+'</h2><div class="frame">'+P.s+'</div></div>';
+}).join('');
+</script>
+</body>
+</html>

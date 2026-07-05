@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Showcase Planchas TOP</title>
+<style>
+  :root{ --bg:#0f1117; --surface:#181c2a; --border:#2c3350; --txt:#eceefb; --accent:#22d3ee; --brand:#7c5cff; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,Segoe UI,Roboto,sans-serif;padding:20px;max-width:1040px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:#9aa3c7;font-size:13px;margin:0 0 20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px}
+  .card h2{font-size:15px;margin:0 0 3px;color:var(--accent)}
+  .card p.d{font-size:12px;color:#9aa3c7;margin:0 0 10px}
+  .frame{border-radius:14px;overflow:hidden}
+  svg{display:block;width:100%;height:auto}
+</style>
+</head>
+<body>
+  <h1>Planchas &mdash; Showcase TOP (3 estilos premium)</h1>
+  <p class="sub">La misma plancha de antebrazos en 3 tratamientos. Elige el ganador y lo aplico a las 10.</p>
+  <div class="grid" id="grid"></div>
+
+<script>
+var BODY = "M165 150 L300 158 C360 162 402 166 432 176 C444 198 452 222 456 246 L436 246 C430 220 422 200 410 188 C372 182 330 186 300 188 L185 188 C176 186 168 174 166 158 Z";
+
+// ============ ESTILO A: AURORA (heatmap con glow + volumen) ============
+function aurora(){
+  return `
+  <svg viewBox="0 0 520 300" xmlns="http://www.w3.org/2000/svg" role="img">
+    <defs>
+      <linearGradient id="a-body" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2f3a5c"/>
+        <stop offset="1" stop-color="#141a2b"/>
+      </linearGradient>
+      <radialGradient id="a-core" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#22d3ee" stop-opacity="0.95"/>
+        <stop offset="55%" stop-color="#22d3ee" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#7c5cff" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="a-blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+      <linearGradient id="a-refl" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2f3a5c" stop-opacity="0.22"/>
+        <stop offset="1" stop-color="#2f3a5c" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <!-- reflejo suave en el suelo -->
+    <g transform="translate(0,504) scale(1,-1)" opacity="0.5">
+      <path d="${BODY}" fill="url(#a-refl)"/>
+    </g>
+    <ellipse cx="290" cy="256" rx="215" ry="9" fill="#000" opacity="0.35"/>
+    <line x1="70" y1="252" x2="500" y2="252" stroke="#3a4266" stroke-width="4" stroke-linecap="round"/>
+    <!-- brazo -->
+    <rect x="150" y="156" width="20" height="96" rx="10" fill="url(#a-body)" stroke="#0a0c14" stroke-width="3"/>
+    <rect x="100" y="234" width="72" height="18" rx="9" fill="url(#a-body)" stroke="#0a0c14" stroke-width="3"/>
+    <!-- cuerpo -->
+    <path d="${BODY}" fill="url(#a-body)" stroke="#0a0c14" stroke-width="3" stroke-linejoin="round"/>
+    <!-- luz de borde (rim light) sobre el lomo -->
+    <path d="M170 154 L300 160 C360 164 402 168 430 178" fill="none" stroke="#8ea2ff" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+    <!-- cabeza -->
+    <ellipse cx="116" cy="150" rx="27" ry="25" fill="url(#a-body)" stroke="#0a0c14" stroke-width="3"/>
+    <!-- CORE encendido con halo -->
+    <ellipse cx="250" cy="172" rx="70" ry="26" fill="url(#a-core)" filter="url(#a-blur)"/>
+    <ellipse cx="250" cy="173" rx="46" ry="12" fill="#22d3ee" opacity="0.55"/>
+  </svg>`;
+}
+
+// ============ ESTILO B: NOVA (duotono + movimiento minimalista) ============
+function nova(){
+  return `
+  <svg viewBox="0 0 520 300" xmlns="http://www.w3.org/2000/svg" role="img">
+    <defs>
+      <linearGradient id="b-body" x1="0" y1="0" x2="1" y2="0.6">
+        <stop offset="0" stop-color="#7c5cff"/>
+        <stop offset="1" stop-color="#22d3ee"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="290" cy="256" rx="210" ry="8" fill="#000" opacity="0.3"/>
+    <line x1="70" y1="252" x2="500" y2="252" stroke="#2c3350" stroke-width="3" stroke-linecap="round"/>
+    <!-- brazo -->
+    <rect x="150" y="156" width="20" height="96" rx="10" fill="url(#b-body)"/>
+    <rect x="100" y="234" width="72" height="18" rx="9" fill="url(#b-body)"/>
+    <path d="${BODY}" fill="url(#b-body)"/>
+    <ellipse cx="116" cy="150" rx="27" ry="25" fill="url(#b-body)"/>
+    <!-- indicador ISO (mantener): linea de nivel + arco tiempo -->
+    <line x1="180" y1="132" x2="440" y2="140" stroke="#ffffff" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round" opacity="0.55"/>
+    <g transform="translate(474,120)">
+      <circle r="16" fill="none" stroke="#22d3ee" stroke-width="3" opacity="0.35"/>
+      <path d="M0 -16 A16 16 0 0 1 14 -8" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linecap="round"/>
+    </g>
+  </svg>`;
+}
+
+// ============ ESTILO D: STUDIO (tarjeta-producto con chip + nombre) ============
+function studio(){
+  return `
+  <svg viewBox="0 0 520 340" xmlns="http://www.w3.org/2000/svg" role="img">
+    <defs>
+      <radialGradient id="d-bg" cx="50%" cy="30%" r="80%">
+        <stop offset="0" stop-color="#232a44"/>
+        <stop offset="100%" stop-color="#10131f"/>
+      </radialGradient>
+      <linearGradient id="d-body" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2f3a5c"/>
+        <stop offset="1" stop-color="#141a2b"/>
+      </linearGradient>
+      <radialGradient id="d-core" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#22d3ee" stop-opacity="0.9"/>
+        <stop offset="60%" stop-color="#22d3ee" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#7c5cff" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="d-blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+    </defs>
+    <rect x="6" y="6" width="508" height="328" rx="22" fill="url(#d-bg)" stroke="#2c3350" stroke-width="1.5"/>
+    <!-- chip de musculo -->
+    <rect x="26" y="24" width="128" height="34" rx="17" fill="#0e1626" stroke="#22d3ee" stroke-width="1.5"/>
+    <circle cx="46" cy="41" r="6" fill="#22d3ee"/>
+    <text x="60" y="46" fill="#d7f6fb" font-family="system-ui" font-size="16" font-weight="700">Core</text>
+    <!-- badge ISO -->
+    <rect x="410" y="24" width="84" height="34" rx="17" fill="#0e1626" stroke="#7c5cff" stroke-width="1.5"/>
+    <text x="452" y="46" fill="#cfc6ff" font-family="system-ui" font-size="15" font-weight="700" text-anchor="middle">40 s</text>
+    <!-- figura -->
+    <g transform="translate(0,26)">
+      <ellipse cx="290" cy="256" rx="205" ry="8" fill="#000" opacity="0.35"/>
+      <line x1="80" y1="252" x2="490" y2="252" stroke="#3a4266" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="150" y="156" width="20" height="96" rx="10" fill="url(#d-body)" stroke="#0a0c14" stroke-width="3"/>
+      <rect x="100" y="234" width="72" height="18" rx="9" fill="url(#d-body)" stroke="#0a0c14" stroke-width="3"/>
+      <path d="${BODY}" fill="url(#d-body)" stroke="#0a0c14" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M170 154 L300 160 C360 164 402 168 430 178" fill="none" stroke="#8ea2ff" stroke-width="2.5" stroke-linecap="round" opacity="0.32"/>
+      <ellipse cx="116" cy="150" rx="27" ry="25" fill="url(#d-body)" stroke="#0a0c14" stroke-width="3"/>
+      <ellipse cx="250" cy="172" rx="68" ry="24" fill="url(#d-core)" filter="url(#d-blur)"/>
+      <ellipse cx="250" cy="173" rx="44" ry="11" fill="#22d3ee" opacity="0.5"/>
+    </g>
+    <!-- nombre -->
+    <text x="30" y="322" fill="#eceefb" font-family="system-ui" font-size="20" font-weight="800">Plancha de antebrazos</text>
+  </svg>`;
+}
+
+var CARDS = [
+  { t:'A. Aurora', d:'Volumen + musculo encendido con halo + luz de borde + reflejo.', s:aurora() },
+  { t:'B. Nova', d:'Duotono morado-cyan, minimalista, con indicador de mantener (ISO).', s:nova() },
+  { t:'D. Studio', d:'Figura Aurora empaquetada como tarjeta de producto (chip + nombre + tiempo).', s:studio() }
+];
+
+document.getElementById('grid').innerHTML = CARDS.map(function(C){
+  return '<div class="card"><h2>'+C.t+'</h2><p class="d">'+C.d+'</p><div class="frame">'+C.s+'</div></div>';
+}).join('');
+</script>
+</body>
+</html>
