@@ -16,6 +16,74 @@
   // Patron de dias de entreno por semana (Lunes=1 ... Domingo=0)
   const PATTERNS = { 1:[1], 2:[1,4], 3:[1,3,5], 4:[1,2,4,5], 5:[1,2,3,4,5], 6:[1,2,3,4,5,6], 7:[0,1,2,3,4,5,6] };
 
+  // --- DISCIPLINAS: preferencias del usuario que moldean el plan ---
+  const DISCIPLINAS = [
+    { id:'gym',          label:'Gym / Fuerza',  icon:'fa-dumbbell',        color:'#7c5cff' },
+    { id:'casa',         label:'En Casa',        icon:'fa-house',          color:'#22d3ee' },
+    { id:'crossfit',     label:'CrossFit',       icon:'fa-fire',           color:'#f97316' },
+    { id:'yoga',         label:'Yoga',           icon:'fa-spa',            color:'#34d399' },
+    { id:'pilates',      label:'Pilates',        icon:'fa-person-rays',    color:'#a855f7' },
+    { id:'hipopresivos', label:'Hipopresivos',   icon:'fa-lungs',          color:'#f472b6' },
+    { id:'cardio',       label:'Cardio / HIIT',  icon:'fa-heart-pulse',    color:'#ef4444' },
+    { id:'caminar',      label:'Caminar',        icon:'fa-person-walking', color:'#38bdf8' },
+    { id:'correr',       label:'Correr',         icon:'fa-person-running', color:'#fbbf24' },
+    { id:'dioses',       label:'Dioses',         icon:'fa-bolt',           color:'#c084fc' }
+  ];
+  const LEVEL_RANK = { 'basico':1,'principiante':1,'intermedio':2,'avanzado':3,'espartano':4 };
+  function lrank(v){ var s = String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); return LEVEL_RANK[s] || 1; }
+  function getDisciplinas(p){ return String((p && p.disciplinas) || '').split(',').map(function(s){return s.trim();}).filter(Boolean); }
+
+  // Rutinas que pertenecen a una disciplina (segun categoria real o nombre)
+  function discRoutines(id){
+    var all = allRoutines();
+    var cat = function(c){ return all.filter(function(r){ return String(r.category||'').toLowerCase() === c; }); };
+    if (id==='gym')          return cat('gimnasio');
+    if (id==='casa')         return cat('casa');
+    if (id==='crossfit')     return cat('crossfit');
+    if (id==='yoga')         return cat('yoga');
+    if (id==='pilates')      return cat('pilates');
+    if (id==='hipopresivos') return cat('hipopresivos');
+    if (id==='cardio')       return cat('cardio');
+    if (id==='senior')       return cat('senior');
+    if (id==='dioses')       return all.filter(function(r){ return r.culture; });
+    if (id==='caminar')      return all.filter(function(r){ return /camin/i.test(r.name||''); });
+    if (id==='correr')       return all.filter(function(r){ return /run|correr|trote|jog/i.test(r.name||''); });
+    return [];
+  }
+
+  // Pool de entrenamiento mezclando las disciplinas elegidas (round-robin = variedad),
+  // filtrando por nivel del usuario y por seguridad (PAR-Q).
+  function disciplinePool(p, disc, level){
+    var rank = lrank(level);
+    var lists = disc.map(function(id){
+      var rs = discRoutines(id);
+      var lf = rs.filter(function(r){ return lrank(r.level) <= rank; });
+      if (lf.length) rs = lf; // si el filtro de nivel deja vacio, usamos todas
+      return rs;
+    }).filter(function(l){ return l && l.length; });
+    if (!lists.length) return planPool(p);
+    var out = [];
+    for (var i=0; out.length < 16; i++){
+      var added = false;
+      lists.forEach(function(l){ if (l[i]) { out.push(l[i]); added = true; } });
+      if (!added) break;
+    }
+    return (window.FMSafety) ? window.FMSafety.filterSafe(out, p) : out;
+  }
+
+  // Pool de recuperacion activa para dias de descanso (suave y opcional)
+  function recoveryPool(p){
+    var all = allRoutines();
+    var out = [];
+    var walk  = all.filter(function(r){ return /camin/i.test(r.name||''); });
+    var yogaB = all.filter(function(r){ return String(r.category||'').toLowerCase()==='yoga' && lrank(r.level)===1; });
+    var mov   = all.filter(function(r){ return /movilidad|estiramiento|equilibrio/i.test(r.name||''); });
+    [walk, yogaB, mov].forEach(function(l){ if (l[0]) out.push(l[0]); if (l[1]) out.push(l[1]); });
+    var res = out.length ? out : all.filter(function(r){ return ['yoga','cardio'].indexOf(String(r.category||'').toLowerCase())>=0; }).slice(0,4);
+    var seen = {}; res = res.filter(function(r){ if (!r || seen[r.id]) return false; seen[r.id]=1; return true; });
+    return (window.FMSafety) ? window.FMSafety.filterSafe(res, p) : res;
+  }
+
   function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function dkey(d){ return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate(); }
   function allRoutines(){ return [...(window.FMRoutines||[]), ...(window.FMSpecializedRoutines||[])]; }
@@ -94,10 +162,13 @@
     // Si no, usamos el reparto automatico por cantidad de dias/semana.
     const custom = String((p && p.train_days) || '').split(',').map(s=>s.trim()).filter(s=>s!=='').map(Number).filter(n=>n>=0 && n<=6);
     const pattern = custom.length ? custom : (PATTERNS[diasSem] || PATTERNS[3]);
-    const pool = planPool(p);
+    const disc = getDisciplinas(p);
+    const pool = disc.length ? disciplinePool(p, disc, level) : planPool(p);
+    const activeRest = !p || p.descanso_activo !== false; // default: ON
+    const restPool = activeRest ? recoveryPool(p) : [];
 
     // Construir calendario + contar planeados/hechos hasta hoy
-    let trainIdx = 0, plannedSoFar = 0, plannedTotal = 0;
+    let trainIdx = 0, recIdx = 0, plannedSoFar = 0, plannedTotal = 0;
     const cells = [];
     // relleno inicial (alinear a Lunes)
     const firstDow = new Date(y, mo, 1).getDay(); // 0=Dom
@@ -108,11 +179,12 @@
       const date = new Date(y, mo, day);
       const dow = date.getDay();
       const isTraining = pattern.includes(dow);
-      let routine = null;
-      if (isTraining) { routine = pool[trainIdx % pool.length]; trainIdx++; plannedTotal++; if (day <= todayN) plannedSoFar++; }
+      let routine = null, recovery = null;
+      if (isTraining) { routine = pool.length ? pool[trainIdx % pool.length] : null; trainIdx++; plannedTotal++; if (day <= todayN) plannedSoFar++; }
+      else if (restPool.length) { recovery = restPool[recIdx % restPool.length]; recIdx++; }
       const k = dkey(date);
       cells.push({
-        day, isTraining, routine,
+        day, isTraining, routine, recovery,
         isToday: day === todayN,
         isPast: day < todayN,
         done: doneDays.has(k)
@@ -141,6 +213,7 @@
     inner.innerHTML =
       header(apodo, MES[mo], y, level, goalTxt) +
       progressCards(doneCount, plannedSoFar, plannedTotal, adherence, pointsMonth, streak, daysLeft) +
+      disciplineSelector(disc, activeRest) +
       (nut ? nutritionCard(nut) : '') +      calendar(cells) +
       summaryCard(veredicto, vcolor, doneCount, plannedTotal, pointsMonth, streak) +
       safetyNote(p);
@@ -166,6 +239,45 @@
       card('Racha', streak + 'd', 'dias seguidos', '#22d3ee') +
       card('Dias restantes', left, 'para cerrar el mes', '#cbd2ee') + '</div>';
   }
+  function disciplineSelector(disc, activeRest){
+    var chips = DISCIPLINAS.map(function(d){
+      var on = disc.indexOf(d.id) >= 0;
+      return '<button onclick="FMMonthly.toggleDisc(\'' + d.id + '\')" '
+        + 'style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;'
+        + 'border:1px solid ' + (on ? d.color : '#2c3350') + ';'
+        + 'background:' + (on ? d.color + '22' : '#181c2a') + ';'
+        + 'color:' + (on ? d.color : '#9aa3c7') + '">'
+        + '<i class="fa-solid ' + d.icon + '"></i>' + d.label
+        + (on ? ' <i class="fa-solid fa-check" style="font-size:10px"></i>' : '') + '</button>';
+    }).join('');
+    var restBtn = '<button onclick="FMMonthly.toggleRest()" style="display:inline-flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;color:#cbd2ee;font-size:12px;font-weight:600">'
+      + '<span style="width:40px;height:22px;border-radius:999px;position:relative;flex:none;transition:background .2s;background:' + (activeRest ? '#34d399' : '#3a4058') + '">'
+      + '<span style="position:absolute;top:3px;left:' + (activeRest ? '21px' : '3px') + ';width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s"></span></span>'
+      + 'Recuperacion activa en dias de descanso</button>';
+    var hint = disc.length ? '' : '<p style="color:#8b92b0;font-size:11px;margin:9px 0 0">Elige lo que te gusta y tu plan se arma con esas disciplinas, rotandolas en la semana. Los dias de descanso te sugieren algo suave y opcional.</p>';
+    return '<div style="background:#11131c;border:1px solid #2c3350;border-radius:14px;padding:14px;margin-bottom:14px">'
+      + '<div style="color:#fff;font-weight:700;font-size:14px;margin-bottom:10px"><i class="fa-solid fa-sliders" style="color:#7c5cff"></i> Con que te gusta entrenar</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:8px">' + chips + '</div>'
+      + hint
+      + '<div style="border-top:1px solid #222842;margin-top:12px;padding-top:11px">' + restBtn + '</div>'
+      + '</div>';
+  }
+  async function saveProfilePatch(patch){
+    var p = profile(); if (p) Object.assign(p, patch);
+    try { if (supabase && userId) await supabase.from('profiles').update(patch).eq('id', userId); } catch (e) {}
+  }
+  function toggleDisc(id){
+    var cur = getDisciplinas(profile());
+    var i = cur.indexOf(id);
+    if (i >= 0) cur.splice(i, 1); else cur.push(id);
+    saveProfilePatch({ disciplinas: cur.join(',') }).then(open);
+  }
+  function toggleRest(){
+    var p = profile();
+    var cur = !p || p.descanso_activo !== false; // true si esta activo ahora
+    saveProfilePatch({ descanso_activo: !cur }).then(open);
+  }
+
   function nutritionCard(n) {
     return '<div style="background:#11131c;border:1px solid #2c3350;border-radius:14px;padding:14px;margin-bottom:14px">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
@@ -244,15 +356,24 @@
         else if (c.isPast) { bg = '#321a1a'; border = '1px solid #6b2b2b'; icon = '<i class="fa-solid fa-xmark" style="color:#f87171"></i>'; }
         else { border = '1px solid #7c5cff'; icon = '<i class="fa-solid fa-dumbbell" style="color:#a78bfa"></i>'; }
         if (c.routine) { const cat = c.routine.culture ? 'gods' : 'specialized'; click = 'onclick="FMMonthly.preview(\'' + c.routine.id + '\',\'' + cat + '\')" '; }
+      } else if (c.recovery) {
+        bg = '#12261f'; border = '1px dashed #2f6b52'; icon = '<i class="fa-solid fa-seedling" style="color:#34d399"></i>';
+        const cat = c.recovery.culture ? 'gods' : 'specialized'; click = 'onclick="FMMonthly.preview(\'' + c.recovery.id + '\',\'' + cat + '\')" ';
       }
-      const title = c.isTraining && c.routine ? ' title="' + esc(c.routine.name) + '"' : (c.isTraining ? '' : ' title="Descanso"');
+      let title;
+      if (c.isTraining && c.routine) title = ' title="' + esc(c.routine.name) + '"';
+      else if (c.recovery) title = ' title="Descanso activo (opcional): ' + esc(c.recovery.name) + '"';
+      else if (c.isTraining) title = '';
+      else title = ' title="Descanso"';
+      const fallback = '<span style="font-size:9px;color:#5a6080">descanso</span>';
       h += '<div ' + click + title + ' style="' + ring + 'background:' + bg + ';border:' + border + ';border-radius:10px;min-height:46px;padding:4px;cursor:' + (click?'pointer':'default') + ';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">' +
-        '<span style="font-size:11px;color:#cbd2ee;font-weight:700">' + c.day + '</span>' + (icon || '<span style="font-size:9px;color:#5a6080">descanso</span>') + '</div>';
+        '<span style="font-size:11px;color:#cbd2ee;font-weight:700">' + c.day + '</span>' + (icon || fallback) + '</div>';
     });
     h += '</div><div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:10px;color:#8b92b0">' +
       '<span><i class="fa-solid fa-check" style="color:#34d399"></i> Hecho</span>' +
       '<span><i class="fa-solid fa-dumbbell" style="color:#a78bfa"></i> Planeado</span>' +
       '<span><i class="fa-solid fa-xmark" style="color:#f87171"></i> No hecho</span>' +
+      '<span><i class="fa-solid fa-seedling" style="color:#34d399"></i> Recuperacion (opcional)</span>' +
       '<span style="color:#5a6080">descanso = libre</span></div></div>';
     return h;
   }
@@ -281,5 +402,5 @@
     userId = uid;
   }
 
-  window.FMMonthly = { init, open, close, preview, reroll };
+  window.FMMonthly = { init, open, close, preview, reroll, toggleDisc, toggleRest };
 })();
