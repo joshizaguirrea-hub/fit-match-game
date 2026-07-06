@@ -574,13 +574,13 @@
   </div>
 
   <!-- ===== MODAL DETALLE DE RUTINA ===== -->
-  <div id="routine-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
-    <div class="rounded-3xl p-6 max-w-lg w-full relative" style="background:var(--surface);border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.6)">
-      <button onclick="closeRoutineModal()" class="absolute top-4 right-4 text-xl" style="color:var(--txt-mut)">
+  <div id="routine-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-[100085] p-4" onclick="if(event.target===this)closeRoutineModal()">
+    <div class="rounded-3xl max-w-lg w-full relative max-h-[90vh] flex flex-col" style="background:var(--surface);border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.6)">
+      <button onclick="closeRoutineModal()" aria-label="Cerrar" class="absolute top-3 right-3 z-20 w-9 h-9 flex items-center justify-center rounded-full text-xl" style="color:var(--txt-mut);background:var(--surface2)">
         <i class="fa-solid fa-times"></i>
       </button>
       
-      <div id="routine-detail-content" class="space-y-4">
+      <div id="routine-detail-content" class="space-y-4 overflow-y-auto min-h-0 p-5 sm:p-6">
         <!-- Inyectado dinámicamente -->
       </div>
     </div>
@@ -4076,7 +4076,7 @@ function openRoutineDetail(id, category = 'gods') {
 
     <div>
       <p class="fun font-bold text-xs mb-2" style="color:var(--txt-soft)"><i class="fa-solid fa-list-check mr-1" style="color:var(--brand2)"></i> Ejercicios:</p>
-      <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+      <div class="space-y-2">
         ${r.exercises.map(ex => {
           const eq = detectEquipment(ex.name);
           const eqTags = eq.length
