@@ -560,8 +560,8 @@
       
       <div class="bg-gray-50 border-2 border-gray-900 rounded-2xl p-4 text-left space-y-3">
         <div>
-          <span class="block text-[9px] font-bold uppercase text-gray-400">Cómo se hace</span>
-          <p class="text-xs text-gray-700 font-semibold leading-relaxed" id="help-ex-desc">Descripción detallada paso a paso.</p>
+          <span class="block text-[9px] font-bold uppercase text-gray-400">Paso a paso de ejecución</span>
+          <ol class="list-none text-xs text-gray-700 font-semibold leading-relaxed mt-1 space-y-1.5" id="help-ex-steps"></ol>
         </div>
         <div>
           <span class="block text-[9px] font-bold uppercase text-gray-400">Músculos Trabajados</span>
@@ -5027,13 +5027,38 @@ const FM_EX_HELP_DB = {
   }
 };
 
+// Convierte una descripción en una lista numerada de pasos de ejecución.
+// Sirve para CUALQUIER ejercicio: parte la descripción en frases y añade
+// dos consejos estándar (respiración y control) al final.
+function buildExerciseStepsHTML(desc) {
+  const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+  // Parte por punto/exclamación/interrogación seguidos de espacio
+  let pasos = String(desc || '')
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  if (pasos.length === 0) pasos = ['Realiza el movimiento con t\u00e9cnica controlada.'];
+  // Consejos estándar comunes a todo ejercicio
+  pasos.push('Respira de forma controlada: exhala durante el esfuerzo e inhala al regresar.');
+  pasos.push('Vuelve a la posici\u00f3n inicial con control y repite hasta completar tus repeticiones.');
+
+  return pasos.map((p, i) => (
+    '<li class="flex gap-2 items-start">' +
+      '<span class="shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">' + (i + 1) + '</span>' +
+      '<span>' + escHtml(p) + '</span>' +
+    '</li>'
+  )).join('');
+}
+
 function showExerciseHelp(name, event) {
   if (event) {
     event.stopPropagation(); // Evitar marcar la casilla al dar clic en info
   }
   
   const helpExName = document.getElementById('help-ex-name');
-  const helpExDesc = document.getElementById('help-ex-desc');
+  const helpExSteps = document.getElementById('help-ex-steps');
   const helpExMuscles = document.getElementById('help-ex-muscles');
   const helpExVideo = document.getElementById('help-ex-video');
 
@@ -5043,7 +5068,7 @@ function showExerciseHelp(name, event) {
   };
 
   helpExName.textContent = name;
-  helpExDesc.textContent = info.desc;
+  if (helpExSteps) helpExSteps.innerHTML = buildExerciseStepsHTML(info.desc);
   helpExMuscles.textContent = info.muscles;
   helpExVideo.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent('como hacer ' + name + ' ejercicio tecnica calistenia');
 

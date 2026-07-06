@@ -178,7 +178,12 @@ function createProfileModal() {
                 <i class="fa-solid fa-user"></i>
               </div>
               <div>
-                <h2 class="text-2xl font-bold fun" id="profile-nickname">Usuario</h2>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-2xl font-bold fun" id="profile-nickname">Usuario</h2>
+                  <button id="edit-nickname-btn" onclick="editNickname()" title="Cambiar apodo" aria-label="Cambiar apodo" class="hidden text-white/70 hover:text-white text-base w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                </div>
                 <p class="text-white/80" id="profile-rank">Recluta</p>
                 <div class="flex items-center gap-2 mt-2">
                   <span class="bg-white/20 px-3 py-1 rounded-full text-sm">
@@ -406,6 +411,10 @@ async function loadProfileData(targetUserId) {
       // La base usa 'apodo'; dejamos 'nickname' como respaldo por compatibilidad
       document.getElementById('profile-nickname').textContent = profile.apodo || profile.nickname || 'Usuario';
     }
+
+    // Botón de editar apodo: solo visible en TU propio perfil
+    const editNickBtn = document.getElementById('edit-nickname-btn');
+    if (editNickBtn) editNickBtn.classList.toggle('hidden', !isOwn);
 
     // Obtener workouts del usuario que estamos viendo
     const { data: workouts } = await supabase
@@ -1367,6 +1376,34 @@ async function saveNutritionProfile(){
     if(msg) msg.textContent = 'No se pudo guardar: ' + (err.message||err);
   }
 }
+// ===== Cambiar apodo (solo el propio perfil) =====
+async function editNickname(){
+  const el = document.getElementById('profile-nickname');
+  const actual = el ? el.textContent.trim() : '';
+  let nuevo = window.prompt('Elige tu nuevo apodo de atleta (m\u00e1x. 20 caracteres):', actual);
+  if (nuevo === null) return;            // canceló
+  nuevo = nuevo.trim();
+  if (!nuevo) { alert('El apodo no puede quedar vac\u00edo.'); return; }
+  if (nuevo.length > 20) { alert('El apodo es muy largo (m\u00e1x. 20 caracteres).'); return; }
+  if (nuevo === actual) return;          // sin cambios
+  try {
+    const supa = window.FMAuth.getClient();
+    const { data: { user } } = await supa.auth.getUser();
+    if (!user) throw new Error('No hay sesi\u00f3n activa.');
+    const { error } = await supa.from('profiles').update({ apodo: nuevo }).eq('id', user.id);
+    if (error) throw error;
+    // Refleja el cambio en memoria y en pantalla al instante
+    if (window.cloudProfile) window.cloudProfile.apodo = nuevo;
+    if (window.currentProfile) window.currentProfile.apodo = nuevo;
+    if (el) el.textContent = nuevo;
+    if (typeof loadProfileData === 'function') loadProfileData();
+  } catch (err) {
+    console.error('Error al cambiar apodo:', err);
+    alert('No se pudo cambiar el apodo: ' + (err.message || err));
+  }
+}
+
+window.editNickname = editNickname;
 window.toggleNutritionEdit = toggleNutritionEdit;
 window.saveNutritionProfile = saveNutritionProfile;
 
