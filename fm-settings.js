@@ -122,6 +122,7 @@
     window.location.href = 'mailto:' + CONTACT_EMAIL + '?subject=' + encodeURIComponent('Contacto \u00b7 Fit Match') + '&body=' + encodeURIComponent('Hola equipo de Fit Match Studio,\n\n');
   }
   function openPrivacy() { window.open('privacy.html', '_blank', 'noopener'); }
+  function openGuide() { close(); if (window.FMGuide) FMGuide.open(); else toast('Gu\u00eda no disponible', 'Vuelve a intentarlo en un momento.', 'fa-circle-question', '#0ea5a4'); }
 
   /* ---------- TEMA ---------- */
   function currentTheme() {
@@ -221,6 +222,7 @@
       // APOYO
       '<p class="st-h"><i class="fa-solid fa-heart"></i>Apoyo</p>' +
       '<div class="st-card" style="padding:2px 0">' +
+        '<button class="st-link" onclick="FMSettings.guide()"><i class="fa-solid fa-circle-question" style="color:#0ea5a4;width:18px"></i> Gu\u00eda de uso</button>' +
         '<button class="st-link" onclick="FMSettings.share()"><i class="fa-solid fa-share-nodes" style="color:#7c5cff;width:18px"></i> Compartir aplicaci\u00f3n</button>' +
         '<button class="st-link" onclick="FMSettings.rate()"><i class="fa-solid fa-star" style="color:#f59e0b;width:18px"></i> Val\u00f3ranos</button>' +
         '<button class="st-link" onclick="FMSettings.contact()"><i class="fa-solid fa-envelope" style="color:#22c55e;width:18px"></i> Cont\u00e1ctanos</button>' +
@@ -262,6 +264,7 @@
     open: open, close: close, applyPrefs: applyPrefs, maybeAutoMusic: maybeAutoMusic,
     get: get, set: set,
     share: shareApp, rate: rateUs, contact: contactUs, privacy: openPrivacy,
+    guide: openGuide,
     _tgl: _tgl, _theme: _theme, _lang: _lang, _time: _time, _vol: _vol, _volTest: _volTest
   };
 

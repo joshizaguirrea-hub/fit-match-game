@@ -199,7 +199,7 @@
 <script src="fm-group-call.js?v=3"></script>
 <script src="fm-music.js?v=2"></script>
 <script src="fm-fx.js?v=2"></script>
-<script src="fm-settings.js?v=2"></script>
+<script src="fm-settings.js?v=3"></script>
 <script src="fm-rooms.js?v=4"></script>
 <script src="fm-install.js?v=2"></script>
 <script src="fm-trainer.js?v=3"></script>
@@ -231,14 +231,12 @@
 
 <!-- BARRA DE NAVEGACION FIJA (PIE) -->
 <nav id="fm-footer-nav" class="fixed bottom-0 left-0 right-0 z-[100080] bg-white border-t-2 border-gray-900">
-  <div class="max-w-6xl mx-auto grid grid-cols-7">
-    <button class="fm-foot-btn" onclick="window.location.href='index.html'" title="Volver al inicio"><i class="fa-solid fa-house"></i>Inicio</button>
+  <div class="max-w-6xl mx-auto grid grid-cols-5">
     <button class="fm-foot-btn" onclick="if(window.FMTrainer)FMTrainer.toggle()" title="Entrenador IA"><i class="fa-solid fa-dumbbell" style="color:#7c5cff"></i>Coach IA</button>
     <button class="fm-foot-btn" onclick="toggleSocialSidebar()" title="Chat &amp; Fit Bros"><i class="fa-solid fa-comments" style="color:#8b5cf6"></i>Chat</button>
     <button class="fm-foot-btn" onclick="if(window.FMRooms)FMRooms.open()" title="Salas de entrenamiento"><i class="fa-solid fa-people-roof" style="color:#22d3ee"></i>Salas</button>
-    <button class="fm-foot-btn" onclick="if(window.FMSettings)FMSettings.open()" title="Ajustes"><i class="fa-solid fa-gear" style="color:#64748b"></i>Ajustes</button>
-    <button class="fm-foot-btn" onclick="if(window.FMMonthly)FMMonthly.open()" title="Plan del mes"><i class="fa-solid fa-calendar-check" style="color:#0ea5a4"></i>Plan</button>
     <button class="fm-foot-btn" onclick="openClanTab()" title="Tu Clan"><i class="fa-solid fa-shield-halved" style="color:#a855f7"></i>Clan</button>
+    <button class="fm-foot-btn" id="btn-ajustes" onclick="if(window.FMSettings)FMSettings.open()" title="Ajustes"><i class="fa-solid fa-gear" style="color:#64748b"></i>Ajustes</button>
   </div>
 </nav>
 
@@ -445,7 +443,7 @@
       <h1 class="fun text-4xl sm:text-5xl font-extrabold mb-2" style="color:var(--txt)">Rutinas de <span style="background:linear-gradient(90deg,#7c5cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent">Entrenamiento</span></h1>
       <p class="text-gray-600 font-semibold max-w-xl mx-auto">Elige entre las rutinas legendarias de los Dioses o las rutinas especializadas modernas.</p>
       <div class="flex items-center justify-center gap-2 mt-4 flex-wrap">
-        <button onclick="if(window.FMGuide)FMGuide.open()" id="btn-guia" title="Guía" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 text-gray-700 bg-white hover:bg-gray-100 shadow-[2px_2px_0_#111827] transition-all"><i class="fa-solid fa-circle-question mr-1.5"></i>Guía</button>
+        <button onclick="if(window.FMMonthly)FMMonthly.open()" id="btn-plan-top" title="Plan del mes" class="fun font-bold text-xs px-4 py-2 rounded-full border-2 border-gray-900 text-gray-700 bg-white hover:bg-gray-100 shadow-[2px_2px_0_#111827] transition-all"><i class="fa-solid fa-calendar-check mr-1.5" style="color:#0ea5a4"></i>Plan del mes</button>
       </div>
     </div>
     

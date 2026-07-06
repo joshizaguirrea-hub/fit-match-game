@@ -21,7 +21,7 @@
       before: async () => { if (typeof window.startTraining === 'function') { window.startTraining(); await sleep(500); } } },
     { target: '#routines-grid', title: 'Tus rutinas por carriles', icon: 'fa-up-down-left-right',
       body: 'Aqui estan tus rutinas en carriles que se <b>deslizan a los lados</b> (Gimnasio, En Casa, CrossFit, Tercera Edad, Dioses...). Cada carril tiene <b>Ver mas</b> para abrir toda la coleccion.' },
-    { target: '#btn-plan-mes', title: 'Tu plan del mes', icon: 'fa-calendar-check',
+    { target: '#btn-plan-top', title: 'Tu plan del mes', icon: 'fa-calendar-check',
       body: 'Este boton abre tu <b>plan mensual</b>: calendario del dia 1 al fin de mes, tus metas de calorias y tu avance. Asi mides tu progreso.' },
     { target: '#fm-trainer-window', title: 'Tu Entrenador IA', icon: 'fa-dumbbell',
       body: 'Mira, lo abri por ti. Es un <b>chat</b>: preguntale <b>"que entreno hoy"</b>, <b>"que como hoy"</b>, <b>"como voy"</b> o pidele que te <b>motive</b>. Aprende de tus datos.',
@@ -29,8 +29,8 @@
     { target: '.social-toggle-btn', title: 'Entrena con amigos', icon: 'fa-users',
       body: 'Aqui esta la <b>comunidad</b>: ve quien esta en linea, <b>chatea</b>, haz <b>videollamada</b> o invita a alguien a entrenar contigo.',
       before: async () => { if (window.FMTrainer) window.FMTrainer.toggle(false); await sleep(250); } },
-    { target: '#btn-guia', title: 'Reabre la guia cuando quieras', icon: 'fa-circle-question',
-      body: 'Si te pierdes, este boton <b>Guia</b> vuelve a iniciar este recorrido. Listo para entrenar!' },
+    { target: '#btn-ajustes', title: 'Reabre la guia cuando quieras', icon: 'fa-gear',
+      body: 'La <b>Guia</b> ahora vive dentro de <b>Ajustes</b> (aqui abajo). Entra a Ajustes y toca <b>Guia de uso</b> para repetir este recorrido. Listo para entrenar!' },
     { target: null, title: 'A entrenar!', icon: 'fa-flag-checkered',
       body: 'Eso es todo. Completa tu <b>Perfil</b> y tu <b>Perfil Nutricional</b> para que el coach sea a tu medida. Vamos con todo!' }
   ];
