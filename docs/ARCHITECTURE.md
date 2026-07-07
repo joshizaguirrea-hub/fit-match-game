@@ -80,9 +80,12 @@ Aunque hoy están todos planos en la raíz, conceptualmente pertenecen a capas:
 - `fm-install.js` — prompt de instalación PWA.
 - `fm-profile.js` — perfil de usuario.
 
-### Glue / entrada (¡el problema!)
-- Script inline en `jugar.html` (~4.350 líneas) — juego, clanes, salas, detalle
-  de rutina, integración del plan. **A extraer por feature.**
+### Glue / entrada (¡el problema, en reducción!)
+- Script inline en `jugar.html` (~4.581 líneas, bajando) — juego, clanes,
+  salas, detalle de rutina. **En extracción progresiva por feature.**
+- Ya extraído a módulos propios (Fase 3):
+  - `fm-exercise-help.js` — modal "cómo se hace" de un ejercicio.
+  - `fm-exercise-video.js` — video de YouTube + QR + modal de video.
 - Script inline en `index.html` — auth, onboarding, guilds.
 
 ---
@@ -136,11 +139,13 @@ fit-match-juego/
 - [ ] Actualizar todas las rutas de `<script>`. Validar con E2E.
 
 **Fase 3 — Partir el `jugar.html` (el villano #1)** — EN PROGRESO
-- [x] Piloto: `fm-exercise-help.js` extraído (modal "cómo se hace", 215
-      líneas). `jugar.html`: 5273 -> 5058 líneas. Suite QA verde.
-- [ ] Extraer el resto por feature, uno a la vez:
-      `game`, `clan`, `rooms-ui`, `routine-detail`, `plan-glue`.
-- [ ] Tras cada extracción: E2E verde + commit.
+- [x] `fm-exercise-help.js` — modal "cómo se hace" (215 líneas).
+- [x] `fm-exercise-video.js` — video/QR + modal de video (120 líneas).
+- Progreso: `jugar.html` **4.902 -> 4.581 líneas** (medidor consistente).
+- [ ] Pendiente (núcleo acoplado, requiere exponer estado compartido primero):
+      `game` (máquina de turnos/apuestas), `clan`, `rooms-ui`, `routine-detail`.
+- [ ] Tras cada extracción: E2E verde + commit. El smoke test NO cubre una
+      partida completa, así que el núcleo se extrae con validación humana en vivo.
 
 **Fase 4 — Migrar a ES Modules**
 - [ ] Convertir IIFE/`window.FMXxx` a `export`/`import`.

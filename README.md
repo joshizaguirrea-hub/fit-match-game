@@ -61,3 +61,27 @@ Tu rango militar se calcula dinámicamente y se muestra con insignias de gloria 
 *¡Qué tremenda aventura de programación hemos vivido hoy, mi líder! Logramos resolver un bug asíncrono pesadísimo de Supabase y descubrimos que el bloqueo de red se debió al perfil corporativo de Walmart instalado en tu celular y laptop (Zscaler vigilando). ¡Tu código de producción en internet en dispositivos limpios es un éxito rotundo del 100%!*
 
 *Descansa muchísimo. Mañana continuaremos expandiendo este gran imperio. ¡Hasta mañana, espartano! ¡Guau!*
+
+---
+
+## Documentacion tecnica (para desarrolladores)
+
+- **Arquitectura y roadmap:** `docs/ARCHITECTURE.md` (auditoria, inventario de
+  modulos por capa, arquitectura objetivo y plan de refactor por fases).
+- **Decisiones de diseno (ADRs):** `docs/DECISIONS.md`.
+- **Tests / QA:** `tests/README.md`. Antes de cada push, en verde:
+  ```
+  uv run --with esprima python tests/qa_static.py
+  uv run --with playwright python tests/smoke_e2e.py
+  ```
+- **Despliegue (versionado automatico):** ya NO se editan `?v=N` ni `sw.js` a
+  mano. Fuente unica: archivo `VERSION` + `tools/stamp_version.py`.
+  ```
+  python tools/stamp_version.py --bump
+  git add -A && git commit -m "..." && git push
+  ```
+
+> Refactor en curso (Fase 3): se esta partiendo el script inline gigante de
+> `jugar.html` en modulos `fm-*.js` por feature, uno a la vez y con la suite
+> de QA validando cada paso. Ya extraidos: `fm-exercise-help.js`,
+> `fm-exercise-video.js`.

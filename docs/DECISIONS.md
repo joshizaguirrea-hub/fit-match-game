@@ -5,6 +5,30 @@ contexto -> decisión -> consecuencia. La más reciente arriba.
 
 ---
 
+## ADR-005 — Receta de extracción de features desde `jugar.html`
+
+- **Contexto:** `jugar.html` tiene un script inline gigante. Hay que partirlo
+  sin romper nada ni corromper acentos (mojibake).
+- **Decisión — receta repetible y test-guarded:**
+  1. Identificar un bloque **cohesivo** de funciones y sus dependencias
+     (`grep` de cada nombre en TODO el repo para ver quién lo llama).
+  2. Preferir bloques **auto-contenidos** (que solo dependan de globales ya
+     existentes: `FMVideos`, `FMPhotos`, `FMDemo`, DOM). El núcleo acoplado
+     (`G`, `supabase`, `cloudUser`) se deja para el final.
+  3. Extraer **byte-exacto** con un script Python de un solo uso
+     (`io.open(..., newline="")`), nunca a mano — evita mojibake.
+  4. Envolver en IIFE (`(function(){ 'use strict'; ... })()`) y **exponer en
+     `window` SOLO** las funciones llamadas desde `onclick`/otros módulos.
+  5. Añadir `<script src="...">` en el `<head>` (tras sus dependencias).
+  6. `python tools/stamp_version.py --bump` para versionar.
+  7. Validar: `qa_static.py` (nombres/handlers) + `smoke_e2e.py` (sin
+     excepciones). Solo si ambos en verde -> commit + push.
+- **Consecuencia:** Cada extracción es pequeña, reversible y verificada.
+  Ya aplicada a `fm-exercise-help.js` y `fm-exercise-video.js`.
+- **Aviso:** El smoke test NO cubre una partida completa ni clanes contra
+  Supabase en vivo. La extracción del núcleo del juego requiere validación
+  humana en el navegador entre pasos.
+
 ## ADR-004 — Fuente única de verdad para el cache-busting
 
 - **Contexto:** 33 scripts con `?v=N` a mano; el mismo archivo se pedía con
