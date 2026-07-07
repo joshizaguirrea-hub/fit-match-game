@@ -135,8 +135,10 @@ fit-match-juego/
 - [ ] Mover JS a `src/**`, SQL a `sql/**`, docs a `docs/**`.
 - [ ] Actualizar todas las rutas de `<script>`. Validar con E2E.
 
-**Fase 3 — Partir el `jugar.html` (el villano #1)**
-- [ ] Extraer el script inline a módulos por feature, uno a la vez:
+**Fase 3 — Partir el `jugar.html` (el villano #1)** — EN PROGRESO
+- [x] Piloto: `fm-exercise-help.js` extraído (modal "cómo se hace", 215
+      líneas). `jugar.html`: 5273 -> 5058 líneas. Suite QA verde.
+- [ ] Extraer el resto por feature, uno a la vez:
       `game`, `clan`, `rooms-ui`, `routine-detail`, `plan-glue`.
 - [ ] Tras cada extracción: E2E verde + commit.
 
