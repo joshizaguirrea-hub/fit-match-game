@@ -134,6 +134,53 @@ def run():
 
         check_page("jugar.html", actions=jugar_actions, name="jugar.html (ajustes+temas+clan)")
 
+        # ---- jugar.html: modales criticos (plan del mes, rutina, ayuda) ----
+        # Blinda los flujos que refactorizaremos. Siembra un perfil de prueba
+        # (FMMonthly lee window.cloudProfile) para renderizar el plan sin login.
+        def modals_actions(page):
+            page.wait_for_selector("button[title='Ajustes']", timeout=20000)
+
+            # 1) Plan del Mes: selector de disciplinas + calendario con recuperacion
+            page.evaluate("""async () => {
+              window.cloudProfile = {
+                id:'test-user', apodo:'Tester', edad:30, sexo:'m',
+                peso_kg:75, altura_cm:175, experiencia:'intermedio',
+                objetivo:'salud', equipo:'gym', dias_semana:4,
+                disciplinas:'yoga,gym,caminar', descanso_activo:true
+              };
+              await window.FMMonthly.open();
+            }""")
+            page.wait_for_selector("#fm-monthly-modal", state="visible", timeout=8000)
+            inner = (page.inner_text("#fm-monthly-inner") or "").lower()
+            if "entrenar" not in inner:
+                raise AssertionError("Plan del Mes: no se renderizo el selector de disciplinas")
+            if "recuperaci" not in inner:
+                raise AssertionError("Plan del Mes: falta la leyenda de recuperacion activa")
+            page.evaluate("window.FMMonthly.close()")
+            page.wait_for_timeout(200)
+
+            # 2) Modal detalle de rutina: abre y cierra sin excepciones
+            page.evaluate("window.openRoutineDetail('gym_pecho_biceps','specialized')")
+            page.wait_for_selector("#routine-modal:not(.hidden)", timeout=6000)
+            page.evaluate("window.closeRoutineModal && window.closeRoutineModal()")
+            page.wait_for_timeout(200)
+
+            # 3) Modal de ayuda de ejercicio: NO debe cortarse arriba (regresion)
+            page.evaluate("window.showExerciseHelp('Flexiones')")
+            page.wait_for_selector("#exercise-help-modal:not(.hidden)", timeout=6000)
+            box = page.evaluate("""() => {
+              const b = document.querySelector('#exercise-help-modal button');
+              if (!b) return null;
+              const r = b.getBoundingClientRect();
+              return { top: r.top, right: r.right, w: window.innerWidth };
+            }""")
+            if not box or box["top"] < 0 or box["right"] > box["w"] + 1:
+                raise AssertionError("Modal de ayuda: el boton de cerrar quedo fuera de la vista (recorte)")
+            page.evaluate("window.closeExerciseHelp()")
+            page.wait_for_timeout(200)
+
+        check_page("jugar.html", actions=modals_actions, name="jugar.html (plan+rutina+ayuda)")
+
         # ---- privacy.html ----
         check_page("privacy.html", name="privacy.html")
 

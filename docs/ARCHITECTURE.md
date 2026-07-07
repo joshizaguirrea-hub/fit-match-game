@@ -117,11 +117,14 @@ fit-match-juego/
 
 > Cada fase = rama/commit propio, testeable y reversible con git.
 
-**Fase 0 — Colchón de seguridad** *(sin tocar código de la app)*
+**Fase 0 — Colchón de seguridad** *(sin tocar código de la app)* — HECHA
 - [x] Este documento de arquitectura.
-- [ ] `docs/DECISIONS.md` (registro de decisiones).
-- [ ] Prettier + ESLint (config, sin reformatear aún) + `npm run lint`.
-- [ ] E2E Playwright de humo: cargar app, login, abrir plan, abrir rutina.
+- [x] `docs/DECISIONS.md` (registro de decisiones ADR).
+- [x] Red de seguridad validada en verde: `tests/qa_static.py` (linter) +
+      `tests/smoke_e2e.py` (E2E). Baseline establecida ANTES de refactorizar.
+- [x] Smoke test extendido: plan del mes (disciplinas), modal de rutina y
+      modal de ayuda (guarda contra el recorte del modal).
+- [~] ESLint/Prettier: descartado por ahora (no hay Node). Ver ADR-003.
 
 **Fase 1 — Matar el cache-busting manual**
 - [ ] Una constante de versión única; script que estampa `?v=BUILD` en todos
@@ -158,11 +161,13 @@ fit-match-juego/
 
 ---
 
-## 7. Decisiones abiertas (esperando al dueño)
+## 7. Decisiones tomadas
 
-1. ¿Tooling? cero vanilla · **ligero (Prettier+ESLint, recomendado)** · Vite.
-2. ¿ES Modules? **sí (recomendado)** · mantener script tags.
-3. ¿Por dónde arrancar? **partir `jugar.html`** · versionado · linter+docs.
-4. ¿Reorganizar carpetas ahora? sí · aún no.
+1. **Tooling:** ligero, pero **sin Node** — el "linter" es la suite Python
+   (`qa_static.py` + `smoke_e2e.py`). Ver ADR-003.
+2. **ES Modules:** sí, migración planificada (Fase 4). Ver ADR-002.
+3. **Orden:** Fase 0 (hecha) -> versionado -> reorg carpetas -> partir
+   `jugar.html` -> ES Modules -> pulido.
+4. **Reorg carpetas:** sí, con la suite de QA validando cada movimiento.
 
-_Última actualización: 2026-07-05 · Autor: Horus _
+_Última actualización: 2026-07-05 · Autor: Horus_
