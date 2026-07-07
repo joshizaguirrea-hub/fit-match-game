@@ -5,6 +5,24 @@ contexto -> decisión -> consecuencia. La más reciente arriba.
 
 ---
 
+## ADR-004 — Fuente única de verdad para el cache-busting
+
+- **Contexto:** 33 scripts con `?v=N` a mano; el mismo archivo se pedía con
+  versiones distintas en `index.html` y `jugar.html` (ej. `?v=18` vs `?v=32`).
+  Olvidar bumpear uno = servir código viejo. Bug real ya vivido.
+- **Decisión:** Un archivo `VERSION` (un número) + `tools/stamp_version.py`
+  que estampa `?v=<VERSION>` en TODOS los `<script>`/`<link>` locales de los
+  HTML y ajusta `CACHE_VERSION` del SW. Idempotente, sin dependencias.
+- **Consecuencia:** Imposible olvidar una versión; todo queda consistente con
+  un comando. Puente perfecto hasta migrar a ES Modules (ADR-002), que lo
+  elimina de raíz.
+- **Flujo de despliegue:**
+  ```
+  python tools/stamp_version.py --bump   # sube VERSION y estampa todo
+  git add -A && git commit -m "..." && git push
+  ```
+  En CI/pre-push se puede validar con `python tools/stamp_version.py --check`.
+
 ## ADR-003 — El "linter" es la suite de QA en Python (no ESLint/Prettier, por ahora)
 
 - **Contexto:** La máquina de desarrollo NO tiene Node/npm (sí Python 3.13 +

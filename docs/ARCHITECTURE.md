@@ -126,9 +126,10 @@ fit-match-juego/
       modal de ayuda (guarda contra el recorte del modal).
 - [~] ESLint/Prettier: descartado por ahora (no hay Node). Ver ADR-003.
 
-**Fase 1 — Matar el cache-busting manual**
-- [ ] Una constante de versión única; script que estampa `?v=BUILD` en todos
-      los `<script>` (o migrar a ES Modules, que lo elimina de raíz).
+**Fase 1 — Matar el cache-busting manual** — HECHA
+- [x] `VERSION` (fuente única) + `tools/stamp_version.py` estampan `?v=`
+      en todos los HTML y el `CACHE_VERSION` del SW. Idempotente, sin Node.
+      Validado con la suite de QA en verde. Ver ADR-004.
 
 **Fase 2 — Reorganización de carpetas** *(mecánico, alto cuidado con rutas)*
 - [ ] Mover JS a `src/**`, SQL a `sql/**`, docs a `docs/**`.
