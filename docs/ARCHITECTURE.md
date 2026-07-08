@@ -84,7 +84,9 @@ Aunque hoy están todos planos en la raíz, conceptualmente pertenecen a capas:
 - Script inline en `jugar.html` (~4.581 líneas, bajando) — juego, clanes,
   salas, detalle de rutina. **En extracción progresiva por feature.**
 - Ya extraído a módulos propios (Fase 3):
-  - `fm-exercise-help.js` — modal "cómo se hace" de un ejercicio.
+  - `fm-exercise-help.js` — modal "cómo se hace" + resolvedor de ayuda.
+  - `fm-exercise-help-db.js` — DATOS: base de ~140 movimientos + genericos
+    por categoria (ver ADR-006, cobertura 96%+ sobre 856 ejercicios).
   - `fm-exercise-video.js` — video de YouTube + QR + modal de video.
 - Script inline en `index.html` — auth, onboarding, guilds.
 

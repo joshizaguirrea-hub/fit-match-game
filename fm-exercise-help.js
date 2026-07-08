@@ -183,6 +183,78 @@ function buildExerciseStepsHTML(desc) {
   )).join('');
 }
 
+// Palabras conectoras que se ignoran al comparar.
+const FM_STOP = new Set(['de','del','la','el','los','las','con','y','a','en','al','o','un','una','para','sin','e','su','sus','lo']);
+// Stem crudo para casar singular/plural en espanol: quita '-es' (flexion/
+// flexiones, talon/talones) o la '-s' final. Debe ser consistente kw<->nombre.
+function fmStem(t) {
+  if (t.length > 4 && t.endsWith('es')) return t.slice(0, -2);
+  if (t.length > 3 && t.endsWith('s')) return t.slice(0, -1);
+  return t;
+}
+// Tokeniza: minusculas, sin acentos/signos, sin conectoras, con stem.
+function fmTokens(s) {
+  return String(s || '')
+    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(t => t && !FM_STOP.has(t))
+    .map(fmStem);
+}
+function fmNormEx(s) { return fmTokens(s).join(' '); }
+
+// Mapa normalizado de las entradas exactas (se construye una sola vez).
+let _fmNormDB = null;
+function fmNormDB() {
+  if (_fmNormDB) return _fmNormDB;
+  _fmNormDB = {};
+  for (const k in FM_EX_HELP_DB) _fmNormDB[fmNormEx(k)] = FM_EX_HELP_DB[k];
+  return _fmNormDB;
+}
+
+// Resolvedor: exacto -> normalizado exacto -> movimiento base (score) ->
+// categoria -> generico. Ver fm-exercise-help-db.js (base de conocimiento).
+// El match base es por SUBCONJUNTO de tokens: una clave calza si TODOS sus
+// tokens estan en el nombre (orden y conectores/plurales aparte). Gana la
+// clave con mas caracteres (la mas especifica).
+function resolveExerciseHelp(name) {
+  if (FM_EX_HELP_DB[name]) return FM_EX_HELP_DB[name];
+  const norm = fmNormEx(name);
+  const nd = fmNormDB();
+  if (nd[norm]) return nd[norm];
+
+  const nameSet = new Set(fmTokens(name));
+  const base = window.FM_EX_HELP_BASE || [];
+  let best = null, bestScore = 0;
+  for (const entry of base) {
+    for (const kw of entry.kw) {
+      const toks = fmTokens(kw);
+      if (!toks.length) continue;
+      if (toks.every(t => nameSet.has(t))) {
+        const score = toks.reduce((a, t) => a + t.length, 0);
+        if (score > bestScore) { bestScore = score; best = entry; }
+      }
+    }
+  }
+  if (best) return { desc: best.desc, muscles: best.muscles };
+
+  // Respaldo por categoria (yoga/pilates/hipopresivos/cardio/movilidad).
+  const cats = window.FM_EX_HELP_CATEGORY || {};
+  for (const key in cats) {
+    const c = cats[key];
+    if ((c.match || []).some(m => {
+      const mt = fmTokens(m);
+      return mt.length && mt.every(t => nameSet.has(t));
+    })) {
+      return { desc: c.desc, muscles: c.muscles };
+    }
+  }
+  return window.FM_EX_HELP_GENERIC || {
+    desc: "Realiza este ejercicio con tecnica controlada, espalda neutra y core activo, en un rango completo. Evita acelerarte para prevenir lesiones.",
+    muscles: "Musculos estabilizadores y Cuerpo completo"
+  };
+}
+
 function showExerciseHelp(name, event) {
   if (event) {
     event.stopPropagation(); // Evitar marcar la casilla al dar clic en info
@@ -193,10 +265,7 @@ function showExerciseHelp(name, event) {
   const helpExMuscles = document.getElementById('help-ex-muscles');
   const helpExVideo = document.getElementById('help-ex-video');
 
-  const info = FM_EX_HELP_DB[name] || {
-    desc: "Realiza este ejercicio manteniendo una técnica controlada, respirando de manera constante y apretando los músculos involucrados. Evita acelerarte para prevenir lesiones.",
-    muscles: "Músculos Estabilizadores y Cuerpo Completo"
-  };
+  const info = resolveExerciseHelp(name);
 
   helpExName.textContent = name;
   if (helpExSteps) helpExSteps.innerHTML = buildExerciseStepsHTML(info.desc);
@@ -225,4 +294,5 @@ function closeExerciseHelp() {
 
   window.showExerciseHelp = showExerciseHelp;
   window.closeExerciseHelp = closeExerciseHelp;
+  window.resolveExerciseHelp = resolveExerciseHelp; // API/diagnostico
 })();

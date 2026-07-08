@@ -5,6 +5,23 @@ contexto -> decisión -> consecuencia. La más reciente arriba.
 
 ---
 
+## ADR-006 — Ayuda de ejercicios: resolvedor por movimiento base (no 1 texto por ejercicio)
+
+- **Contexto:** Hay **856 ejercicios unicos** en las rutinas pero solo 35
+  tenian explicacion; el resto mostraba un texto GENERICO igual para todos.
+  Escribir 821 textos a mano rompe DRY (muchisimos son el mismo movimiento
+  con calificadores: "bicicleta", "...rapidos", "...lentos").
+- **Decisión:** Base de conocimiento de ~140 **movimientos base** correctos
+  (`fm-exercise-help-db.js`, solo datos) + un **resolvedor** en
+  `fm-exercise-help.js` que casa por TOKENS con stemming es/plural:
+  exacto -> exacto normalizado -> movimiento base (gana la clave con mas
+  caracteres, la mas especifica) -> categoria (yoga/pilates/hipopresivos/
+  cardio/movilidad/recuperacion) -> generico. Datos separados de logica.
+- **Consecuencia:** Cobertura **96% especifica + 4% categoria, 0% generico**
+  sobre los 856. Escala solo a ejercicios futuros. Verificable con
+  `tools/verify_help_coverage.py` (mide cobertura + spot-check de calidad;
+  correr al agregar rutinas).
+
 ## ADR-005 — Receta de extracción de features desde `jugar.html`
 
 - **Contexto:** `jugar.html` tiene un script inline gigante. Hay que partirlo
