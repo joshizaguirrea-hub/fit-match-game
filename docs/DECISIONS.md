@@ -5,6 +5,22 @@ contexto -> decisión -> consecuencia. La más reciente arriba.
 
 ---
 
+## ADR-007 — Extraccion de datos con namespace + rebind
+
+- **Contexto:** `jugar.html` tiene grandes `const` de datos (TRAIN_CATS,
+  MUSCLE_GROUPS, BODY_GROUPS, WARMUP_EXERCISES, etc.) intercalados con las
+  funciones que los usan por nombre. Un test (shot_equip.py) espera algunos
+  como global de pagina.
+- **Decisión:** Mover solo los DATOS a un archivo (`fm-train-data.js`) bajo
+  un unico namespace `window.FM_TRAIN_DATA`, y en `jugar.html` reemplazar
+  cada declaracion por un REBIND de una linea:
+  `const TRAIN_CATS = window.FM_TRAIN_DATA.TRAIN_CATS;`
+- **Consecuencia:** (1) el namespace global queda limpio (un objeto, no 10
+  globals sueltos); (2) TODOS los usos siguen igual (bare `TRAIN_CATS`);
+  (3) el const de pagina sigue existiendo para tests. El archivo de datos
+  DEBE cargarse en el `<head>` ANTES del script inline (olvidarlo = 
+  'Cannot read properties of undefined' - ya pasado y cazado por el smoke).
+
 ## ADR-006 — Ayuda de ejercicios: resolvedor por movimiento base (no 1 texto por ejercicio)
 
 - **Contexto:** Hay **856 ejercicios unicos** en las rutinas pero solo 35

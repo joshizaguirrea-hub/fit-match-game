@@ -88,6 +88,10 @@ Aunque hoy están todos planos en la raíz, conceptualmente pertenecen a capas:
   - `fm-exercise-help-db.js` — DATOS: base de ~140 movimientos + genericos
     por categoria (ver ADR-006, cobertura 96%+ sobre 856 ejercicios).
   - `fm-exercise-video.js` — video de YouTube + QR + modal de video.
+  - `fm-shop-data.js` — DATOS: catalogo de la Tienda (window.FM_SHOP).
+  - `fm-train-data.js` — DATOS: constantes del armador (categorias, mapa
+    muscular, grupos del cuerpo, calentamiento). Namespace
+    window.FM_TRAIN_DATA; jugar.html rebindea cada const (ver ADR-007).
 - Script inline en `index.html` — auth, onboarding, guilds.
 
 ---
